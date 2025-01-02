@@ -58,7 +58,7 @@ class BubbleTimelineChannel extends Channel {
 		if (!this.withBots && note.user.isBot) return;
 		if (this.instance.bubbleInstances == null) return;
 
-		if (!(note.user.host != null && this.instance.bubbleInstances.includes(note.user.host) && note.visibility === 'public' )) return;
+		if (!((note.user.host == null || this.instance.bubbleInstances.includes(note.user.host)) && note.visibility === 'public' )) return;
 
 		if (note.channelId != null) return;
 
