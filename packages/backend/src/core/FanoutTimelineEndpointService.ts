@@ -100,6 +100,11 @@ export class FanoutTimelineEndpointService {
 				filter = (note) => (note.user ? note.user.isCat : false) && parentFilter(note);
 			}
 
+			if (ps.me == null) {
+				const parentFilter = filter;
+				filter = (note) => !note.localAndFollowers && parentFilter(note);
+			}
+
 			if (ps.me) {
 				const me = ps.me;
 				const [
