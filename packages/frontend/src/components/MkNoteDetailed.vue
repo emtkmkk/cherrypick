@@ -39,6 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i v-else-if="note.reactionAcceptance === 'likeOnly'" v-tooltip="i18n.ts.likeOnly" class="ti ti-heart"></i>
 			</span>
 			<span v-if="note.localOnly" style="margin-right: 0.5em;"><i v-tooltip="i18n.ts._visibility['disableFederation']" class="ti ti-rocket-off"></i></span>
+			<span v-if="note.localAndFollowers" style="margin-right: 0.5em;"><i v-tooltip="i18n.ts._visibility['localAndFollowers']" class="ti ti-briefcase-off"></i></span>
 			<span :class="$style.renoteTime">
 				<button ref="renoteTime" class="_button">
 					<i class="ti ti-dots" :class="$style.renoteMenu" @mousedown.prevent="showRenoteMenu()"></i>
@@ -83,6 +84,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<i v-else-if="note.reactionAcceptance === 'likeOnly'" v-tooltip="i18n.ts.likeOnly" class="ti ti-heart"></i>
 						</span>
 						<span v-if="appearNote.localOnly" style="margin-left: 0.5em;"><i v-tooltip="i18n.ts._visibility['disableFederation']" class="ti ti-rocket-off"></i></span>
+						<span v-if="note.localAndFollowers" style="margin-right: 0.5em;"><i v-tooltip="i18n.ts._visibility['localAndFollowers']" class="ti ti-briefcase-off"></i></span>
 					</div>
 					<MkInstanceTicker v-if="showTicker" :instance="appearNote.user.instance" @click="showOnRemote"/>
 				</div>
