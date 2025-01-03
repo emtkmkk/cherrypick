@@ -169,7 +169,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showPreview: {
 		where: 'device',
-		default: false,
+		default: true,
 	},
 	showPreviewInReplies: {
 		where: 'device',
@@ -232,7 +232,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	highlightSensitiveMedia: {
 		where: 'device',
-		default: false,
+		default: true,
 	},
 	animation: {
 		where: 'device',
@@ -296,7 +296,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showFixedPostFormInChannel: {
 		where: 'device',
-		default: false,
+		default: true,
 	},
 	enableInfiniteScroll: {
 		where: 'device',
@@ -312,11 +312,11 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	darkMode: {
 		where: 'device',
-		default: false,
+		default: true,
 	},
 	instanceTicker: {
 		where: 'device',
-		default: 'remote' as 'always' | 'remote' | 'none',
+		default: 'always' as 'always' | 'remote' | 'none',
 	},
 	emojiPickerScale: {
 		where: 'device',
@@ -412,7 +412,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	notificationPosition: {
 		where: 'device',
-		default: 'rightBottom' as 'leftTop' | 'leftBottom' | 'rightTop' | 'rightBottom',
+		default: 'leftBottom' as 'leftTop' | 'leftBottom' | 'rightTop' | 'rightBottom',
 	},
 	notificationStackAxis: {
 		where: 'device',
@@ -468,7 +468,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	enableHorizontalSwipe: {
 		where: 'device',
-		default: true,
+		default: false,
 	},
 	useNativeUIForVideoAudioPlayer: {
 		where: 'device',
@@ -476,7 +476,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	keepOriginalFilename: {
 		where: 'device',
-		default: true,
+		default: false,
 	},
 	alwaysConfirmFollow: {
 		where: 'device',
@@ -484,7 +484,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	confirmWhenRevealingSensitiveMedia: {
 		where: 'device',
-		default: false,
+		default: true,
 	},
 	contextMenu: {
 		where: 'device',
@@ -521,7 +521,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	sound_note: {
 		where: 'device',
-		default: { type: 'syuilo/n-aec', volume: 1 } as SoundStore,
+		default: { type: 'syuilo/n-aec', volume: 0 } as SoundStore,
 	},
 	sound_noteMy: {
 		where: 'device',
@@ -560,7 +560,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	bannerDisplay: {
 		where: 'device',
-		default: 'topBottom' as 'all' | 'topBottom' | 'top' | 'bottom' | 'bg' | 'hide',
+		default: 'hide' as 'all' | 'topBottom' | 'top' | 'bottom' | 'bg' | 'hide',
 	},
 	autoLoadMoreReplies: {
 		where: 'device',
@@ -622,7 +622,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showTranslateButtonInNote: {
 		where: 'device',
-		default: true,
+		default: false,
 	},
 	enableAbsoluteTime: {
 		where: 'device',
@@ -690,7 +690,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showLikeButtonInNoteFooter: {
 		where: 'device',
-		default: true,
+		default: false,
 	},
 	showDoReactionButtonInNoteFooter: {
 		where: 'device',
@@ -720,7 +720,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showExploreButtonInNavbar: {
 		where: 'device',
-		default: isFriendly.value,
+		default: false || isFriendly.value,
 	},
 	showSearchButtonInNavbar: {
 		where: 'device',
@@ -732,7 +732,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showMessageButtonInNavbar: {
 		where: 'device',
-		default: isFriendly.value,
+		default: false || isFriendly.value,
 	},
 	showWidgetButtonInNavbar: {
 		where: 'device',
@@ -766,15 +766,15 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	enableListTimeline: {
 		where: 'device',
-		default: true,
+		default: false,
 	},
 	enableAntennaTimeline: {
 		where: 'device',
-		default: true,
+		default: false,
 	},
 	enableChannelTimeline: {
 		where: 'device',
-		default: true,
+		default: false,
 	},
 
 	// - Settings/Sounds & Vibrations
