@@ -734,7 +734,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 						dm.addFollowersRecipe();
 					}
 
-					if (['public'].includes(note.visibility)) {
+					if (['public'].includes(note.visibility) && !note.localAndFollowers) {
 						this.relayService.deliverToRelays(user, noteActivity);
 					}
 
