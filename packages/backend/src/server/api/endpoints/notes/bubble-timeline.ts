@@ -81,6 +81,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.andWhere('note.visibility = \'public\'')
 				.andWhere('note.channelId IS NULL')
 				.andWhere('(note.userHost IN (:...hosts) OR note.userHost IS NULL)', { hosts: this.serverSettings.bubbleInstances })
+				.andWhere("(note.replyId IS NULL OR reply.userHost IS NULL OR reply.userHost = ANY (:recommendedHosts)", { recommendedHosts: m.recommendedInstances });
 				.innerJoinAndSelect('note.user', 'user')
 				.leftJoinAndSelect('note.reply', 'reply')
 				.leftJoinAndSelect('note.renote', 'renote')

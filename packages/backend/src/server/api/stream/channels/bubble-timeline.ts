@@ -59,6 +59,7 @@ class BubbleTimelineChannel extends Channel {
 		if (this.instance.bubbleInstances == null) return;
 
 		if (!((note.user.host == null || this.instance.bubbleInstances.includes(note.user.host)) && note.visibility === 'public' )) return;
+		if (note.replyId != null && !(note.reply?.user.host == null || this.instance.bubbleInstances.includes(note.reply?.user.host))) return;
 
 		if (note.channelId != null) return;
 
