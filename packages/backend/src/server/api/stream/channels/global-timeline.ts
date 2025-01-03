@@ -65,6 +65,8 @@ class GlobalTimelineChannel extends Channel {
 			}
 		}
 
+		if (this.user == null && note.localAndFollowers) return;
+
 		this.connection.cacheNote(note);
 
 		this.send('note', note);
