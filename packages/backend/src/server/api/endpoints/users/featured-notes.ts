@@ -88,6 +88,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const notes = (await query.getMany()).filter(note => {
 				if (me && isUserRelated(note, userIdsWhoBlockingMe, false)) return false;
 				if (me && isUserRelated(note, userIdsWhoMeMuting, true)) return false;
+				if (me == null && note.localAndFollowers) return false;
 
 				return true;
 			});
