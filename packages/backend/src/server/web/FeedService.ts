@@ -53,6 +53,7 @@ export class FeedService {
 				userId: user.id,
 				renoteId: IsNull(),
 				visibility: In(['public', 'home']),
+				localAndFollowers: false,
 			},
 			order: { id: -1 },
 			take: 20,
