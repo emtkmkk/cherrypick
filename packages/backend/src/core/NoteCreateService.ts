@@ -136,6 +136,7 @@ type Option = {
 	poll?: IPoll | null;
 	event?: IEvent | null;
 	localOnly?: boolean | null;
+	localAndFollowers?: boolean | null;
 	reactionAcceptance?: MiNote['reactionAcceptance'];
 	disableRightClick?: boolean | null;
 	cw?: string | null;
@@ -256,6 +257,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		if (data.createdAt == null) data.createdAt = new Date();
 		if (data.visibility == null) data.visibility = 'public';
 		if (data.localOnly == null) data.localOnly = false;
+		if (data.localAndFollowers == null) data.localAndFollowers = false;
 		if (data.disableRightClick == null) data.disableRightClick = false;
 		if (data.channel != null) data.visibility = 'public';
 		if (data.channel != null) data.visibleUsers = [];
@@ -431,6 +433,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			emojis,
 			userId: user.id,
 			localOnly: data.localOnly!,
+			localAndFollowers: data.localAndFollowers!,
 			reactionAcceptance: data.reactionAcceptance,
 			disableRightClick: data.disableRightClick!,
 			deleteAt: data.deleteAt,
@@ -731,7 +734,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 						dm.addFollowersRecipe();
 					}
 
-					if (['public'].includes(note.visibility)) {
+					if (['public'].includes(note.visibility) && !note.localAndFollowers) {
 						this.relayService.deliverToRelays(user, noteActivity);
 					}
 
@@ -854,6 +857,10 @@ export class NoteCreateService implements OnApplicationShutdown {
 	@bindThis
 	private async renderNoteOrRenoteActivity(data: Option, note: MiNote) {
 		if (data.localOnly) return null;
+
+		if (data.localAndFollowers) {
+			note.visibility = 'followers';
+		}
 
 		const content = this.isRenote(data) && !this.isQuote(data)
 			? this.apRendererService.renderAnnounce(data.renote.uri ? data.renote.uri : `${this.config.url}/notes/${data.renote.id}`, note)

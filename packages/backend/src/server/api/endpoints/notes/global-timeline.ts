@@ -83,6 +83,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				this.queryService.generateMutedUserQuery(query, me);
 				this.queryService.generateBlockedUserQuery(query, me);
 				this.queryService.generateMutedUserRenotesQueryForNotes(query, me);
+			} else {
+				query.andWhere('note.localAndFollowersOnly = false');
 			}
 
 			if (ps.withFiles) {

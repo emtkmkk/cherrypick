@@ -94,7 +94,10 @@ export class ApRendererService {
 		let to: string[] = [];
 		let cc: string[] = [];
 
-		if (note.visibility === 'public') {
+		if (note.localAndFollowers && note.visibility !== 'specified') {
+			to = [`${attributedTo}/followers`];
+			cc = [];
+		} else if (note.visibility === 'public') {
 			to = ['https://www.w3.org/ns/activitystreams#Public'];
 			cc = [`${attributedTo}/followers`];
 		} else if (note.visibility === 'home') {
@@ -366,7 +369,10 @@ export class ApRendererService {
 		let to: string[] = [];
 		let cc: string[] = [];
 
-		if (note.visibility === 'public') {
+		if (note.localAndFollowers && note.visibility !== 'specified') {
+			to = [`${attributedTo}/followers`];
+			cc = mentions;
+		} else if (note.visibility === 'public') {
 			to = ['https://www.w3.org/ns/activitystreams#Public'];
 			cc = [`${attributedTo}/followers`].concat(mentions);
 		} else if (note.visibility === 'home') {

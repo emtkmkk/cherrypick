@@ -4528,6 +4528,7 @@ export type components = {
         userId: string | null;
       }) | null;
       localOnly?: boolean;
+      localAndFollowers?: boolean;
       /** @enum {string|null} */
       reactionAcceptance: 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null;
       reactionEmojis: {
@@ -22937,6 +22938,8 @@ export type operations = {
           cw?: string | null;
           /** @default false */
           localOnly?: boolean;
+          /** @default false */
+          localAndFollowers?: boolean;
           /**
            * @default null
            * @enum {string|null}

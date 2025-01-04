@@ -640,6 +640,7 @@ export class ClientServerService {
 				where: {
 					id: request.params.note,
 					visibility: In(['public', 'home']),
+					localAndFollowers: false,
 				},
 				relations: ['user'],
 			});
@@ -882,6 +883,7 @@ export class ClientServerService {
 			if (note == null) return;
 			if (['specified', 'followers'].includes(note.visibility)) return;
 			if (note.userHost != null) return;
+			if (note.localAndFollowers) return;
 
 			const _note = await this.noteEntityService.pack(note, null, { detail: true });
 

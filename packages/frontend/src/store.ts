@@ -110,6 +110,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: false,
 	},
+	defaultNoteLocalAndFollowers: {
+		where: 'account',
+		default: false,
+	},
 	uploadFolder: {
 		where: 'account',
 		default: null as string | null,
@@ -164,6 +168,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		default: 'public' as (typeof Misskey.noteVisibilities)[number],
 	},
 	localOnly: {
+		where: 'deviceAccount',
+		default: false,
+	},
+	localAndFollowers: {
 		where: 'deviceAccount',
 		default: false,
 	},

@@ -124,6 +124,10 @@ export class NoteEntityService implements OnModuleInit {
 		// TODO: isVisibleForMe を使うようにしても良さそう(型違うけど)
 		let hide = false;
 
+		if (packedNote.localAndFollowers && meId == null) {
+			hide = true;
+		}
+
 		if (packedNote.user.requireSigninToViewContents && meId == null) {
 			hide = true;
 		}
@@ -421,6 +425,7 @@ export class NoteEntityService implements OnModuleInit {
 			cw: note.cw,
 			visibility: note.visibility,
 			localOnly: note.localOnly,
+			localAndFollowers: note.localAndFollowers,
 			reactionAcceptance: note.reactionAcceptance,
 			visibleUserIds: note.visibility === 'specified' ? note.visibleUserIds : undefined,
 			disableRightClick: note.disableRightClick || undefined,

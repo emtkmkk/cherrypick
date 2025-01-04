@@ -36,6 +36,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<span v-if="!localOnly"><i class="ti ti-rocket"></i></span>
 				<span v-else><i class="ti ti-rocket-off"></i></span>
 			</button>
+			<button v-click-anime v-tooltip="i18n.ts._visibility.localAndFollowers" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localAndFollowers }]" :disabled="channel != null || visibility === 'specified'" @click="toggleLocalAndFollowers">
+				<span v-if="!localAndFollowers"><i class="ti ti-briefcase"></i></span>
+				<span v-else><i class="ti ti-briefcase-off"></i></span>
+			</button>
 			<button v-click-anime v-tooltip="i18n.ts.reactionAcceptance" class="_button" :class="[$style.headerRightItem, { [$style.danger]: reactionAcceptance === 'likeOnly' }]" @click="toggleReactionAcceptance">
 				<span v-if="reactionAcceptance === 'likeOnly'"><i class="ti ti-heart"></i></span>
 				<span v-else-if="reactionAcceptance === 'likeOnlyForRemote'"><i class="ti ti-heart-plus"></i></span>
@@ -195,6 +199,7 @@ const showAddMfmFunction = ref(defaultStore.state.enableQuickAddMfmFunction);
 watch(showAddMfmFunction, () => defaultStore.set('enableQuickAddMfmFunction', showAddMfmFunction.value));
 const cw = ref<string | null>(props.initialCw ?? null);
 const localOnly = ref(props.initialLocalOnly ?? (defaultStore.state.rememberNoteVisibility ? defaultStore.state.localOnly : defaultStore.state.defaultNoteLocalOnly));
+const localAndFollowers = ref(props.initialLocalOnly ?? (defaultStore.state.rememberNoteVisibility ? defaultStore.state.localAndFollowers : defaultStore.state.defaultNoteLocalAndFollowers));
 const visibility = ref(props.initialVisibility ?? (defaultStore.state.rememberNoteVisibility ? defaultStore.state.visibility : defaultStore.state.defaultNoteVisibility));
 const visibleUsers = ref<Misskey.entities.UserDetailed[]>([]);
 if (props.initialVisibleUsers) {
@@ -391,6 +396,7 @@ function watchForDraft() {
 	watch(files, () => saveDraft(), { deep: true });
 	watch(visibility, () => saveDraft());
 	watch(localOnly, () => saveDraft());
+	watch(localAndFollowers, () => saveDraft());
 	watch(quoteId, () => saveDraft());
 	watch(reactionAcceptance, () => saveDraft());
 	watch(scheduledNoteDelete, () => saveDraft());
@@ -564,6 +570,13 @@ async function toggleLocalOnly() {
 	localOnly.value = !localOnly.value;
 	if (defaultStore.state.rememberNoteVisibility) {
 		defaultStore.set('localOnly', localOnly.value);
+	}
+}
+
+async function toggleLocalAndFollowers() {
+	localAndFollowers.value = !localAndFollowers.value;
+	if (defaultStore.state.rememberNoteVisibility) {
+		defaultStore.set('localAndFollowers', localAndFollowers.value);
 	}
 }
 
@@ -764,6 +777,7 @@ function saveDraft() {
 			disableRightClick: disableRightClick.value,
 			visibility: visibility.value,
 			localOnly: localOnly.value,
+			localAndFollowers: localAndFollowers.value,
 			files: files.value,
 			poll: poll.value,
 			event: event.value,
@@ -883,6 +897,7 @@ async function post(ev?: MouseEvent) {
 		event: event.value,
 		cw: useCw.value ? cw.value ?? '' : null,
 		localOnly: localOnly.value,
+		localAndFollowers: localAndFollowers.value,
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
@@ -1189,6 +1204,7 @@ onMounted(() => {
 				disableRightClick.value = draft.data.disableRightClick;
 				visibility.value = draft.data.visibility;
 				localOnly.value = draft.data.localOnly;
+				localAndFollowers.value = draft.data.localAndFollowers;
 				files.value = (draft.data.files || []).filter(draftFile => draftFile);
 				if (draft.data.poll) {
 					poll.value = draft.data.poll;
@@ -1214,6 +1230,7 @@ onMounted(() => {
 			cw.value = init.cw ?? null;
 			visibility.value = init.visibility;
 			localOnly.value = init.localOnly ?? false;
+			localAndFollowers.value = init.localAndFollowers ?? false;
 			files.value = init.files ?? [];
 			if (init.poll) {
 				poll.value = {

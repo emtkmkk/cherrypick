@@ -2692,6 +2692,8 @@ _visibility:
   specifiedDescription: "指定したユーザーのみに公開"
   disableFederation: "連合なし"
   disableFederationDescription: "他サーバーへの配信を行いません"
+  localAndFollowers: "ローカルとフォロワーのみ"
+  localAndFollowersDescription: "ローカルのユーザーとフォロワーのみに公開"
 
 _postForm:
   signinRequiredPlaceholder: "ノートを作成するにはログインが必要です。"

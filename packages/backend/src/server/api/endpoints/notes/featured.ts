@@ -98,6 +98,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				if (me && isUserRelated(note, userIdsWhoBlockingMe)) return false;
 				if (me && isUserRelated(note, userIdsWhoMeMuting)) return false;
 
+				if (me == null && note.localAndFollowers) return false;
 				return true;
 			});
 

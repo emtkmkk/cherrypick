@@ -10253,6 +10253,14 @@ export interface Locale extends ILocale {
          * 他サーバーへの配信を行いません
          */
         "disableFederationDescription": string;
+        /**
+         * ローカルとフォロワーのみ
+         */
+        "localAndFollowers": string;
+        /**
+         * ローカルのユーザーとフォロワーのみに公開
+         */
+        "localAndFollowersDescription": string;
     };
     "_postForm": {
         /**
