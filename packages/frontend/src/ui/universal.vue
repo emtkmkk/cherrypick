@@ -153,6 +153,8 @@ const pageMetadata = ref<null | PageMetadata>(null);
 const widgetsShowing = ref(false);
 const navFooter = shallowRef<HTMLElement>();
 const contents = shallowRef<InstanceType<typeof MkStickyContainer>>();
+const bg = ref<string | undefined>(undefined);
+const PostBg = ref<string | undefined>(undefined);
 
 provide('router', mainRouter);
 provideMetadataReceiver((metadataGetter) => {
@@ -190,6 +192,22 @@ if (window.innerWidth > 1024) {
 		location.reload();
 	}
 }
+
+const calcBg = () => {
+	const rawBg = 'var(--MI_THEME-panel)';
+	const rawPostBg = 'var(--MI_THEME-accent)';
+	const tinyBg = tinycolor(rawBg.startsWith('var(') ? getComputedStyle(document.documentElement).getPropertyValue(rawBg.slice(4, -1)) : rawBg);
+	const tinyPostBg = tinycolor(rawPostBg.startsWith('var(') ? getComputedStyle(document.documentElement).getPropertyValue(rawPostBg.slice(4, -1)) : rawPostBg);
+	if (defaultStore.state.useBlurEffect) {
+		tinyBg.setAlpha(0.7);
+		tinyPostBg.setAlpha(0.7);
+	} else {
+		tinyBg.setAlpha(1);
+		tinyPostBg.setAlpha(1);
+	}
+	bg.value = tinyBg.toRgbString();
+	PostBg.value = tinyPostBg.toRgbString();
+};
 
 defaultStore.loaded.then(() => {
 	if (defaultStore.state.widgets.length === 0) {
@@ -557,7 +575,7 @@ $float-button-size: 65px;
   display: block;
   position: fixed;
   z-index: 1000;
-  bottom: calc(65px + env(safe-area-inset-bottom));
+  bottom: calc(var(--MI-stickyBottom, 65px) + var(--MI-margin) + env(safe-area-inset-bottom));
   width: $float-button-size;
   height: $float-button-size;
   box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12);
