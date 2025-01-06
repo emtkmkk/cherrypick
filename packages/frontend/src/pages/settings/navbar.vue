@@ -66,6 +66,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkSwitch v-if="miLocalStorage.getItem('ui') !== 'deck'" v-model="showWidgetButtonInNavbar" :disabled="!isMobile"><i class="ti ti-apps"></i> {{ i18n.ts.widgets }}</MkSwitch>
 			<MkSwitch v-if="!isFriendly" v-model="showPostButtonInNavbar" :disabled="!isMobile"><i class="ti ti-pencil"></i> {{ i18n.ts.postNote }}</MkSwitch>
 		</div>
+		<MkSwitch v-if="!isFriendly" v-model="showPostButtonInFloat" :disabled="!isMobile"><i class="ti ti-pencil"></i> {{ i18n.ts.postNoteFloat }}</MkSwitch>
 		<div class="_buttons" style="margin-top: 20px;">
 			<MkButton :disabled="!isMobile" danger @click="resetButtomNavbar"><i class="ti ti-reload"></i> {{ i18n.ts.default }}</MkButton>
 			<MkButton :disabled="!isMobile" primary class="save" @click="reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true })"><i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}</MkButton>
@@ -117,6 +118,7 @@ const showNotificationButtonInNavbar = computed(defaultStore.makeGetterSetter('s
 const showMessageButtonInNavbar = computed(defaultStore.makeGetterSetter('showMessageButtonInNavbar'));
 const showWidgetButtonInNavbar = computed(defaultStore.makeGetterSetter('showWidgetButtonInNavbar'));
 const showPostButtonInNavbar = computed(defaultStore.makeGetterSetter('showPostButtonInNavbar'));
+const showPostButtonInFloat = computed(defaultStore.makeGetterSetter('showPostButtonInFloat'));
 
 async function addItem(ev: MouseEvent) {
 	const menu = Object.keys(navbarItemDef).filter(k => !defaultStore.state.menu.includes(k));

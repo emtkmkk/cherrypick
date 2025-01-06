@@ -140,15 +140,8 @@ export const navbarItemDef = reactive({
 		icon: 'ti ti-devices',
 		action: (ev: MouseEvent) => {
 			os.popupMenu([{
-				text: 'Friendly',
-				active: ui === 'friendly' || ui === null,
-				action: () => {
-					localStorage.setItem('ui', 'friendly');
-					unisonReload();
-				},
-			}, {
 				text: 'Misskey',
-				active: ui === 'default',
+				active: ui === 'default' || ui === null,
 				action: () => {
 					miLocalStorage.setItem('ui', 'default');
 					unisonReload();
@@ -158,6 +151,13 @@ export const navbarItemDef = reactive({
 				active: ui === 'deck',
 				action: () => {
 					miLocalStorage.setItem('ui', 'deck');
+					unisonReload();
+				},
+			}, {
+				text: 'Friendly',
+				active: ui === 'friendly',
+				action: () => {
+					localStorage.setItem('ui', 'friendly');
 					unisonReload();
 				},
 			}, {

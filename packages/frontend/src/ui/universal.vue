@@ -24,6 +24,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<button v-if="(!isDesktop || pageMetadata?.needWideArea) && !isMobile" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="[$style.widgetButton, { [$style.reduceAnimation]: !defaultStore.state.animation, [$style.showEl]: (showEl && ['hideHeaderFloatBtn', 'hideFloatBtnOnly', 'hideFloatBtnNavBar', 'hide'].includes(<string>defaultStore.state.displayHeaderNavBarWhenScroll)) }]" class="_button" @click="widgetsShowing = true"><i class="ti ti-apps"></i></button>
 
+	<button v-if="isMobile && enablePostButton.includes(<string>mainRouter.currentRoute.value.name) && defaultStore.state.showPostButtonInFloat" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="[$style.floatPostButton, { [$style.reduceBlurEffect]: !defaultStore.state.useBlurEffect, [$style.reduceAnimation]: !defaultStore.state.animation, [$style.showEl]: (showEl && ['hideHeaderFloatBtn', 'hideFloatBtnOnly', 'hideFloatBtnNavBar', 'hide'].includes(<string>defaultStore.state.displayHeaderNavBarWhenScroll)) }]" :style="{ background: PostBg }" class="_button" @click="openMessage"><span :class="[$style.floatPostButtonBg, { [$style.reduceBlurEffect]: !defaultStore.state.useBlurEffect }]"></span><i v-if="mainRouter.currentRoute.value.name === 'messaging' && !(['messaging-room', 'messaging-room-group'].includes(<string>mainRouter.currentRoute.value.name))" class="ti ti-plus"></i><i v-else-if="enablePostButton.includes(<string>mainRouter.currentRoute.value.name)" class="ti ti-pencil"></i></button>
+
 	<div v-if="isMobile" ref="navFooter" :class="[$style.nav, { [$style.reduceAnimation]: !defaultStore.state.animation, [$style.showEl]: (showEl && ['hideFloatBtnNavBar', 'hide'].includes(<string>defaultStore.state.displayHeaderNavBarWhenScroll)) }]">
 		<button v-if="defaultStore.state.showMenuButtonInNavbar" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="$style.navButton" class="_button" @click="drawerMenuShowing = true"><i :class="$style.navButtonIcon" class="ti ti-menu-2"></i><span v-if="menuIndicated" :class="$style.navButtonIndicator" class="_blink"><i class="_indicatorCircle"></i></span></button>
 		<button v-if="defaultStore.state.showHomeButtonInNavbar" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="$style.navButton" class="_button" @click="isRoot ? top() : mainRouter.push('/')"><i :class="$style.navButtonIcon" class="ti ti-home"></i></button>
@@ -540,5 +542,52 @@ $widgets-hide-threshold: 1090px;
 
 .spacer {
 	height: calc(var(--MI-minBottomSpacing));
+}
+
+.floatButton {
+  display: block;
+  position: fixed;
+  z-index: 1000;
+  bottom: calc(65px + env(safe-area-inset-bottom));
+  width: $float-button-size;
+  height: $float-button-size;
+  box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12);
+  border-radius: 28px;
+  -webkit-backdrop-filter: var(--MI-blur, blur(15px));
+  backdrop-filter: var(--MI-blur, blur(15px));
+  transition: opacity 0.5s, transform 0.5s;
+
+  &.reduceBlurEffect {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  &.reduceAnimation {
+    transition: opacity 0s, transform 0s;
+  }
+}
+
+.floatPostButton {
+  composes: floatButton;
+	right: 15px;
+	font-size: 18px;
+
+	&.showEl {
+		transform: translateX(250px);
+	}
+
+	i {
+		position: relative;
+		color: white;
+	}
+}
+
+.floatPostButtonBg {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	right: 0;
+	bottom: 0;
+	border-radius: 28px;
 }
 </style>

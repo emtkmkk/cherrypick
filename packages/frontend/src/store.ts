@@ -748,6 +748,10 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showPostButtonInNavbar: {
 		where: 'device',
+		default: false,
+	},
+	showPostButtonInFloat: {
+		where: 'device',
 		default: true,
 	},
 
