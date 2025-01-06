@@ -5723,6 +5723,10 @@ export interface Locale extends ILocale {
      */
     "sensitiveMediaRevealConfirm": string;
     /**
+     * 返信・RT・投稿時にメッセージを表示
+     */
+    "showPostedToast": string;
+    /**
      * 作成したリスト
      */
     "createdLists": string;
