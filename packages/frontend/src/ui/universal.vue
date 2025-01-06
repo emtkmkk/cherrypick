@@ -137,6 +137,14 @@ window.addEventListener('resize', () => {
 	isMobile.value = deviceKind === 'smartphone' || window.innerWidth <= MOBILE_THRESHOLD;
 });
 
+const enablePostButton = [
+	'index',
+	'explore',
+	'my-notifications',
+	'messaging',
+	'user',
+];
+
 const showEl = ref(false);
 const showEl2 = ref(false);
 const lastScrollPosition = ref(0);
