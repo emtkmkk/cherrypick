@@ -378,6 +378,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: '',
 	},
+	showPostedToast: {
+		where: 'device',
+		default: true,
+	},
 	themeInitial: {
 		where: 'device',
 		default: true,

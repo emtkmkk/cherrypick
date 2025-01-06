@@ -948,10 +948,12 @@ async function post(ev?: MouseEvent) {
 			clear();
 		}
 		nextTick(() => {
-			if (props.reply) os.toast(i18n.ts.replied, 'reply');
-			else if (props.renote) os.toast(i18n.ts.quoted, 'quote');
-			else if (props.updateMode) os.toast(i18n.ts.noteEdited, 'edited');
-			else os.toast(i18n.ts.posted, 'posted');
+			if (props.updateMode) os.toast(i18n.ts.noteEdited, 'edited');
+			else if (defaultStore.state.showPostedToast) {
+				if (props.reply) os.toast(i18n.ts.replied, 'reply');
+				else if (props.renote) os.toast(i18n.ts.quoted, 'quote');
+				else os.toast(i18n.ts.posted, 'posted');
+			}
 
 			deleteDraft();
 			emit('posted');
