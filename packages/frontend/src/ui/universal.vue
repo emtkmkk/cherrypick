@@ -232,11 +232,24 @@ onMounted(() => {
 	}
 
 	contents.value.rootEl.addEventListener('scroll', onScroll);
+	
+	calcBg();
+	globalEvents.on('themeChanged', calcBg);
 });
 
 onBeforeUnmount(() => {
 	contents.value.rootEl.removeEventListener('scroll', onScroll);
 });
+
+onUnmounted(() => {
+	globalEvents.off('themeChanged', calcBg);
+});
+
+
+function openMessage(ev: MouseEvent) {
+	if (mainRouter.currentRoute.value.name === 'messaging' && !(['messaging-room', 'messaging-room-group'].includes(<string>mainRouter.currentRoute.value.name))) globalEvents.emit('openMessage', ev);
+	else if (enablePostButton.includes(<string>mainRouter.currentRoute.value.name)) os.post();
+}
 
 function onScroll() {
 	const currentScrollPosition = contents.value.rootEl.scrollTop;
