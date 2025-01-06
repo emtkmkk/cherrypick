@@ -53,6 +53,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<option value="hide">{{ i18n.ts._bannerDisplay.hide }}</option>
 	</MkRadios>
 
+	<div class="_gaps_m">
+		<MkSwitch v-if="!isFriendly" v-model="showPostButtonInFloat" :disabled="!isMobile"><i class="ti ti-pencil"></i> {{ i18n.ts.postNoteFloat }}</MkSwitch>
+	</div>
+		
 	<FormSection>
 		<template #label>{{ i18n.ts.bottomNavbar }} <span class="_beta" style="vertical-align: middle;">CherryPick</span></template>
 		<template v-if="!isMobile" #description>{{ i18n.ts.cannotBeUsedFunc }} <a class="_link" @click="learnMoreBottomNavbar">{{ i18n.ts.learnMore }}</a></template>
@@ -66,7 +70,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkSwitch v-if="miLocalStorage.getItem('ui') !== 'deck'" v-model="showWidgetButtonInNavbar" :disabled="!isMobile"><i class="ti ti-apps"></i> {{ i18n.ts.widgets }}</MkSwitch>
 			<MkSwitch v-if="!isFriendly" v-model="showPostButtonInNavbar" :disabled="!isMobile"><i class="ti ti-pencil"></i> {{ i18n.ts.postNote }}</MkSwitch>
 		</div>
-		<MkSwitch v-if="!isFriendly" v-model="showPostButtonInFloat" :disabled="!isMobile"><i class="ti ti-pencil"></i> {{ i18n.ts.postNoteFloat }}</MkSwitch>
 		<div class="_buttons" style="margin-top: 20px;">
 			<MkButton :disabled="!isMobile" danger @click="resetButtomNavbar"><i class="ti ti-reload"></i> {{ i18n.ts.default }}</MkButton>
 			<MkButton :disabled="!isMobile" primary class="save" @click="reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true })"><i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}</MkButton>
