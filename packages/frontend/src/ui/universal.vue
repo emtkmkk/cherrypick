@@ -24,6 +24,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<button v-if="(!isDesktop || pageMetadata?.needWideArea) && !isMobile" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="[$style.widgetButton, { [$style.reduceAnimation]: !defaultStore.state.animation, [$style.showEl]: (showEl && ['hideHeaderFloatBtn', 'hideFloatBtnOnly', 'hideFloatBtnNavBar', 'hide'].includes(<string>defaultStore.state.displayHeaderNavBarWhenScroll)) }]" class="_button" @click="widgetsShowing = true"><i class="ti ti-apps"></i></button>
 
+	<button v-if="isMobile && enablePostButton.includes(<string>mainRouter.currentRoute.value.name) && defaultStore.state.showPostButtonInFloat" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="[$style.floatPostButton, { [$style.reduceBlurEffect]: !defaultStore.state.useBlurEffect, [$style.reduceAnimation]: !defaultStore.state.animation, [$style.showEl]: (showEl && ['hideHeaderFloatBtn', 'hideFloatBtnOnly', 'hideFloatBtnNavBar', 'hide'].includes(<string>defaultStore.state.displayHeaderNavBarWhenScroll)) }]" :style="{ background: PostBg }" class="_button" @click="openMessage"><span :class="[$style.floatPostButtonBg, { [$style.reduceBlurEffect]: !defaultStore.state.useBlurEffect }]"></span><i v-if="mainRouter.currentRoute.value.name === 'messaging' && !(['messaging-room', 'messaging-room-group'].includes(<string>mainRouter.currentRoute.value.name))" class="ti ti-plus"></i><i v-else-if="enablePostButton.includes(<string>mainRouter.currentRoute.value.name)" class="ti ti-pencil"></i></button>
+
 	<div v-if="isMobile" ref="navFooter" :class="[$style.nav, { [$style.reduceAnimation]: !defaultStore.state.animation, [$style.showEl]: (showEl && ['hideFloatBtnNavBar', 'hide'].includes(<string>defaultStore.state.displayHeaderNavBarWhenScroll)) }]">
 		<button v-if="defaultStore.state.showMenuButtonInNavbar" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="$style.navButton" class="_button" @click="drawerMenuShowing = true"><i :class="$style.navButtonIcon" class="ti ti-menu-2"></i><span v-if="menuIndicated" :class="$style.navButtonIndicator" class="_blink"><i class="_indicatorCircle"></i></span></button>
 		<button v-if="defaultStore.state.showHomeButtonInNavbar" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="$style.navButton" class="_button" @click="isRoot ? top() : mainRouter.push('/')"><i :class="$style.navButtonIcon" class="ti ti-home"></i></button>
@@ -99,7 +101,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, provide, onMounted, computed, ref, watch, shallowRef, Ref, onBeforeUnmount } from 'vue';
+import { defineAsyncComponent, provide, onMounted, computed, ref, watch, shallowRef, Ref, onUnmounted, onBeforeUnmount } from 'vue';
+import tinycolor from 'tinycolor2';
 import { instanceName } from '@@/js/config.js';
 import { CURRENT_STICKY_BOTTOM } from '@@/js/const.js';
 import { isLink } from '@@/js/is-link.js';
@@ -135,6 +138,14 @@ window.addEventListener('resize', () => {
 	isMobile.value = deviceKind === 'smartphone' || window.innerWidth <= MOBILE_THRESHOLD;
 });
 
+const enablePostButton = [
+	'index',
+	'explore',
+	'my-notifications',
+	'messaging',
+	'user',
+];
+
 const showEl = ref(false);
 const showEl2 = ref(false);
 const lastScrollPosition = ref(0);
@@ -143,6 +154,8 @@ const pageMetadata = ref<null | PageMetadata>(null);
 const widgetsShowing = ref(false);
 const navFooter = shallowRef<HTMLElement>();
 const contents = shallowRef<InstanceType<typeof MkStickyContainer>>();
+const bg = ref<string | undefined>(undefined);
+const PostBg = ref<string | undefined>(undefined);
 
 provide('router', mainRouter);
 provideMetadataReceiver((metadataGetter) => {
@@ -181,6 +194,22 @@ if (window.innerWidth > 1024) {
 	}
 }
 
+const calcBg = () => {
+	const rawBg = 'var(--MI_THEME-panel)';
+	const rawPostBg = 'var(--MI_THEME-accent)';
+	const tinyBg = tinycolor(rawBg.startsWith('var(') ? getComputedStyle(document.documentElement).getPropertyValue(rawBg.slice(4, -1)) : rawBg);
+	const tinyPostBg = tinycolor(rawPostBg.startsWith('var(') ? getComputedStyle(document.documentElement).getPropertyValue(rawPostBg.slice(4, -1)) : rawPostBg);
+	if (defaultStore.state.useBlurEffect) {
+		tinyBg.setAlpha(0.7);
+		tinyPostBg.setAlpha(0.7);
+	} else {
+		tinyBg.setAlpha(1);
+		tinyPostBg.setAlpha(1);
+	}
+	bg.value = tinyBg.toRgbString();
+	PostBg.value = tinyPostBg.toRgbString();
+};
+
 defaultStore.loaded.then(() => {
 	if (defaultStore.state.widgets.length === 0) {
 		defaultStore.set('widgets', [{
@@ -204,11 +233,24 @@ onMounted(() => {
 	}
 
 	contents.value.rootEl.addEventListener('scroll', onScroll);
+
+	calcBg();
+	globalEvents.on('themeChanged', calcBg);
 });
 
 onBeforeUnmount(() => {
 	contents.value.rootEl.removeEventListener('scroll', onScroll);
 });
+
+onUnmounted(() => {
+	globalEvents.off('themeChanged', calcBg);
+});
+
+
+function openMessage(ev: MouseEvent) {
+	if (mainRouter.currentRoute.value.name === 'messaging' && !(['messaging-room', 'messaging-room-group'].includes(<string>mainRouter.currentRoute.value.name))) globalEvents.emit('openMessage', ev);
+	else if (enablePostButton.includes(<string>mainRouter.currentRoute.value.name)) os.post();
+}
 
 function onScroll() {
 	const currentScrollPosition = contents.value.rootEl.scrollTop;
@@ -302,6 +344,7 @@ body {
 <style lang="scss" module>
 $ui-font-size: 1em; // TODO: どこかに集約したい
 $widgets-hide-threshold: 1090px;
+$float-button-size: 65px;
 
 .transition_menuDrawerBg_enterActive,
 .transition_menuDrawerBg_leaveActive {
@@ -443,7 +486,7 @@ $widgets-hide-threshold: 1090px;
 	left: 0;
 	padding: 12px 12px max(12px, env(safe-area-inset-bottom, 0px)) 12px;
 	display: grid;
-	grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+	grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
 	grid-gap: 8px;
 	width: 100%;
 	box-sizing: border-box;
@@ -540,5 +583,52 @@ $widgets-hide-threshold: 1090px;
 
 .spacer {
 	height: calc(var(--MI-minBottomSpacing));
+}
+
+.floatButton {
+  display: block;
+  position: fixed;
+  z-index: 1000;
+  bottom: calc(var(--MI-stickyBottom, 65px) + var(--MI-margin) + env(safe-area-inset-bottom));
+  width: $float-button-size;
+  height: $float-button-size;
+  box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12);
+  border-radius: 28px;
+  -webkit-backdrop-filter: var(--MI-blur, blur(15px));
+  backdrop-filter: var(--MI-blur, blur(15px));
+  transition: opacity 0.5s, transform 0.5s;
+
+  &.reduceBlurEffect {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  &.reduceAnimation {
+    transition: opacity 0s, transform 0s;
+  }
+}
+
+.floatPostButton {
+  composes: floatButton;
+	right: 15px;
+	font-size: 18px;
+
+	&.showEl {
+		transform: translateX(250px);
+	}
+
+	i {
+		position: relative;
+		color: white;
+	}
+}
+
+.floatPostButtonBg {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	right: 0;
+	bottom: 0;
+	border-radius: 28px;
 }
 </style>

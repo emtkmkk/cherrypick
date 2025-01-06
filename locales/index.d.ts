@@ -101,6 +101,10 @@ export interface Locale extends ILocale {
      */
     "postNote": string;
     /**
+     * 投稿ボタンを画面右下に表示
+     */
+    "postNoteFloat": string;
+    /**
      * 下のナビゲーションバー
      */
     "bottomNavbar": string;

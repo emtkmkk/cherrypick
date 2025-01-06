@@ -53,6 +53,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<option value="hide">{{ i18n.ts._bannerDisplay.hide }}</option>
 	</MkRadios>
 
+	<div class="_gaps_m">
+		<MkSwitch v-if="!isFriendly" v-model="showPostButtonInFloat" :disabled="!isMobile"><i class="ti ti-pencil"></i> {{ i18n.ts.postNoteFloat }}</MkSwitch>
+	</div>
+		
 	<FormSection>
 		<template #label>{{ i18n.ts.bottomNavbar }} <span class="_beta" style="vertical-align: middle;">CherryPick</span></template>
 		<template v-if="!isMobile" #description>{{ i18n.ts.cannotBeUsedFunc }} <a class="_link" @click="learnMoreBottomNavbar">{{ i18n.ts.learnMore }}</a></template>
@@ -117,6 +121,7 @@ const showNotificationButtonInNavbar = computed(defaultStore.makeGetterSetter('s
 const showMessageButtonInNavbar = computed(defaultStore.makeGetterSetter('showMessageButtonInNavbar'));
 const showWidgetButtonInNavbar = computed(defaultStore.makeGetterSetter('showWidgetButtonInNavbar'));
 const showPostButtonInNavbar = computed(defaultStore.makeGetterSetter('showPostButtonInNavbar'));
+const showPostButtonInFloat = computed(defaultStore.makeGetterSetter('showPostButtonInFloat'));
 
 async function addItem(ev: MouseEvent) {
 	const menu = Object.keys(navbarItemDef).filter(k => !defaultStore.state.menu.includes(k));
