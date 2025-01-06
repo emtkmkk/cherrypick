@@ -61,12 +61,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #label>{{ i18n.ts.bottomNavbar }} <span class="_beta" style="vertical-align: middle;">CherryPick</span></template>
 		<template v-if="!isMobile" #description>{{ i18n.ts.cannotBeUsedFunc }} <a class="_link" @click="learnMoreBottomNavbar">{{ i18n.ts.learnMore }}</a></template>
 		<div class="_gaps_m">
-			<MkSwitch v-if="!isFriendly" v-model="showMenuButtonInNavbar" :disabled="!isMobile"><i class="ti ti-menu-2"></i> {{ i18n.ts.menu }}</MkSwitch>
+			<MkSwitch v-if="!showMenuButtonInNavbar && !isFriendly" v-model="showMenuButtonInNavbar" :disabled="!isMobile"><i class="ti ti-menu-2"></i> {{ i18n.ts.menu }}</MkSwitch>
 			<MkSwitch v-model="showHomeButtonInNavbar" :disabled="!isMobile"><i class="ti ti-home"></i> {{ i18n.ts.home }}</MkSwitch>
 			<MkSwitch v-model="showExploreButtonInNavbar" :disabled="!isMobile"><i class="ti ti-hash"></i> {{ i18n.ts.explore }}</MkSwitch>
 			<MkSwitch v-model="showSearchButtonInNavbar" :disabled="!isMobile"><i class="ti ti-search"></i> {{ i18n.ts.search }}</MkSwitch>
 			<MkSwitch v-model="showNotificationButtonInNavbar" :disabled="!isMobile"><i class="ti ti-bell"></i> {{ i18n.ts.notifications }}</MkSwitch>
 			<MkSwitch v-model="showMessageButtonInNavbar" :disabled="!isMobile"><i class="ti ti-messages"></i> {{ i18n.ts.messaging }}</MkSwitch>
+			<MkSwitch v-model="showReloadButtonInNavbar" :disabled="!isMobile"><i class="ti ti-refresh"></i> {{ i18n.ts.reload }}</MkSwitch>
 			<MkSwitch v-if="miLocalStorage.getItem('ui') !== 'deck'" v-model="showWidgetButtonInNavbar" :disabled="!isMobile"><i class="ti ti-apps"></i> {{ i18n.ts.widgets }}</MkSwitch>
 			<MkSwitch v-if="!isFriendly" v-model="showPostButtonInNavbar" :disabled="!isMobile"><i class="ti ti-pencil"></i> {{ i18n.ts.postNote }}</MkSwitch>
 		</div>
@@ -119,6 +120,7 @@ const showExploreButtonInNavbar = computed(defaultStore.makeGetterSetter('showEx
 const showSearchButtonInNavbar = computed(defaultStore.makeGetterSetter('showSearchButtonInNavbar'));
 const showNotificationButtonInNavbar = computed(defaultStore.makeGetterSetter('showNotificationButtonInNavbar'));
 const showMessageButtonInNavbar = computed(defaultStore.makeGetterSetter('showMessageButtonInNavbar'));
+const showReloadButtonInNavbar = computed(defaultStore.makeGetterSetter('showReloadButtonInNavbar'));
 const showWidgetButtonInNavbar = computed(defaultStore.makeGetterSetter('showWidgetButtonInNavbar'));
 const showPostButtonInNavbar = computed(defaultStore.makeGetterSetter('showPostButtonInNavbar'));
 const showPostButtonInFloat = computed(defaultStore.makeGetterSetter('showPostButtonInFloat'));
