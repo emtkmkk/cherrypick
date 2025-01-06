@@ -39,6 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</span>
 		</button>
 		<button v-if="defaultStore.state.showMessageButtonInNavbar" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.currentRoute.value.name === 'messaging' ? top() : mainRouter.push('/my/messaging')"><i :class="$style.navButtonIcon" class="ti ti-messages"></i><span v-if="$i?.hasUnreadMessagingMessage" :class="$style.navButtonIndicator" class="_blink"><i class="_indicatorCircle"></i></span></button>
+		<button v-if="defaultStore.state.showReloadButtonInNavbar" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="$style.navButton" class="_button" @click="location.reload()"><i :class="$style.navButtonIcon" class="ti ti-refresh"></i></button>
 		<button v-if="defaultStore.state.showWidgetButtonInNavbar" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="$style.navButton" class="_button" @click="widgetsShowing = true"><i :class="$style.navButtonIcon" class="ti ti-apps"></i></button>
 		<button v-if="defaultStore.state.showPostButtonInNavbar" v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" :class="$style.postButton" class="_button" @click="os.post()"><i :class="$style.navButtonIcon" class="ti ti-pencil"></i></button>
 	</div>

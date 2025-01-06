@@ -742,6 +742,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: isFriendly.value,
 	},
+	showReloadButtonInNavbar: {
+		where: 'device',
+		default: false,
+	},
 	showWidgetButtonInNavbar: {
 		where: 'device',
 		default: true,
