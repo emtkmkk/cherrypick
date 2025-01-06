@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #caption>{{ i18n.ts.makeExplorableDescription }}</template>
 	</MkSwitch>
 
-	<FormSection>
+	<FormSection v-if="requireSigninToViewContents || makeNotesFollowersOnlyBefore_type || makeNotesHiddenBefore_type">
 		<template #label>{{ i18n.ts.lockdown }}<span class="_beta">{{ i18n.ts.beta }}</span></template>
 
 		<div class="_gaps_m">
@@ -148,7 +148,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<option value="followers">{{ i18n.ts._visibility.followers }}</option>
 						<option value="specified">{{ i18n.ts._visibility.specified }}</option>
 					</MkSelect>
-					<MkSwitch v-model="defaultNoteLocalOnly">{{ i18n.ts._visibility.disableFederation }}</MkSwitch>
+					<MkSwitch v-if="defaultNoteLocalOnly" v-model="defaultNoteLocalOnly">{{ i18n.ts._visibility.disableFederation }}</MkSwitch>
 					<MkSwitch v-model="defaultNoteLocalAndFollowers">{{ i18n.ts._visibility.localAndFollowers }}</MkSwitch>
 				</div>
 			</MkFolder>
