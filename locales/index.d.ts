@@ -10230,6 +10230,10 @@ export interface Locale extends ILocale {
          */
         "homeDescription": string;
         /**
+         * 公開TLには表示されていません
+         */
+        "homeTooltip": string;
+        /**
          * フォロワー
          */
         "followers": string;
@@ -10237,6 +10241,10 @@ export interface Locale extends ILocale {
          * 自分のフォロワーのみに公開
          */
         "followersDescription": string;
+        /**
+         * フォロワー限定で表示されています
+         */
+        "followersTooltip": string;
         /**
          * ダイレクト
          */
@@ -10246,6 +10254,10 @@ export interface Locale extends ILocale {
          */
         "specifiedDescription": string;
         /**
+         * 指定された相手のみに表示されています
+         */
+        "specifiedTooltip": string;
+        /**
          * 連合なし
          */
         "disableFederation": string;
@@ -10254,6 +10266,10 @@ export interface Locale extends ILocale {
          */
         "disableFederationDescription": string;
         /**
+         * リモートには表示されていません
+         */
+        "disableFederationTooltip": string;
+        /**
          * ローカルとフォロワーのみ
          */
         "localAndFollowers": string;
@@ -10261,6 +10277,18 @@ export interface Locale extends ILocale {
          * ローカルのユーザーとフォロワーのみに公開
          */
         "localAndFollowersDescription": string;
+        /**
+         * リモートにはフォロワー限定で表示されています
+         */
+        "localAndFollowerTooltip": string;
+        /**
+         * ダイレクトモード解除
+         */
+        "exitDirectMode": string;
+        /**
+         * 公開範囲強制状態に戻ります
+         */
+        "exitDirectModeDescription": string;
     };
     "_postForm": {
         /**
