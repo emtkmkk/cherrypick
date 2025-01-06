@@ -102,6 +102,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { defineAsyncComponent, provide, onMounted, computed, ref, watch, shallowRef, Ref, onUnmounted, onBeforeUnmount } from 'vue';
+import tinycolor from 'tinycolor2';
 import { instanceName } from '@@/js/config.js';
 import { CURRENT_STICKY_BOTTOM } from '@@/js/const.js';
 import { isLink } from '@@/js/is-link.js';
