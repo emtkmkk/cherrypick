@@ -53,7 +53,7 @@ export class RateLimiterService {
 
 					this.logger.debug(`${actor} ${limitation.key} min remaining: ${info.remaining}`);
 
-					if (info.remaining === 0) {
+					if (info.remaining === 0 && info.total > 1) {
 						return reject({ code: 'BRIEF_REQUEST_INTERVAL', info });
 					} else {
 						if (hasLongTermLimit) {
