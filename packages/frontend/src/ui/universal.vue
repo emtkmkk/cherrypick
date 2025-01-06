@@ -304,6 +304,7 @@ body {
 <style lang="scss" module>
 $ui-font-size: 1em; // TODO: どこかに集約したい
 $widgets-hide-threshold: 1090px;
+$float-button-size: 65px;
 
 .transition_menuDrawerBg_enterActive,
 .transition_menuDrawerBg_leaveActive {
