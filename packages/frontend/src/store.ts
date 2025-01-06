@@ -300,7 +300,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showFixedPostForm: {
 		where: 'device',
-		default: false,
+		default: true,
 	},
 	showFixedPostFormInChannel: {
 		where: 'device',
@@ -728,7 +728,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showExploreButtonInNavbar: {
 		where: 'device',
-		default: false || isFriendly.value,
+		default: isFriendly.value,
 	},
 	showSearchButtonInNavbar: {
 		where: 'device',
@@ -740,7 +740,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showMessageButtonInNavbar: {
 		where: 'device',
-		default: false || isFriendly.value,
+		default: isFriendly.value,
 	},
 	showWidgetButtonInNavbar: {
 		where: 'device',
