@@ -480,7 +480,8 @@ export class ApRendererService {
 			attachment: files.map(x => this.renderDocument(x)),
 			sensitive: note.cw != null || files.some(file => file.isSensitive),
 			tag,
-			disableRightClick: note.disableRightClick,
+			/* FIXME: これを送信するとリレーでの投稿の配送に失敗する */
+			//disableRightClick: note.disableRightClick,
 			...asDeleteAt,
 			...asEvent,
 			...asPoll,
