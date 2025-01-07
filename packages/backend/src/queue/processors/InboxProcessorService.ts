@@ -4,6 +4,7 @@
  */
 
 import { URL } from 'node:url';
+import type { IncomingMessage } from 'node:http';
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import httpSignature from '@peertube/http-signature';
 import * as Bull from 'bullmq';
@@ -239,6 +240,25 @@ export class InboxProcessorService implements OnApplicationShutdown {
 			throw e;
 		}
 		return 'ok';
+	}
+
+	@bindThis 
+	public async getSignatureUser(req: IncomingMessage): Promise<{
+		user: MiRemoteUser;
+		key: MiUserPublickey | null;
+	} | null> {
+		const signature = httpSignature.parseRequest(req, { headers: [] });
+		const keyId = new URL(signature.keyId);
+	
+		// Retrieve from DB by HTTP-Signature keyId
+		const authUser = await this.apDbResolverService.getAuthUserFromKeyId(signature.keyId);
+		if (authUser) {
+			return authUser;
+		}
+	
+		// Resolve if failed to retrieve by keyId
+		keyId.hash = "";
+		return await this.apDbResolverService.getAuthUserFromApId(getApId(keyId.toString()));
 	}
 
 	@bindThis
