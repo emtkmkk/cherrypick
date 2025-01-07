@@ -578,12 +578,11 @@ export class ActivityPubServerService {
 				localOnly: false,
 			});
 
-
 			if (note == null) {
 				reply.code(404);
 				return;
 			}
-			
+
 			// リモートだったらリダイレクト
 			if (note.userHost != null) {
 				if (note.uri == null || this.utilityService.isSelfHost(note.userHost)) {
@@ -637,13 +636,44 @@ export class ActivityPubServerService {
 			const note = await this.notesRepository.findOneBy({
 				id: request.params.note,
 				userHost: IsNull(),
-				visibility: In(['public', 'home']),
+				visibility: In(['public', 'home', 'followers']),
 				localOnly: false,
 			});
 
 			if (note == null) {
 				reply.code(404);
 				return;
+			}
+
+			if (note.visibility === "followers" || note.localAndFollowers) {
+				console.debug(
+					"Responding to request for follower-only note, validating access...",
+				);
+				const remoteUser = await this.inboxProcessorService.getSignatureUser(request);
+				console.debug("Local note author user:");
+				console.debug(JSON.stringify(note, null, 2));
+				console.debug("Authenticated remote user:");
+				console.debug(JSON.stringify(remoteUser, null, 2));
+		
+				if (remoteUser == null) {
+					console.debug("Rejecting: no user");
+					reply.code(401);
+					return;
+				}
+		
+				const relation = await this.userEntityService.getRelation(remoteUser.user.id, note.userId);
+				console.debug("Relation:");
+				console.debug(JSON.stringify(relation, null, 2));
+		
+				if (!relation.isFollowing || relation.isBlocked) {
+					console.debug(
+						"Rejecting: authenticated user is not following us or was blocked by us",
+					);					
+					reply.code(403);
+					return;
+				}
+		
+				console.debug("Accepting: access criteria met");
 			}
 
 			reply.header('Cache-Control', 'public, max-age=180');
