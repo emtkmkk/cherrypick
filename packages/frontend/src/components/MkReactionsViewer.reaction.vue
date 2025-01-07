@@ -57,9 +57,9 @@ const emojiName = computed(() => props.reaction.replace(/:/g, '').replace(/@\./,
 const emoji = computed(() => customEmojisMap.get(emojiName.value) ?? getUnicodeEmoji(props.reaction));
 
 const canToggle = computed(() => {
-	return !props.reaction.match(/@\w/) && $i && emoji.value && checkReactionPermissions($i, props.note, emoji.value);
+	return $i && ((emoji.value && checkReactionPermissions($i, props.note, emoji.value)) || !emoji.value);
 });
-const canGetInfo = computed(() => !props.reaction.match(/@\w/) && props.reaction.includes(':'));
+const canGetInfo = computed(() => props.reaction.includes(':'));
 
 const reactionName = computed(() => {
 	const r = props.reaction.replace(':', '');
@@ -156,7 +156,7 @@ async function menu(ev) {
 
 	os.popupMenu([{
 		type: 'label',
-		text: `:${reactionName.value}:`,
+		text: `${props.reaction}`,
 	}, {
 		text: i18n.ts.info,
 		icon: 'ti ti-info-circle',
