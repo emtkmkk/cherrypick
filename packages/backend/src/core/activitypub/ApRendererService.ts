@@ -24,7 +24,7 @@ import { MfmService } from '@/core/MfmService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import type { MiUserKeypair } from '@/models/UserKeypair.js';
-import type { UsersRepository, UserProfilesRepository, NotesRepository, DriveFilesRepository, PollsRepository, EventsRepository } from '@/models/_.js';
+import type { UsersRepository, UserProfilesRepository, NotesRepository, DriveFilesRepository, PollsRepository, EventsRepository, EmojisRepository } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { IdService } from '@/core/IdService.js';
@@ -56,6 +56,9 @@ export class ApRendererService {
 
 		@Inject(DI.eventsRepository)
 		private eventsRepository: EventsRepository,
+
+		@Inject(DI.emojisRepository)
+		private emojisRepository: EmojisRepository,
 
 		private customEmojiService: CustomEmojiService,
 		private userEntityService: UserEntityService,
