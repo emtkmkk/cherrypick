@@ -37,6 +37,7 @@ export class DropAndFusionGame extends EventEmitter<{
 	changeCombo: (newCombo: number) => void;
 	changeStock: (newStock: { id: string; mono: Mono }[]) => void;
 	changeHolding: (newHolding: { id: string; mono: Mono } | null) => void;
+	changeLife: (newLife: number) => void;
 	dropped: (x: number) => void;
 	fusioned: (x: number, y: number, nextMono: Mono | null, scoreDelta: number) => void;
 	collision: (energy: number, bodyA: Matter.Body, bodyB: Matter.Body) => void;
@@ -106,6 +107,15 @@ export class DropAndFusionGame extends EventEmitter<{
 	private set score(value: number) {
 		this._score = value;
 		this.emit('changeScore', value);
+	}
+
+	private _life = 3;
+	private get life() {
+		return this._life;
+	}
+	private set life(value: number) {
+		this._life = value;
+		this.emit('changeLife', value);
 	}
 
 	private getMonoRenderOptions: null | ((mono: Mono) => Partial<Matter.IBodyRenderOptions>) = null;
@@ -303,8 +313,22 @@ export class DropAndFusionGame extends EventEmitter<{
 			// ハコからあふれたかどうかの判定
 			if (bodyA.id === this.overflowCollider.id || bodyB.id === this.overflowCollider.id) {
 				if (this.gameOverReadyBodyIds.includes(bodyA.id) || this.gameOverReadyBodyIds.includes(bodyB.id)) {
-					this.gameOver();
-					break;
+					this.life -= 1
+					if (this.life <= 0){
+						this.gameOver();
+						break;
+					} else {
+						if (this.gameOverReadyBodyIds.includes(bodyA.id)) {
+							this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(x => x !== bodyA.id);
+							this.gameOverReadyBodyIds = this.gameOverReadyBodyIds.filter(x => x !== bodyA.id);
+							Matter.Composite.remove(this.engine.world, [bodyA]);
+						}
+						if (this.gameOverReadyBodyIds.includes(bodyB.id)) {
+							this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(x => x !== bodyB.id);
+							this.gameOverReadyBodyIds = this.gameOverReadyBodyIds.filter(x => x !== bodyB.id);
+							Matter.Composite.remove(this.engine.world, [bodyB]);
+						}
+					}
 				}
 				continue;
 			}

@@ -52,6 +52,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<img v-for="x in stock" :key="x.id" :src="getTextureImageUrl(x.mono)" style="width: 32px; vertical-align: bottom;"/>
 						</TransitionGroup>
 					</div>
+					<div class="_woodenFrameInner">
+						<img :src="/client-assets/drop-and-fusion/normal_monos/heart_suit.png" style="width: 32px; margin-right: 8px; vertical-align: bottom;"/>
+						{{ life }}
+					</div>
+					<div class="_woodenFrameInner" :class="$style.stock" style="text-align: center;">
+						<TransitionGroup
+							:enterActiveClass="$style.transition_stock_enterActive"
+							:leaveActiveClass="$style.transition_stock_leaveActive"
+							:enterFromClass="$style.transition_stock_enterFrom"
+							:leaveToClass="$style.transition_stock_leaveTo"
+							:moveClass="$style.transition_stock_move"
+						>
+							<img v-for="x in stock" :key="x.id" :src="getTextureImageUrl(x.mono)" style="width: 32px; vertical-align: bottom;"/>
+						</TransitionGroup>
+					</div>
 				</div>
 			</div>
 
@@ -575,6 +590,7 @@ const score = ref(0);
 const combo = ref(0);
 const comboPrev = ref(0);
 const maxCombo = ref(0);
+const life = ref(3);
 const dropReady = ref(true);
 const isGameOver = ref(false);
 const gameLoaded = ref(false);
@@ -794,6 +810,7 @@ function reset() {
 	combo.value = 0;
 	comboPrev.value = 0;
 	maxCombo.value = 0;
+	life.value = 3;
 	gameLoaded.value = false;
 	readyGo.value = null;
 }
@@ -967,6 +984,10 @@ function attachGameEvents() {
 				playbackRate: replayPlaybackRate.value,
 			});
 		}
+	});
+
+	game.addListener('changeLife', value => {
+		life.value = value;
 	});
 
 	game.addListener('dropped', (x) => {
