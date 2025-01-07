@@ -5,6 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
+import type { Config } from '@/config.js';
 import type { EmojisRepository, NoteReactionsRepository, UsersRepository, NotesRepository, MiMeta } from '@/models/_.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import type { MiRemoteUser, MiUser } from '@/models/User.js';
@@ -70,6 +71,9 @@ const decodeCustomEmojiRegexp = /^:([\w+-]+)(?:@([\w.-]+))?:$/;
 @Injectable()
 export class ReactionService {
 	constructor(
+		@Inject(DI.config)
+		private config: Config,
+
 		@Inject(DI.meta)
 		private meta: MiMeta,
 
@@ -125,39 +129,67 @@ export class ReactionService {
 		let reaction = _reaction ?? FALLBACK;
 
 		if (note.reactionAcceptance === 'likeOnly' || ((note.reactionAcceptance === 'likeOnlyForRemote' || note.reactionAcceptance === 'nonSensitiveOnlyForLocalLikeOnlyForRemote') && (user.host != null))) {
-			reaction = '\u2764';
+			reaction = FALLBACK;
 		} else if (_reaction != null) {
-			const custom = reaction.match(isCustomEmojiRegexp);
+			const custom = reaction.match(decodeCustomEmojiRegexp);
 			if (custom) {
 				const reacterHost = this.utilityService.toPunyNullable(user.host);
-
+				let emoji = undefined;
 				const name = custom[1];
-				const emoji = reacterHost == null
+				const noteHost = note.userHost;
+				const hosts = (
+					reacterHost
+						? custom?.[2] === this.config.host
+							? [null, reacterHost]
+							: [custom?.[2], reacterHost, null]
+						: [
+								null,
+								custom?.[2] === this.config.host ? undefined : custom?.[2],
+								noteHost ?? "misskey.io",
+						  ]
+				).filter((x) => x || x == null);
+				for (const host of hosts) {
+					emoji = host == null
 					? (await this.customEmojiService.localEmojisCache.fetch()).get(name)
 					: await this.emojisRepository.findOneBy({
-						host: reacterHost,
+						host: host,
 						name,
 					});
+		
+					if (emoji) break;
+				}
 
 				if (emoji) {
 					if (emoji.roleIdsThatCanBeUsedThisEmojiAsReaction.length === 0 || (await this.roleService.getUserRoles(user.id)).some(r => emoji.roleIdsThatCanBeUsedThisEmojiAsReaction.includes(r.id))) {
-						reaction = reacterHost ? `:${name}@${reacterHost}:` : `:${name}:`;
+						reaction = emoji.host ? `:${name}@${emoji.host}:` : `:${name}:`;
 
 						// センシティブ
 						if ((note.reactionAcceptance === 'nonSensitiveOnly' || note.reactionAcceptance === 'nonSensitiveOnlyForLocalLikeOnlyForRemote') && emoji.isSensitive) {
-							reaction = FALLBACK;
+							throw new IdentifiableError(
+								"ea74aa32-a320-92d5-cc11-97a02a598673",
+								"センシティブ絵文字を受け入れていません。",
+							);
 						}
 
 						// for media silenced host, custom emoji reactions are not allowed
 						if (reacterHost != null && this.utilityService.isMediaSilencedHost(this.meta.mediaSilencedHosts, reacterHost)) {
-							reaction = FALLBACK;
+							throw new IdentifiableError(
+								"ea74aa32-a320-92d5-cc11-97a02a598673",
+								"メディアサイレンスサーバーの絵文字の為使用できません。",
+							);
 						}
 					} else {
 						// リアクションとして使う権限がない
-						reaction = FALLBACK;
+						throw new IdentifiableError(
+							"796734ec-d7d9-d4c9-da71-47521faf0c09",
+							"リアクションとして使う権限がありません。",
+						);
 					}
 				} else {
-					reaction = FALLBACK;
+					throw new IdentifiableError(
+						"770a3ede-67d2-fc9d-f2e2-6163ba0443af",
+						"指定された絵文字が存在しません。",
+					);
 				}
 			} else {
 				reaction = this.normalize(reaction);
