@@ -128,6 +128,7 @@ export class RelayService {
 		if (!copy.to) copy.to = ['https://www.w3.org/ns/activitystreams#Public'];
 
 		const signed = await this.apRendererService.attachLdSignature(copy, user);
+		console.log(signed);
 
 		for (const relay of relays) {
 			this.queueService.deliver(user, signed, relay.inbox, false);
