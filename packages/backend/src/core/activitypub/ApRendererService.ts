@@ -183,7 +183,7 @@ export class ApRendererService {
 	@bindThis
 	public renderEmoji(emoji: MiEmoji): IApEmoji {
 		return {
-			id: `${this.config.url}/emojis/${emoji.name}`,
+			id: emoji.uri || `${this.config.url}/emojis/${emoji.name}`,
 			type: 'Emoji',
 			name: `:${emoji.name}:`,
 			host: `${emoji.host ?? this.config.host}`,
