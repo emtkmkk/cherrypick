@@ -50,6 +50,7 @@ import { ReversiChannelService } from './api/stream/channels/reversi.js';
 import { ReversiGameChannelService } from './api/stream/channels/reversi-game.js';
 import { SigninWithPasskeyApiService } from './api/SigninWithPasskeyApiService.js';
 import { BubbleTimelineChannelService } from './api/stream/channels/bubble-timeline.js';
+import { InboxProcessorService } from '@/queue/processors/InboxProcessorService.js';
 
 @Module({
 	imports: [
@@ -100,6 +101,7 @@ import { BubbleTimelineChannelService } from './api/stream/channels/bubble-timel
 		OpenApiServerService,
 		OAuth2ProviderService,
 		BubbleTimelineChannelService,
+		InboxProcessorService,
 	],
 	exports: [
 		ServerService,
