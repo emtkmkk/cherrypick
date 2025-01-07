@@ -94,7 +94,9 @@ export class ApRendererService {
 		let to: string[] = [];
 		let cc: string[] = [];
 
-		if (note.localAndFollowers && note.visibility !== 'specified') {
+		const remoteFollowerOnly = note.localAndFollowers && ["public", "home"].includes(note.visibility);
+
+		if (remoteFollowerOnly) {
 			to = [`${attributedTo}/followers`];
 			cc = [];
 		} else if (note.visibility === 'public') {
@@ -369,7 +371,9 @@ export class ApRendererService {
 		let to: string[] = [];
 		let cc: string[] = [];
 
-		if (note.localAndFollowers && note.visibility !== 'specified') {
+		const remoteFollowerOnly = note.localAndFollowers && ["public", "home"].includes(note.visibility);
+
+		if (remoteFollowerOnly) {
 			to = [`${attributedTo}/followers`];
 			cc = mentions;
 		} else if (note.visibility === 'public') {
@@ -486,6 +490,7 @@ export class ApRendererService {
 			...asEvent,
 			...asPoll,
 			...asTalk,
+			_mk_localVisibility: remoteFollowerOnly ? note.visibility : undefined,
 		};
 	}
 

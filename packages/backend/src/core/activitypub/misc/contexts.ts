@@ -562,6 +562,9 @@ const extension_context_definition = {
 	'isCat': 'misskey:isCat',
 	// vcard
 	vcard: 'http://www.w3.org/2006/vcard/ns#',
+	// mkkey
+	mkkey: 'https://mkkey.net/ns#',
+	_mk_localVisibility: 'mkkey:_mk_localVisibility'
 } satisfies Context;
 
 export const CONTEXT: (string | Context)[] = [...context_iris, extension_context_definition];

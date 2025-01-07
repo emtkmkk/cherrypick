@@ -230,6 +230,15 @@ export class ApNoteService {
 
 		const noteAudience = await this.apAudienceService.parseAudience(actor, note.to, note.cc, resolver);
 		let visibility = noteAudience.visibility;
+		
+		let localAndFollowers = false;
+
+		if (note._mk_localVisibility && visibility === "followers") {
+			if (this.meta.bubbleInstances.includes(actor.host)) {
+				visibility = note._mk_localVisibility;
+				localAndFollowers = true;
+			}
+		}
 		const visibleUsers = noteAudience.visibleUsers;
 
 		// Audience (to, cc) が指定されてなかった場合
@@ -359,6 +368,7 @@ export class ApNoteService {
 				cw,
 				text,
 				localOnly: false,
+				localAndFollowers,
 				disableRightClick: note.disableRightClick,
 				visibility,
 				visibleUsers,

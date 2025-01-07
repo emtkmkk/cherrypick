@@ -707,9 +707,12 @@ export class NoteCreateService implements OnApplicationShutdown {
 			nm.notify();
 
 			//#region AP deliver
-			if (this.userEntityService.isLocalUser(user)) {
+			if (this.userEntityService.isLocalUser(user) && !data.localOnly) {
 				await (async () => {
 					const noteActivity = await this.renderNoteOrRenoteActivity(data, note);
+
+					if (!noteActivity) return;
+
 					const dm = this.apDeliverManagerService.createDeliverManager(user, noteActivity);
 
 					// メンションされたリモートユーザーに配送
@@ -734,7 +737,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 						dm.addFollowersRecipe();
 					}
 
-					if (['public'].includes(note.visibility) && !note.localAndFollowers) {
+					if (['public'].includes(note.visibility)) {
 						this.relayService.deliverToRelays(user, noteActivity);
 					}
 
@@ -857,10 +860,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 	@bindThis
 	private async renderNoteOrRenoteActivity(data: Option, note: MiNote) {
 		if (data.localOnly) return null;
-
-		if (data.localAndFollowers) {
-			note.visibility = 'followers';
-		}
+		// リモートでRT出来ないはずの投稿がRTされている場合、連合しない
+		if (data.renote?.userId !== note.userId && data.renote?.localAndFollowers) return null;
 
 		const content = this.isRenote(data) && !this.isQuote(data)
 			? this.apRendererService.renderAnnounce(data.renote.uri ? data.renote.uri : `${this.config.url}/notes/${data.renote.id}`, note)
