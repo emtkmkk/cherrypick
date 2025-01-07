@@ -564,7 +564,9 @@ const extension_context_definition = {
 	vcard: 'http://www.w3.org/2006/vcard/ns#',
 	// mkkey
 	mkkey: 'https://mkkey.net/ns#',
-	_mk_localVisibility: 'mkkey:_mk_localVisibility'
+	_mk_localVisibility: 'mkkey:_mk_localVisibility',
+	host: "schema:host",
+	keywords: "schema:keywords",
 } satisfies Context;
 
 export const CONTEXT: (string | Context)[] = [...context_iris, extension_context_definition];

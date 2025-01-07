@@ -249,7 +249,9 @@ export const isHashtag = (object: IObject): object is IApHashtag =>
 export interface IApEmoji extends IObject {
 	type: 'Emoji';
 	name: string;
+	host: string;
 	updated: string;
+	keywords: string[];
 }
 
 export const isEmoji = (object: IObject): object is IApEmoji =>

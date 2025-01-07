@@ -186,6 +186,8 @@ export class ApRendererService {
 			id: `${this.config.url}/emojis/${emoji.name}`,
 			type: 'Emoji',
 			name: `:${emoji.name}:`,
+			host: `${emoji.host ?? this.config.host}`,
+			keywords: emoji.aliases,
 			updated: emoji.updatedAt != null ? emoji.updatedAt.toISOString() : new Date().toISOString(),
 			icon: {
 				type: 'Image',
