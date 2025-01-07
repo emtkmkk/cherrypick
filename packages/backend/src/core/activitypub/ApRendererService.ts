@@ -278,19 +278,31 @@ export class ApRendererService {
 	@bindThis
 	public async renderLike(noteReaction: MiNoteReaction, note: { uri: string | null }): Promise<ILike> {
 		const reaction = noteReaction.reaction;
-
+		const custom = reaction.match(/^:([\w+-]+)(?:@([\w.-]+))?:$/) || null;
+		const sendReaction = custom
+			? custom[2]
+			? `:${reaction?.match(/[^:@]+/)?.[0]}:`
+			: reaction
+		: reaction;
+		
 		const object: ILike = {
 			type: 'Like',
 			id: `${this.config.url}/likes/${noteReaction.id}`,
 			actor: `${this.config.url}/users/${noteReaction.userId}`,
 			object: note.uri ? note.uri : `${this.config.url}/notes/${noteReaction.noteId}`,
-			content: reaction,
-			_misskey_reaction: reaction,
+			content: sendReaction,
+			_misskey_reaction: sendReaction,
 		};
 
 		if (reaction.startsWith(':')) {
-			const name = reaction.replaceAll(':', '');
-			const emoji = (await this.customEmojiService.localEmojisCache.fetch()).get(name);
+			const name = custom[1];
+			const host = custom[2] == "." ? null : custom[2] || null;
+			const emoji = host == null
+					? (await this.customEmojiService.localEmojisCache.fetch()).get(name)
+					: await this.emojisRepository.findOneBy({
+						host: host,
+						name,
+					});
 
 			if (emoji && !emoji.localOnly) object.tag = [this.renderEmoji(emoji)];
 		}
