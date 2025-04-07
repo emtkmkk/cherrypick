@@ -16,19 +16,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 		</div>
 	</div>
-	<div :class="{ [$style.slotClip]: isPullStart }">
-		<slot/>
-	</div>
+
+	<slot/>
 </div>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref, shallowRef } from 'vue';
+import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
 import { getScrollContainer } from '@@/js/scroll.js';
 import { i18n } from '@/i18n.js';
-import { isHorizontalSwipeSwiping } from '@/scripts/touch.js';
-import { vibrate } from '@/scripts/vibrate.js';
-import { defaultStore } from '@/store.js';
+import { isHorizontalSwipeSwiping } from '@/utility/touch.js';
+import { vibrate } from '@/utility/vibrate.js';
+import { prefer } from '@/preferences.js';
 
 const SCROLL_STOP = 10;
 const MAX_PULL_DISTANCE = Infinity;
@@ -45,7 +44,7 @@ const pullDistance = ref(0);
 let supportPointerDesktop = false;
 let startScreenY: number | null = null;
 
-const rootEl = shallowRef<HTMLDivElement>();
+const rootEl = useTemplateRef('rootEl');
 let scrollEl: HTMLElement | null = null;
 
 let disabled = false;
@@ -86,11 +85,11 @@ function moveBySystem(to: number): Promise<void> {
 			return;
 		}
 		const startTime = Date.now();
-		let intervalId = setInterval(() => {
+		let intervalId = window.setInterval(() => {
 			const time = Date.now() - startTime;
 			if (time > RELEASE_TRANSITION_DURATION) {
 				pullDistance.value = to;
-				clearInterval(intervalId);
+				window.clearInterval(intervalId);
 				r();
 				return;
 			}
@@ -161,7 +160,7 @@ function moving(event: TouchEvent | PointerEvent) {
 
 	if (!isPullEnd.value) isVibrate = false;
 	else if (isPullEnd.value && !isVibrate) {
-		vibrate(defaultStore.state.vibrateSystem ? 10 : []);
+		vibrate(prefer.s['vibrate.on.system'] ? 10 : []);
 		isVibrate = true;
 	}
 }
@@ -271,9 +270,5 @@ defineExpose({
 
 .text {
   margin: 5px 0;
-}
-
-.slotClip {
-	overflow-y: clip;
 }
 </style>

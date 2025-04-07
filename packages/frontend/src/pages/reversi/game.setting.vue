@@ -115,14 +115,14 @@ import * as Misskey from 'cherrypick-js';
 import * as Reversi from 'misskey-reversi';
 import type { MenuItem } from '@/types/menu.js';
 import { i18n } from '@/i18n.js';
-import { $i } from '@/account.js';
-import { deepClone } from '@/scripts/clone.js';
+import { $i } from '@/i.js';
+import { deepClone } from '@/utility/clone.js';
 import MkButton from '@/components/MkButton.vue';
 import MkRadios from '@/components/MkRadios.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import * as os from '@/os.js';
-import { useRouter } from '@/router/supplier.js';
+import { useRouter } from '@/router.js';
 
 const router = useRouter();
 
@@ -290,7 +290,7 @@ onUnmounted(() => {
 .footer {
 	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
 	backdrop-filter: var(--MI-blur, blur(15px));
-	background: var(--MI_THEME-acrylicBg);
+	background: color(from var(--MI_THEME-bg) srgb r g b / 0.5);
 	border-top: solid 0.5px var(--MI_THEME-divider);
 }
 </style>

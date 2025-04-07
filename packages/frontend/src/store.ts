@@ -5,70 +5,20 @@
 
 import { markRaw, ref } from 'vue';
 import * as Misskey from 'cherrypick-js';
-import { hemisphere } from '@@/js/intl-const.js';
 import lightTheme from '@@/themes/l-cherrypick.json5';
 import darkTheme from '@@/themes/d-cherrypick.json5';
-import type { SoundType } from '@/scripts/sound.js';
-import type { Ast } from '@syuilo/aiscript';
-import { DEFAULT_DEVICE_KIND, type DeviceKind } from '@/scripts/device-kind.js';
+import { hemisphere } from '@@/js/intl-const.js';
+import type { DeviceKind } from '@/utility/device-kind.js';
+import type { Plugin } from '@/plugin.js';
 import { miLocalStorage } from '@/local-storage.js';
-import { Storage } from '@/pizzax.js';
+import { Pizzax } from '@/lib/pizzax.js';
+import { DEFAULT_DEVICE_KIND } from '@/utility/device-kind.js';
+import { isFriendly } from '@/utility/is-friendly.js';
 
-interface PostFormAction {
-	title: string,
-	handler: <T>(form: T, update: (key: unknown, value: unknown) => void) => void;
-}
-
-interface UserAction {
-	title: string,
-	handler: (user: Misskey.entities.UserDetailed) => void;
-}
-
-interface NoteAction {
-	title: string,
-	handler: (note: Misskey.entities.Note) => void;
-}
-
-interface NoteViewInterruptor {
-	handler: (note: Misskey.entities.Note) => unknown;
-}
-
-interface NotePostInterruptor {
-	handler: (note: FIXME) => unknown;
-}
-
-interface PageViewInterruptor {
-	handler: (page: Misskey.entities.Page) => unknown;
-}
-
-/** サウンド設定 */
-export type SoundStore = {
-	type: Exclude<SoundType, '_driveFile_'>;
-	volume: number;
-} | {
-	type: '_driveFile_';
-
-	/** ドライブのファイルID */
-	fileId: string;
-
-	/** ファイルURL（こちらが優先される） */
-	fileUrl: string;
-
-	volume: number;
-}
-
-export const postFormActions: PostFormAction[] = [];
-export const userActions: UserAction[] = [];
-export const noteActions: NoteAction[] = [];
-export const noteViewInterruptors: NoteViewInterruptor[] = [];
-export const notePostInterruptors: NotePostInterruptor[] = [];
-export const pageViewInterruptors: PageViewInterruptor[] = [];
-
-const isFriendly = ref(miLocalStorage.getItem('ui') === 'friendly');
-
-// TODO: それぞれいちいちwhereとかdefaultというキーを付けなきゃいけないの冗長なのでなんとかする(ただ型定義が面倒になりそう)
-//       あと、現行の定義の仕方なら「whereが何であるかに関わらずキー名の重複不可」という制約を付けられるメリットもあるからそのメリットを引き継ぐ方法も考えないといけない
-export const defaultStore = markRaw(new Storage('base', {
+/**
+ * 「状態」を管理するストア(not「設定」)
+ */
+export const store = markRaw(new Pizzax('base', {
 	accountSetupWizard: {
 		where: 'account',
 		default: 0,
@@ -86,61 +36,9 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: false,
 	},
-	keepCw: {
-		where: 'account',
-		default: true,
-	},
-	showFullAcct: {
-		where: 'account',
-		default: false,
-	},
-	collapseRenotes: {
-		where: 'account',
-		default: true,
-	},
-	rememberNoteVisibility: {
-		where: 'account',
-		default: false,
-	},
-	defaultNoteVisibility: {
-		where: 'account',
-		default: 'public' as (typeof Misskey.noteVisibilities)[number],
-	},
-	defaultNoteLocalOnly: {
-		where: 'account',
-		default: false,
-	},
-	defaultNoteLocalAndFollowers: {
-		where: 'account',
-		default: false,
-	},
-	uploadFolder: {
-		where: 'account',
-		default: null as string | null,
-	},
-	pastedFileName: {
-		where: 'account',
-		default: 'yyyy-MM-dd HH-mm-ss [{{number}}]',
-	},
-	keepOriginalUploading: {
-		where: 'account',
-		default: false,
-	},
-	imageCompressionMode: {
-		where: 'account',
-		default: 'resizeCompressLossy' as 'resizeCompress' | 'noResizeCompress' | 'resizeCompressLossy' | 'noResizeCompressLossy' | null,
-	},
 	memo: {
 		where: 'account',
 		default: null,
-	},
-	reactions: {
-		where: 'account',
-		default: ['👍', '❤️', '😆', '🤔', '😮', '🎉', '💢', '😥', '😇', '🍮'],
-	},
-	pinnedEmojis: {
-		where: 'account',
-		default: [],
 	},
 	reactionAcceptance: {
 		where: 'account',
@@ -149,19 +47,6 @@ export const defaultStore = markRaw(new Storage('base', {
 	mutedAds: {
 		where: 'account',
 		default: [] as string[],
-	},
-
-	menu: {
-		where: 'deviceAccount',
-		default: [
-			'notifications',
-			'messaging',
-			'favorites',
-			'followRequests',
-			'explore',
-			'search',
-			'announcements',
-		],
 	},
 	visibility: {
 		where: 'deviceAccount',
@@ -174,38 +59,6 @@ export const defaultStore = markRaw(new Storage('base', {
 	localAndFollowers: {
 		where: 'deviceAccount',
 		default: false,
-	},
-	showPreview: {
-		where: 'device',
-		default: true,
-	},
-	showPreviewInReplies: {
-		where: 'device',
-		default: false,
-	},
-	showProfilePreview: {
-		where: 'device',
-		default: true,
-	},
-	statusbars: {
-		where: 'deviceAccount',
-		default: [] as {
-			name: string;
-			id: string;
-			type: string;
-			size: 'verySmall' | 'small' | 'medium' | 'large' | 'veryLarge';
-			black: boolean;
-			props: Record<string, any>;
-		}[],
-	},
-	widgets: {
-		where: 'account',
-		default: [] as {
-			name: string;
-			id: string;
-			place: string | null;
-			data: Record<string, any>;
-		}[],
 	},
 	tl: {
 		where: 'deviceAccount',
@@ -221,14 +74,144 @@ export const defaultStore = markRaw(new Storage('base', {
 			},
 		},
 	},
-	pinnedUserLists: {
+	darkMode: {
+		where: 'device',
+		default: false,
+	},
+	recentlyUsedEmojis: {
+		where: 'device',
+		default: [] as string[],
+	},
+	recentlyUsedUsers: {
+		where: 'device',
+		default: [] as string[],
+	},
+	menuDisplay: {
+		where: 'device',
+		default: 'sideFull' as 'sideFull' | 'sideIcon' | 'top',
+	},
+	postFormWithHashtags: {
+		where: 'device',
+		default: false,
+	},
+	postFormHashtags: {
+		where: 'device',
+		default: '',
+	},
+	additionalUnicodeEmojiIndexes: {
+		where: 'device',
+		default: {} as Record<string, Record<string, string[]>>,
+	},
+	pluginTokens: {
 		where: 'deviceAccount',
-		default: [] as Misskey.entities.UserList[],
+		default: {} as Record<string, string>, // plugin id, token
+	},
+	accountTokens: {
+		where: 'device',
+		default: {} as Record<string, string>, // host/userId, token
 	},
 
+	enablePreferencesAutoCloudBackup: {
+		where: 'device',
+		default: false,
+	},
+	showPreferencesAutoCloudBackupSuggestion: {
+		where: 'device',
+		default: true,
+	},
+
+	//#region TODO: そのうち消す (preferに移行済み)
+	defaultWithReplies: {
+		where: 'account',
+		default: true,
+	},
+	reactions: {
+		where: 'account',
+		default: ['👍', '❤️', '😆', '🤔', '😮', '🎉', '💢', '😥', '😇', '🍮'],
+	},
+	pinnedEmojis: {
+		where: 'account',
+		default: [],
+	},
+	widgets: {
+		where: 'account',
+		default: [] as {
+			name: string;
+			id: string;
+			place: string | null;
+			data: Record<string, any>;
+		}[],
+	},
 	overridedDeviceKind: {
 		where: 'device',
 		default: null as DeviceKind | null,
+	},
+	defaultSideView: {
+		where: 'device',
+		default: false,
+	},
+	defaultNoteVisibility: {
+		where: 'account',
+		default: 'public' as (typeof Misskey.noteVisibilities)[number],
+	},
+	defaultNoteLocalOnly: {
+		where: 'account',
+		default: false,
+	},
+	defaultNoteLocalAndFollowers: {
+		where: 'account',
+		default: false,
+	},
+	keepCw: {
+		where: 'account',
+		default: true,
+	},
+	collapseRenotes: {
+		where: 'account',
+		default: true,
+	},
+	rememberNoteVisibility: {
+		where: 'account',
+		default: false,
+	},
+	uploadFolder: {
+		where: 'account',
+		default: null as string | null,
+	},
+	keepOriginalUploading: {
+		where: 'account',
+		default: false,
+	},
+	menu: {
+		where: 'deviceAccount',
+		default: [
+			'notifications',
+			'chat',
+			'favorites',
+			'explore',
+			'followRequests',
+			'-',
+			'announcements',
+			'channels',
+			'search',
+			'-',
+			'support',
+		],
+	},
+	statusbars: {
+		where: 'deviceAccount',
+		default: [] as {
+			name: string;
+			id: string;
+			type: string;
+			size: 'verySmall' | 'small' | 'medium' | 'large' | 'veryLarge';
+			black: boolean;
+			props: Record<string, any>;
+		}[],
+	},
+	pinnedUserLists: {
+		where: 'deviceAccount',
+		default: [] as Misskey.entities.UserList[],
 	},
 	serverDisconnectedBehavior: {
 		where: 'device',
@@ -274,10 +257,6 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: window.matchMedia('(prefers-reduced-motion)').matches,
 	},
-	showingAnimatedImages: {
-		where: 'device',
-		default: /mobile|iphone|android/.test(navigator.userAgent.toLowerCase()) ? 'inactive' : 'always' as 'always' | 'interaction' | 'inactive',
-	},
 	emojiStyle: {
 		where: 'device',
 		default: 'twemoji', // twemoji / fluentEmoji / native
@@ -291,10 +270,6 @@ export const defaultStore = markRaw(new Storage('base', {
 		default: DEFAULT_DEVICE_KIND === 'desktop',
 	},
 	useBlurEffect: {
-		where: 'device',
-		default: DEFAULT_DEVICE_KIND === 'desktop',
-	},
-	removeModalBgColorForBlur: {
 		where: 'device',
 		default: DEFAULT_DEVICE_KIND === 'desktop',
 	},
@@ -318,10 +293,6 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: true,
 	},
-	darkMode: {
-		where: 'device',
-		default: true,
-	},
 	instanceTicker: {
 		where: 'device',
 		default: 'always' as 'always' | 'remote' | 'none',
@@ -342,47 +313,19 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: 'auto' as 'auto' | 'popup' | 'drawer',
 	},
-	recentlyUsedEmojis: {
-		where: 'device',
-		default: [] as string[],
-	},
-	recentlyUsedUsers: {
-		where: 'device',
-		default: [] as string[],
-	},
-	defaultSideView: {
-		where: 'device',
-		default: false,
-	},
-	menuDisplay: {
-		where: 'device',
-		default: 'sideFull' as 'sideFull' | 'sideIcon' | 'top',
-	},
 	reportError: {
 		where: 'device',
 		default: false,
 	},
 	squareAvatars: {
-		where: 'device',
+		where: 'account',
 		default: true,
 	},
 	showAvatarDecorations: {
 		where: 'device',
 		default: true,
 	},
-	postFormWithHashtags: {
-		where: 'device',
-		default: false,
-	},
-	postFormHashtags: {
-		where: 'device',
-		default: '',
-	},
 	showPostedToast: {
-		where: 'device',
-		default: true,
-	},
-	themeInitial: {
 		where: 'device',
 		default: true,
 	},
@@ -434,17 +377,9 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: false,
 	},
-	additionalUnicodeEmojiIndexes: {
-		where: 'device',
-		default: {} as Record<string, Record<string, string[]>>,
-	},
 	keepScreenOn: {
 		where: 'device',
 		default: false,
-	},
-	defaultWithReplies: {
-		where: 'account',
-		default: true,
 	},
 	disableStreamingTimeline: {
 		where: 'device',
@@ -466,17 +401,6 @@ export const defaultStore = markRaw(new Storage('base', {
 	enableSeasonalScreenEffect: {
 		where: 'device',
 		default: false,
-	},
-	dropAndFusion: {
-		where: 'device',
-		default: {
-			bgmVolume: 0.25,
-			sfxVolume: 1,
-		},
-	},
-	hemisphere: {
-		where: 'device',
-		default: hemisphere as 'N' | 'S',
 	},
 	enableHorizontalSwipe: {
 		where: 'device',
@@ -506,17 +430,17 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: true,
 	},
-	showUnreadNotificationsCount: {
-		where: 'deviceAccount',
+	showSoftWordMutedWord: {
+		where: 'device',
 		default: false,
 	},
-	externalNavigationWarning: {
+	confirmOnReact: {
 		where: 'device',
-		default: true,
+		default: false,
 	},
-	trustedDomains: {
+	hemisphere: {
 		where: 'device',
-		default: [] as string[],
+		default: hemisphere as 'N' | 'S',
 	},
 
 	sound_masterVolume: {
@@ -537,42 +461,121 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	sound_noteMy: {
 		where: 'device',
-		default: { type: 'syuilo/n-cea-4va', volume: 1 } as SoundStore,
+		default: { type: 'syuilo/n-cea-4va', volume: 1 },
+	},
+	sound_noteSchedulePost: {
+		where: 'device',
+		default: { type: 'syuilo/n-cea', volume: 1 },
 	},
 	sound_noteEdited: {
 		where: 'device',
-		default: { type: 'syuilo/n-eca', volume: 1 } as SoundStore,
+		default: { type: 'syuilo/n-eca', volume: 1 },
 	},
 	sound_notification: {
 		where: 'device',
-		default: { type: 'syuilo/n-ea', volume: 1 } as SoundStore,
-	},
-	sound_chat: {
-		where: 'device',
-		default: { type: 'syuilo/pope1', volume: 1 } as SoundStore,
-	},
-	sound_chatBg: {
-		where: 'device',
-		default: { type: 'syuilo/waon', volume: 1 } as SoundStore,
+		default: { type: 'syuilo/n-ea', volume: 1 },
 	},
 	sound_reaction: {
 		where: 'device',
-		default: { type: 'syuilo/bubble2', volume: 1 } as SoundStore,
+		default: { type: 'syuilo/bubble2', volume: 1 },
+	},
+	dropAndFusion: {
+		where: 'device',
+		default: {
+			bgmVolume: 0.25,
+			sfxVolume: 1,
+		},
 	},
 
 	// #region CherryPick
-	// - Settings/General
-	newNoteReceivedNotificationBehavior: {
-		where: 'device',
-		default: 'count' as 'default' | 'count' | 'none',
+	// - Settings/Preferences
+	forceCollapseAllRenotes: {
+		where: 'account',
+		default: false,
 	},
-	requireRefreshBehavior: {
-		where: 'device',
-		default: 'dialog' as 'quiet' | 'dialog',
+	collapseReplies: {
+		where: 'account',
+		default: false,
 	},
-	bannerDisplay: {
+	collapseLongNoteContent: {
+		where: 'account',
+		default: true,
+	},
+	collapseDefault: {
+		where: 'account',
+		default: true,
+	},
+	allMediaNoteCollapse: {
 		where: 'device',
-		default: 'hide' as 'all' | 'topBottom' | 'top' | 'bottom' | 'bg' | 'hide',
+		default: false,
+	},
+	showSubNoteFooterButton: {
+		where: 'device',
+		default: true,
+	},
+	infoButtonForNoteActionsEnabled: {
+		where: 'account',
+		default: true,
+	},
+	showTranslateButtonInNote: {
+		where: 'device',
+		default: true,
+	},
+	showReplyButtonInNoteFooter: {
+		where: 'device',
+		default: true,
+	},
+	showRenoteButtonInNoteFooter: {
+		where: 'device',
+		default: true,
+	},
+	showLikeButtonInNoteFooter: {
+		where: 'device',
+	},
+	showDoReactionButtonInNoteFooter: {
+		where: 'device',
+		default: true,
+	},
+	showQuoteButtonInNoteFooter: {
+		where: 'device',
+		default: true,
+	},
+	showMoreButtonInNoteFooter: {
+		where: 'device',
+		default: true,
+	},
+	selectReaction: {
+		where: 'device',
+		default: '❤️' as string,
+	},
+		default: false,
+	showReplyInNotification: {
+		where: 'device',
+		default: false,
+	},
+	renoteQuoteButtonSeparation: {
+		where: 'device',
+		default: true,
+	},
+	renoteVisibilitySelection: {
+		where: 'device',
+		default: true,
+	},
+	forceRenoteVisibilitySelection: {
+		where: 'device',
+		default: 'none' as 'none' | 'public' | 'home' | 'followers',
+	},
+	showFixedPostFormInReplies: {
+		where: 'device',
+		default: true,
+	},
+	showNoAltTextWarning: {
+		where: 'device',
+		default: false,
+	},
+	alwaysShowCw: {
+		where: 'device',
+		default: false,
 	},
 	autoLoadMoreReplies: {
 		where: 'device',
@@ -594,6 +597,14 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: false,
 	},
+	requireRefreshBehavior: {
+		where: 'device',
+		default: 'dialog' as 'quiet' | 'dialog',
+	},
+	newNoteReceivedNotificationBehavior: {
+		where: 'device',
+		default: 'count' as 'default' | 'count' | 'none',
+	},
 	searchEngine: {
 		where: 'device',
 		default: 'google' as 'google' | 'bing' | 'yahoo' | 'baidu' | 'naver' | 'daum' | 'duckduckgo' | 'other',
@@ -606,33 +617,45 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: 'q',
 	},
-
-	// - Settings/Appearance
-	collapseReplies: {
-		where: 'account',
+	showUnreadNotificationsCount: {
+		where: 'deviceAccount',
 		default: false,
 	},
-	filesGridLayoutInUserPage: {
+	externalNavigationWarning: {
 		where: 'device',
 		default: true,
+	},
+	trustedDomains: {
+		where: 'device',
+		default: [] as string[],
+	},
+	showPreview: {
+		where: 'device',
+		default: false,
+	},
+	showProfilePreview: {
+		where: 'device',
+		default: true,
+	},
+
+	// - Settings/Appearance
+	removeModalBgColorForBlur: {
+		where: 'device',
+		default: DEFAULT_DEVICE_KIND === 'desktop',
 	},
 	fontSize: {
 		where: 'device',
 		default: 8,
 	},
-	collapseLongNoteContent: {
+	setFederationAvatarShape: {
 		where: 'account',
 		default: true,
 	},
-	collapseDefault: {
-		where: 'account',
+	filesGridLayoutInUserPage: {
+		where: 'device',
 		default: true,
 	},
 	hideAvatarsInNote: {
-		where: 'device',
-		default: false,
-	},
-	showTranslateButtonInNote: {
 		where: 'device',
 		default: false,
 	},
@@ -644,45 +667,9 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: false,
 	},
-	showSubNoteFooterButton: {
+	showReplyTargetNote: {
 		where: 'device',
 		default: true,
-	},
-	infoButtonForNoteActionsEnabled: {
-		where: 'account',
-		default: true,
-	},
-	showReplyInNotification: {
-		where: 'device',
-		default: false,
-	},
-	renoteQuoteButtonSeparation: {
-		where: 'device',
-		default: true,
-	},
-	renoteVisibilitySelection: {
-		where: 'device',
-		default: true,
-	},
-	forceRenoteVisibilitySelection: {
-		where: 'device',
-		default: 'none' as 'none' | 'public' | 'home' | 'followers',
-	},
-	showFixedPostFormInReplies: {
-		where: 'device',
-		default: true,
-	},
-	allMediaNoteCollapse: {
-		where: 'device',
-		default: false,
-	},
-	showNoAltTextWarning: {
-		where: 'device',
-		default: false,
-	},
-	alwaysShowCw: {
-		where: 'device',
-		default: false,
 	},
 	showReplyTargetNoteInSemiTransparent: {
 		where: 'device',
@@ -692,39 +679,15 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: 'click' as 'click' | 'doubleClick',
 	},
-	showReplyButtonInNoteFooter: {
-		where: 'device',
-		default: true,
-	},
-	showRenoteButtonInNoteFooter: {
-		where: 'device',
-		default: true,
-	},
-	showLikeButtonInNoteFooter: {
-		where: 'device',
-		default: false,
-	},
-	showDoReactionButtonInNoteFooter: {
-		where: 'device',
-		default: true,
-	},
-	showQuoteButtonInNoteFooter: {
-		where: 'device',
-		default: true,
-	},
-	showMoreButtonInNoteFooter: {
-		where: 'device',
-		default: true,
-	},
-	selectReaction: {
-		where: 'device',
-		default: '❤️' as string,
-	},
 
 	// - Settings/Navigation bar
+	bannerDisplay: {
+		where: 'device',
+		default: 'topBottom' as 'all' | 'topBottom' | 'top' | 'bottom' | 'bg' | 'hide',
+	},
 	showMenuButtonInNavbar: {
 		where: 'device',
-		default: !isFriendly.value,
+		default: !isFriendly().value,
 	},
 	showHomeButtonInNavbar: {
 		where: 'device',
@@ -732,7 +695,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showExploreButtonInNavbar: {
 		where: 'device',
-		default: isFriendly.value,
+		default: isFriendly().value,
 	},
 	showSearchButtonInNavbar: {
 		where: 'device',
@@ -742,9 +705,9 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: true,
 	},
-	showMessageButtonInNavbar: {
+	showChatButtonInNavbar: {
 		where: 'device',
-		default: isFriendly.value,
+		default: isFriendly().value,
 	},
 	showReloadButtonInNavbar: {
 		where: 'device',
@@ -756,7 +719,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showPostButtonInNavbar: {
 		where: 'device',
-		default: false,
+		default: !isFriendly().value,
 	},
 	showPostButtonInFloat: {
 		where: 'device',
@@ -802,23 +765,15 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: !/ipad|iphone/.test(navigator.userAgent.toLowerCase()) && window.navigator.vibrate,
 	},
-	vibrateNote: {
+	vibrate_note: {
 		where: 'device',
 		default: true,
 	},
-	vibrateNotification: {
+	vibrate_notification: {
 		where: 'device',
 		default: true,
 	},
-	vibrateChat: {
-		where: 'device',
-		default: true,
-	},
-	vibrateChatBg: {
-		where: 'device',
-		default: true,
-	},
-	vibrateSystem: {
+	vibrate_system: {
 		where: 'device',
 		default: true,
 	},
@@ -892,6 +847,18 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: false,
 	},
+
+	// - Settings/Accessibility
+	showingAnimatedImages: {
+		where: 'device',
+		default: /mobile|iphone|android/.test(navigator.userAgent.toLowerCase()) ? 'inactive' : 'always' as 'always' | 'interaction' | 'inactive',
+	},
+
+	// - Settings/Drive
+	imageCompressionMode: {
+		where: 'account',
+		default: 'resizeCompressLossy' as 'resizeCompress' | 'noResizeCompress' | 'resizeCompressLossy' | 'noResizeCompressLossy' | null,
+	},
 	// #endregion
 }));
 
@@ -899,36 +866,21 @@ export const defaultStore = markRaw(new Storage('base', {
 
 const PREFIX = 'miux:' as const;
 
-export type Plugin = {
-	id: string;
-	name: string;
-	active: boolean;
-	config?: Record<string, { default: any }>;
-	configData: Record<string, any>;
-	token: string;
-	src: string | null;
-	version: string;
-	ast: Ast.Node[];
-	author?: string;
-	description?: string;
-	permissions?: string[];
-};
-
 interface Watcher {
 	key: string;
 	callback: (value: unknown) => void;
 }
 
+// TODO: 消す(preferに移行済みのため)
 /**
  * 常にメモリにロードしておく必要がないような設定情報を保管するストレージ(非リアクティブ)
  */
-
 export class ColdDeviceStorage {
 	public static default = {
-		lightTheme,
-		darkTheme,
-		syncDeviceDarkMode: true,
-		plugins: [] as Plugin[],
+		lightTheme, // TODO: 消す(preferに移行済みのため)
+		darkTheme, // TODO: 消す(preferに移行済みのため)
+		syncDeviceDarkMode: true, // TODO: 消す(preferに移行済みのため)
+		plugins: [] as Plugin[], // TODO: 消す(preferに移行済みのため)
 	};
 
 	public static watchers: Watcher[] = [];
