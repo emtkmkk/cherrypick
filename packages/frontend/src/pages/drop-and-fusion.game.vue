@@ -964,7 +964,19 @@ function attachGameEvents() {
         });
 
         game.addListener('changeLives', value => {
+                const prev = lives.value;
                 lives.value = value;
+                if (value < prev && !props.mute) {
+                        if (props.gameMode === 'yen') {
+                                sound.playUrl('/client-assets/drop-and-fusion/gameover_yen.mp3', {
+                                        volume: 0.5 * sfxVolume.value,
+                                });
+                        } else {
+                                sound.playUrl('/client-assets/drop-and-fusion/gameover.mp3', {
+                                        volume: sfxVolume.value,
+                                });
+                        }
+                }
         });
 
 	game.addListener('changeHolding', value => {

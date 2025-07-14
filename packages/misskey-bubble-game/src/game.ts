@@ -60,6 +60,7 @@ export class DropAndFusionGame extends EventEmitter<{
         private overflowCollider: Matter.Body;
         private isGameOver = false;
         private lostLifeThisDrop = false;
+        private dropsSinceLifeLost = 0;
         private _lives = 3;
 	private gameMode: 'normal' | 'yen' | 'square' | 'sweets' | 'space';
 	private rng: () => number;
@@ -335,10 +336,12 @@ export class DropAndFusionGame extends EventEmitter<{
        private handleOverflow(body: Matter.Body) {
                if (!this.lostLifeThisDrop) {
                        this.lostLifeThisDrop = true;
+                       this.dropsSinceLifeLost = 0;
                        if (this.lives > 1) {
                                this.lives--;
                                this.removeOverflowBodies(body);
                        } else {
+                               this.lives--;
                                this.finalizeGameOver();
                        }
                } else {
@@ -371,6 +374,7 @@ export class DropAndFusionGame extends EventEmitter<{
 
         public start() {
                 this.lostLifeThisDrop = false;
+                this.dropsSinceLifeLost = 0;
                 this.emit('changeLives', this.lives);
                 for (let i = 0; i < this.STOCK_MAX; i++) {
                         this.stock.push({
@@ -449,9 +453,16 @@ export class DropAndFusionGame extends EventEmitter<{
 
                 Matter.Composite.add(this.engine.world, body);
                 this.lostLifeThisDrop = false;
+                if (this.lives < 3) {
+                        this.dropsSinceLifeLost++;
+                        if (this.dropsSinceLifeLost >= 10) {
+                                this.lives = Math.min(3, this.lives + 1);
+                                this.dropsSinceLifeLost = 0;
+                        }
+                }
 
-		this.fusionReadyBodyIds.push(body.id);
-		this.latestDroppedAt = this.frame;
+                this.fusionReadyBodyIds.push(body.id);
+                this.latestDroppedAt = this.frame;
 
 		this.emit('dropped', x);
 		this.emit('monoAdded', head.mono);
