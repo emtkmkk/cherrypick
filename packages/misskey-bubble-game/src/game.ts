@@ -261,10 +261,9 @@ export class DropAndFusionGame extends EventEmitter<{
 			this.emit('monoAdded', nextMono);
 		}
 
-		const hasComboBonus = this.gameMode !== 'yen' && this.gameMode !== 'sweets';
-		const comboBonus = hasComboBonus ? 1 + ((this.combo - 1) / 5) : 1;
-		const additionalScore = Math.round(currentMono.score * comboBonus);
-		this.score += additionalScore;
+                const hasComboBonus = this.gameMode !== 'yen' && this.gameMode !== 'sweets';
+                const additionalScore = currentMono.score + (hasComboBonus ? Math.floor(this.combo / 3) : 0);
+                this.score += additionalScore;
 
 		this.emit('fusioned', newX, newY, nextMono, additionalScore);
 	}
