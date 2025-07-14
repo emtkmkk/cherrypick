@@ -41,18 +41,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkButton inline small @click="hold">{{ i18n.ts._bubbleGame.hold }}</MkButton>
 						<img v-if="holdingStock" :src="getTextureImageUrl(holdingStock.mono)" style="width: 32px; margin-left: 8px; vertical-align: bottom;"/>
 					</div>
-					<div class="_woodenFrameInner" :class="$style.stock" style="text-align: center;">
-						<TransitionGroup
-							:enterActiveClass="$style.transition_stock_enterActive"
-							:leaveActiveClass="$style.transition_stock_leaveActive"
-							:enterFromClass="$style.transition_stock_enterFrom"
-							:leaveToClass="$style.transition_stock_leaveTo"
-							:moveClass="$style.transition_stock_move"
-						>
-							<img v-for="x in stock" :key="x.id" :src="getTextureImageUrl(x.mono)" style="width: 32px; vertical-align: bottom;"/>
-						</TransitionGroup>
-					</div>
-				</div>
+                                        <div class="_woodenFrameInner" :class="$style.stock" style="text-align: center;">
+                                                <TransitionGroup
+                                                        :enterActiveClass="$style.transition_stock_enterActive"
+                                                        :leaveActiveClass="$style.transition_stock_leaveActive"
+                                                        :enterFromClass="$style.transition_stock_enterFrom"
+                                                        :leaveToClass="$style.transition_stock_leaveTo"
+                                                        :moveClass="$style.transition_stock_move"
+                                                >
+                                                        <img v-for="x in stock" :key="x.id" :src="getTextureImageUrl(x.mono)" style="width: 32px; vertical-align: bottom;"/>
+                                                </TransitionGroup>
+                                        </div>
+                                        <div class="_woodenFrameInner" style="white-space: nowrap;">
+                                                {{ i18n.ts._bubbleGame.life ?? 'Life' }}: <MkNumber :value="lives"/>
+                                        </div>
+                                </div>
 			</div>
 
 			<div ref="containerEl" :class="[$style.gameContainer, { [$style.gameOver]: isGameOver && !replaying }]" @contextmenu.stop.prevent @click.stop.prevent="onClick" @touchmove.stop.prevent="onTouchmove" @touchend="onTouchend" @mousemove="onMousemove">
@@ -137,10 +140,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div style="display: flex;">
 				<div class="_woodenFrame" style="flex: 1; margin-right: 10px;">
 					<div class="_woodenFrameInner">
-						<div>{{ i18n.ts._bubbleGame._score.score }}: <MkNumber :value="score"/>{{ getScoreUnit(gameMode) }}</div>
-						<div>{{ i18n.ts._bubbleGame._score.highScore }}: <b v-if="highScore"><MkNumber :value="highScore"/>{{ getScoreUnit(gameMode) }}</b><b v-else>-</b></div>
-						<div v-if="gameMode === 'yen'">
-							{{ i18n.ts._bubbleGame._score.scoreYen }}:
+                                                <div>{{ i18n.ts._bubbleGame._score.score }}: <MkNumber :value="score"/>{{ getScoreUnit(gameMode) }}</div>
+                                                <div>{{ i18n.ts._bubbleGame._score.highScore }}: <b v-if="highScore"><MkNumber :value="highScore"/>{{ getScoreUnit(gameMode) }}</b><b v-else>-</b></div>
+                                                <div v-if="gameMode === 'yen'">
+                                                        {{ i18n.ts._bubbleGame._score.scoreYen }}:
 							<I18n :src="i18n.ts._bubbleGame._score.yen" tag="b">
 								<template #yen><MkNumber :value="yenTotal ?? score"/></template>
 							</I18n>
@@ -577,6 +580,7 @@ const comboPrev = ref(0);
 const maxCombo = ref(0);
 const dropReady = ref(true);
 const isGameOver = ref(false);
+const lives = ref(3);
 const gameLoaded = ref(false);
 const readyGo = ref<'ready' | 'go' | null>('ready');
 const highScore = ref<number | null>(null);
@@ -788,10 +792,11 @@ function reset() {
 	replayPlaybackRate.value = 1;
 	currentPick.value = null;
 	dropReady.value = true;
-	stock.value = [];
-	holdingStock.value = null;
-	score.value = 0;
-	combo.value = 0;
+        stock.value = [];
+        holdingStock.value = null;
+        score.value = 0;
+        lives.value = 3;
+        combo.value = 0;
 	comboPrev.value = 0;
 	maxCombo.value = 0;
 	gameLoaded.value = false;
@@ -953,10 +958,14 @@ function attachGameEvents() {
 		combo.value = value;
 	});
 
-	game.addListener('changeStock', value => {
-		currentPick.value = JSON.parse(JSON.stringify(value[0]));
-		stock.value = JSON.parse(JSON.stringify(value.slice(1)));
-	});
+        game.addListener('changeStock', value => {
+                currentPick.value = JSON.parse(JSON.stringify(value[0]));
+                stock.value = JSON.parse(JSON.stringify(value.slice(1)));
+        });
+
+        game.addListener('changeLives', value => {
+                lives.value = value;
+        });
 
 	game.addListener('changeHolding', value => {
 		holdingStock.value = value;
