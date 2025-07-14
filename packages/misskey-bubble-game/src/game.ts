@@ -40,8 +40,9 @@ export class DropAndFusionGame extends EventEmitter<{
 	dropped: (x: number) => void;
 	fusioned: (x: number, y: number, nextMono: Mono | null, scoreDelta: number) => void;
 	collision: (energy: number, bodyA: Matter.Body, bodyB: Matter.Body) => void;
-	monoAdded: (mono: Mono) => void;
-	gameOver: () => void;
+        monoAdded: (mono: Mono) => void;
+        changeLives: (lives: number) => void;
+        gameOver: () => void;
 }> {
 	private PHYSICS_QUALITY_FACTOR = 16; // 低いほどパフォーマンスが高いがガタガタして安定しなくなる、逆に高すぎても何故か不安定になる
 	private COMBO_INTERVAL = 60; // frame
@@ -56,8 +57,9 @@ export class DropAndFusionGame extends EventEmitter<{
 	public frame = 0;
 	public engine: Matter.Engine;
 	private tickCallbackQueue: { frame: number; callback: () => void; }[] = [];
-	private overflowCollider: Matter.Body;
-	private isGameOver = false;
+        private overflowCollider: Matter.Body;
+        private isGameOver = false;
+        private _lives = 3;
 	private gameMode: 'normal' | 'yen' | 'square' | 'sweets' | 'space';
 	private rng: () => number;
 	private logs: Log[] = [];
@@ -99,14 +101,22 @@ export class DropAndFusionGame extends EventEmitter<{
 		this.emit('changeCombo', value);
 	}
 
-	private _score = 0;
-	private get score() {
-		return this._score;
-	}
-	private set score(value: number) {
-		this._score = value;
-		this.emit('changeScore', value);
-	}
+        private _score = 0;
+        private get score() {
+                return this._score;
+        }
+        private set score(value: number) {
+                this._score = value;
+                this.emit('changeScore', value);
+        }
+
+        private get lives() {
+                return this._lives;
+        }
+        private set lives(value: number) {
+                this._lives = value;
+                this.emit('changeLives', value);
+        }
 
 	private getMonoRenderOptions: null | ((mono: Mono) => Partial<Matter.IBodyRenderOptions>) = null;
 
@@ -300,34 +310,56 @@ export class DropAndFusionGame extends EventEmitter<{
 		for (const pairs of event.pairs) {
 			const { bodyA, bodyB } = pairs;
 
-			// ハコからあふれたかどうかの判定
-			if (bodyA.id === this.overflowCollider.id || bodyB.id === this.overflowCollider.id) {
-				if (this.gameOverReadyBodyIds.includes(bodyA.id) || this.gameOverReadyBodyIds.includes(bodyB.id)) {
-					this.gameOver();
-					break;
-				}
-				continue;
-			}
-		}
-	}
+                        // ハコからあふれたかどうかの判定
+                        if (bodyA.id === this.overflowCollider.id || bodyB.id === this.overflowCollider.id) {
+                                const other = bodyA.id === this.overflowCollider.id ? bodyB : bodyA;
+                                if (this.gameOverReadyBodyIds.includes(other.id)) {
+                                        this.handleOverflow(other);
+                                        if (this.isGameOver) break;
+                                }
+                                continue;
+                        }
+                }
+        }
 
-	public surrender() {
-		this.logs.push({
-			frame: this.frame,
-			operation: 'surrender',
-		});
+        public surrender() {
+                this.logs.push({
+                        frame: this.frame,
+                        operation: 'surrender',
+                });
 
-		this.gameOver();
-	}
+                this.finalizeGameOver();
+        }
 
-	private gameOver() {
-		this.isGameOver = true;
-		this.emit('gameOver');
-	}
+       private handleOverflow(body: Matter.Body) {
+               if (this.lives > 1) {
+                       this.lives--;
+                       this.removeOverflowBodies();
+               } else {
+                       this.finalizeGameOver();
+               }
+       }
 
-	public start() {
-		for (let i = 0; i < this.STOCK_MAX; i++) {
-			this.stock.push({
+       private removeOverflowBodies() {
+               for (const b of [...this.engine.world.bodies]) {
+                       if (b.label === '_wall_' || b.label === '_overflow_') continue;
+                       if (b.bounds.min.y < 0) {
+                               this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(x => x !== b.id);
+                               this.gameOverReadyBodyIds = this.gameOverReadyBodyIds.filter(x => x !== b.id);
+                               Matter.Composite.remove(this.engine.world, b);
+                       }
+               }
+       }
+
+       private finalizeGameOver() {
+               this.isGameOver = true;
+               this.emit('gameOver');
+       }
+
+        public start() {
+                this.emit('changeLives', this.lives);
+                for (let i = 0; i < this.STOCK_MAX; i++) {
+                        this.stock.push({
 				id: this.rng().toString(),
 				mono: this.monoDefinitions.filter(x => x.dropCandidate)[Math.floor(this.rng() * this.monoDefinitions.filter(x => x.dropCandidate).length)],
 			});
