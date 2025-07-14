@@ -350,7 +350,7 @@ export class DropAndFusionGame extends EventEmitter<{
                for (const b of [...this.engine.world.bodies]) {
                        if (b.label === '_wall_' || b.label === '_overflow_') continue;
                        const collision = Matter.SAT.collides(b, this.overflowCollider);
-                       if (collision.collided || b.bounds.min.y < 0) {
+                       if ((collision && collision.collided) || b.bounds.min.y < 0) {
                                this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(x => x !== b.id);
                                this.gameOverReadyBodyIds = this.gameOverReadyBodyIds.filter(x => x !== b.id);
                                Matter.Composite.remove(this.engine.world, b);
