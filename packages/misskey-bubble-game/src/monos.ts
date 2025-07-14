@@ -12,7 +12,7 @@ export const NORAML_MONOS: Mono[] = [{
 	sizeX: NORMAL_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	sizeY: NORMAL_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	shape: 'circle',
-	score: 512,
+	score: 2048,
 	dropCandidate: false,
 }, {
 	id: 'be9f38d2-b267-4b1a-b420-904e22e80568',
@@ -20,7 +20,7 @@ export const NORAML_MONOS: Mono[] = [{
 	sizeX: NORMAL_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	sizeY: NORMAL_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	shape: 'circle',
-	score: 256,
+	score: 1024,
 	dropCandidate: false,
 }, {
 	id: 'beb30459-b064-4888-926b-f572e4e72e0c',
@@ -28,7 +28,7 @@ export const NORAML_MONOS: Mono[] = [{
 	sizeX: NORMAL_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	sizeY: NORMAL_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	shape: 'circle',
-	score: 128,
+	score: 256,
 	dropCandidate: false,
 }, {
 	id: 'feab6426-d9d8-49ae-849c-048cdbb6cdf0',
@@ -179,7 +179,7 @@ export const SQUARE_MONOS: Mono[] = [{
 	sizeX: SQUARE_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	sizeY: SQUARE_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	shape: 'rectangle',
-	score: 512,
+	score: 2048,
 	dropCandidate: false,
 }, {
 	id: '7b70f4af-1c01-45fd-af72-61b1f01e03d1',
@@ -187,7 +187,7 @@ export const SQUARE_MONOS: Mono[] = [{
 	sizeX: SQUARE_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	sizeY: SQUARE_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	shape: 'rectangle',
-	score: 256,
+	score: 1024,
 	dropCandidate: false,
 }, {
 	id: '41607ef3-b6d6-4829-95b6-3737bf8bb956',
@@ -195,7 +195,7 @@ export const SQUARE_MONOS: Mono[] = [{
 	sizeX: SQUARE_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	sizeY: SQUARE_BASE_SIZE * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25 * 1.25,
 	shape: 'rectangle',
-	score: 128,
+	score: 256,
 	dropCandidate: false,
 }, {
 	id: '8a8310d2-0374-460f-bb50-ca9cd3ee3416',
