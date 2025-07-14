@@ -36,6 +36,10 @@ export const store = markRaw(new Pizzax('base', {
 		where: 'account',
 		default: false,
 	},
+	readDriveTip: {
+		where: 'account',
+		default: false,
+	},
 	memo: {
 		where: 'account',
 		default: null,
@@ -109,6 +113,10 @@ export const store = markRaw(new Pizzax('base', {
 	accountTokens: {
 		where: 'device',
 		default: {} as Record<string, string>, // host/userId, token
+	},
+	accountInfos: {
+		where: 'device',
+		default: {} as Record<string, Misskey.entities.User>, // host/userId, user
 	},
 
 	enablePreferencesAutoCloudBackup: {
@@ -521,6 +529,10 @@ export const store = markRaw(new Pizzax('base', {
 		where: 'device',
 		default: true,
 	},
+	showGapBodyOfTheNote: {
+		where: 'device',
+		default: false,
+	},
 	showReplyButtonInNoteFooter: {
 		where: 'device',
 		default: true,
@@ -851,7 +863,7 @@ export const store = markRaw(new Pizzax('base', {
 	// - Settings/Accessibility
 	showingAnimatedImages: {
 		where: 'device',
-		default: /mobile|iphone|android/.test(navigator.userAgent.toLowerCase()) ? 'inactive' : 'always' as 'always' | 'interaction' | 'inactive',
+		default: /mobile|ipad|iphone|android/.test(navigator.userAgent.toLowerCase()) ? 'inactive' : 'always' as 'always' | 'interaction' | 'inactive',
 	},
 
 	// - Settings/Drive

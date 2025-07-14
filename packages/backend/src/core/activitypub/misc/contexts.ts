@@ -572,6 +572,10 @@ const extension_context_definition = {
 	_mk_localVisibility: 'mkkey:_mk_localVisibility',
 	host: "schema:host",
 	keywords: "schema:keywords",
+	// CherryPick
+	cherrypick: 'https://kokonect.link/ns#',
+	setFederationAvatarShape: 'cherrypick:setFederationAvatarShape',
+	isSquareAvatars: 'cherrypick:isSquareAvatars',
 } satisfies Context;
 
 export const CONTEXT: (string | Context)[] = [...context_iris, extension_context_definition];

@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div v-if="show" ref="el" :class="[$style.root, { [$style.reduceBlurEffect]: !prefer.s.useBlurEffect }]">
+<div v-if="show" ref="el" :class="[$style.root, { [$style.reduceBlurEffect]: !prefer.s.useBlurEffect, [$style.reduceAnimation]: !prefer.s.animation, [$style.scrollToTransparent]: showEl }]">
 	<div :class="[$style.upper, { [$style.slim]: narrow || isFriendly().value, [$style.thin]: thin_, [$style.hideTitle]: hideTitle && isFriendly().value }]">
 		<!--
 		<div v-if="!thin_ && !canBack" :class="$style.buttonsLeft">
@@ -77,25 +77,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 </div>
 </template>
 
-<script lang="ts" setup>
-import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed } from 'vue';
-import { getScrollPosition, scrollToTop } from '@@/js/scroll.js';
-import XTabs from './MkPageHeader.tabs.vue';
-import type { Tab } from './MkPageHeader.tabs.vue';
+<script lang="ts">
 import type { PageHeaderItem } from '@/types/page-header.js';
 import type { PageMetadata } from '@/page.js';
-import { globalEvents } from '@/events.js';
-import { openAccountMenu as openAccountMenu_ } from '@/accounts.js';
-import { DI } from '@/di.js';
-import { mainRouter } from '@/router.js';
-import * as os from '@/os.js';
-import { i18n } from '@/i18n.js';
-import { prefer } from '@/preferences.js';
-import { isFriendly } from '@/utility/is-friendly.js';
+import type { Tab } from './MkPageHeader.tabs.vue';
 
-const canBack = ref(['index', 'explore', 'my-notifications', 'chat'].includes(<string>mainRouter.currentRoute.value.name));
-
-const props = withDefaults(defineProps<{
+export type PageHeaderProps = {
 	overridePageMetadata?: PageMetadata;
 	tabs?: Tab[];
 	tab?: string;
@@ -105,7 +92,27 @@ const props = withDefaults(defineProps<{
 	displayMyAvatar?: boolean;
 	title?: string;
 	icon?: string;
-}>(), {
+};
+</script>
+
+<script lang="ts" setup>
+import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed } from 'vue';
+import { getScrollPosition, scrollToTop } from '@@/js/scroll.js';
+import XTabs from './MkPageHeader.tabs.vue';
+import { globalEvents } from '@/events.js';
+import { openAccountMenu as openAccountMenu_ } from '@/accounts.js';
+import { DI } from '@/di.js';
+import { mainRouter } from '@/router.js';
+import * as os from '@/os.js';
+import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
+import { isFriendly } from '@/utility/is-friendly.js';
+import { scrollToVisibility } from '@/utility/scroll-to-visibility.js';
+
+const { showEl } = scrollToVisibility();
+const canBack = ref(['index', 'explore', 'my-notifications', 'chat'].includes(<string>mainRouter.currentRoute.value.name));
+
+const props = withDefaults(defineProps<PageHeaderProps>(), {
 	tabs: () => ([] as Tab[]),
 });
 
@@ -182,16 +189,32 @@ onUnmounted(() => {
 
 <style lang="scss" module>
 .root {
-	background: color(from var(--MI_THEME-bg) srgb r g b / 0.75);
+	background: color(from var(--MI_THEME-pageHeaderBg) srgb r g b / 0.75);
 	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
 	backdrop-filter: var(--MI-blur, blur(15px));
-	border-bottom: solid 0.5px var(--MI_THEME-divider);
+	border-bottom: solid 0.5px transparent;
 	width: 100%;
+	color: var(--MI_THEME-pageHeaderFg);
+	transition: background-color 0.5s;
 
 	&.reduceBlurEffect {
-		background: color(from var(--MI_THEME-bg) srgb r g b / 1);
+		background-color: color(from var(--MI_THEME-bg) srgb r g b / 1);
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
+	}
+
+	&.reduceAnimation {
+		transition: background-color 0s;
+	}
+
+	&.scrollToTransparent {
+		background-color: transparent;
+	}
+}
+
+@container style(--MI_THEME-pageHeaderBg: var(--MI_THEME-bg)) {
+	.root {
+		border-bottom: solid 0.5px var(--MI_THEME-divider);
 	}
 }
 

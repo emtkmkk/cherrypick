@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkA v-tooltip.noDelay.right="i18n.ts.timeline" :class="$style.item" :activeClass="$style.active" to="/" exact>
 				<i :class="$style.itemIcon" class="ti ti-home ti-fw" style="viewTransitionName: navbar-homeIcon;"></i><span :class="$style.itemText">{{ i18n.ts.timeline }}</span>
 			</MkA>
-			<template v-for="item in menu">
+			<template v-for="item in prefer.r.menu.value">
 				<div v-if="item === '-'" :class="$style.divider"></div>
 				<component
 					:is="navbarItemDef[item].to ? 'MkA' : 'button'"
@@ -132,10 +132,9 @@ const iconOnly = computed(() => {
 	return forceIconOnly.value || (store.r.menuDisplay.value === 'sideIcon');
 });
 
-const menu = computed(() => prefer.s.menu);
 const otherMenuItemIndicated = computed(() => {
 	for (const def in navbarItemDef) {
-		if (menu.value.includes(def)) continue;
+		if (prefer.r.menu.value.includes(def)) continue;
 		if (navbarItemDef[def].indicated) return true;
 	}
 	return false;
@@ -223,12 +222,9 @@ function openProfile() {
 }
 
 .body {
-	position: fixed;
-	top: 0;
-	left: 0;
-	z-index: 1001;
+	position: relative;
 	width: var(--nav-icon-only-width);
-	height: 100dvh;
+	height: 100%;
 	box-sizing: border-box;
 	overflow: auto;
 	overflow-x: clip;

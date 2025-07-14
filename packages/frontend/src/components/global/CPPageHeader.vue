@@ -4,18 +4,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div v-if="show" ref="el" :class="[$style.root, {[$style.slim]: narrow, [$style.thin]: thin_, [$style.reduceBlurEffect]: !prefer.s.useBlurEffect }]">
+<div v-if="show" ref="el" :class="[$style.root, {[$style.slim]: narrow, [$style.thin]: thin_, [$style.reduceBlurEffect]: !prefer.s.useBlurEffect, [$style.reduceAnimation]: !prefer.s.animation, [$style.scrollToTransparent]: showEl }]">
 	<div v-if="!thin_ && !canBack" :class="$style.buttonsLeft">
 		<button v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" class="_button" :class="[$style.button, $style.goBack]" @click.stop="goBack" @touchstart="preventDrag"><i class="ti ti-arrow-left"></i></button>
 	</div>
 	<div v-if="!thin_ && narrow && props.displayMyAvatar && $i && !isFriendly().value" class="_button" :class="$style.buttonsLeft" @click="openAccountMenu">
 		<MkAvatar v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.avatar" :user="$i"/>
 	</div>
-	<div v-else-if="!thin_ && narrow && !hideTitle && canBack" :class="$style.buttonsLeft"/>
-	<div v-else-if="!thin_ && canBack && (actions && actions.length > 0)" :class="$style.buttonsLeft"/>
-	<div v-if="!thin_ && canBack && (actions && actions.length > 1 && ['index', 'my-notifications', 'chat'].includes(<string>mainRouter.currentRoute.value.name))" :class="$style.buttonsLeft"/>
+	<div v-else-if="!thin_ && canBack" :class="$style.buttonsLeft">
+		<div v-if="narrow && !hideTitle" :class="$style.button"/>
+		<div v-else-if="actions && actions.length > 0" :class="$style.button"/>
+		<div v-if="actions && actions.length > 1 && ['index', 'my-notifications', 'chat'].includes(<string>mainRouter.currentRoute.value.name)" :class="$style.button"/>
+		<div v-if="actions && actions.length > 2" :class="$style.button"/>
+	</div>
 	<div v-if="pageMetadata && pageMetadata.avatar && !thin_ && mainRouter.currentRoute.value.name === 'user' && ($i != null && $i.id != pageMetadata.avatar.id)">
-		<div style="width: 50px;"/>
+		<div :class="$style.button"/>
 	</div>
 
 	<template v-if="pageMetadata">
@@ -58,23 +61,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 </div>
 </template>
 
-<script lang="ts" setup>
-import { onMounted, onUnmounted, ref, inject, watch, nextTick, useTemplateRef, computed } from 'vue';
-import { getScrollPosition, scrollToTop } from '@@/js/scroll.js';
+<script lang="ts">
 import type { PageHeaderItem } from '@/types/page-header.js';
 import type { PageMetadata } from '@/page.js';
-import { globalEvents } from '@/events.js';
-import { openAccountMenu as openAccountMenu_ } from '@/accounts.js';
-import { $i } from '@/i.js';
-import { DI } from '@/di.js';
-import { mainRouter } from '@/router.js';
-import * as os from '@/os.js';
-import { i18n } from '@/i18n.js';
-import { prefer } from '@/preferences.js';
-import { isFriendly } from '@/utility/is-friendly.js';
-import MkFollowButton from '@/components/MkFollowButton.vue';
-
-const canBack = ref(['index', 'explore', 'my-notifications', 'chat'].includes(<string>mainRouter.currentRoute.value.name));
+//import type { Tab } from './MkPageHeader.tabs.vue';
 
 type Tab = {
 	key: string;
@@ -84,7 +74,7 @@ type Tab = {
 	onClick?: (ev: MouseEvent) => void;
 };
 
-const props = withDefaults(defineProps<{
+export type PageHeaderProps = {
 	overridePageMetadata?: PageMetadata;
 	tabs?: Tab[];
 	tab?: string;
@@ -93,7 +83,28 @@ const props = withDefaults(defineProps<{
 	hideTitle?: boolean;
 	displayMyAvatar?: boolean;
 	disableFollowButton?: boolean;
-}>(), {
+};
+</script>
+
+<script lang="ts" setup>
+import { onMounted, onUnmounted, ref, inject, watch, nextTick, useTemplateRef, computed } from 'vue';
+import { getScrollPosition, scrollToTop } from '@@/js/scroll.js';
+import { globalEvents } from '@/events.js';
+import { openAccountMenu as openAccountMenu_ } from '@/accounts.js';
+import { $i } from '@/i.js';
+import { DI } from '@/di.js';
+import { mainRouter } from '@/router.js';
+import * as os from '@/os.js';
+import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
+import { isFriendly } from '@/utility/is-friendly.js';
+import { scrollToVisibility } from '@/utility/scroll-to-visibility.js';
+import MkFollowButton from '@/components/MkFollowButton.vue';
+
+const { showEl } = scrollToVisibility();
+const canBack = ref(['index', 'explore', 'my-notifications', 'chat'].includes(<string>mainRouter.currentRoute.value.name));
+
+const props = withDefaults(defineProps<PageHeaderProps>(), {
 	tabs: () => ([] as Tab[]),
 });
 
@@ -200,10 +211,10 @@ onMounted(() => {
 		immediate: true,
 	});
 
-	if (el.value && el.value.parentElement) {
+	if (el.value?.parentElement) {
 		narrow.value = el.value.parentElement.offsetWidth < 500;
 		ro = new ResizeObserver((entries, observer) => {
-			if (el.value && el.value.parentElement && window.document.body.contains(el.value as HTMLElement)) {
+			if (el.value?.parentElement && window.document.body.contains(el.value as HTMLElement)) {
 				narrow.value = el.value.parentElement.offsetWidth < 500;
 			}
 		});
@@ -221,12 +232,14 @@ onUnmounted(() => {
 	--height: 50px;
 	display: flex;
 	width: 100%;
-	background: color(from var(--MI_THEME-bg) srgb r g b / 0.75);
+	background: color(from var(--MI_THEME-pageHeaderBg) srgb r g b / 0.75);
 	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
 	backdrop-filter: var(--MI-blur, blur(15px));
-	border-bottom: solid 0.5px var(--MI_THEME-divider);
+	border-bottom: solid 0.5px transparent;
 	contain: strict;
 	height: var(--height);
+	color: var(--MI_THEME-pageHeaderFg);
+	transition: background-color 0.5s;
 
 	&.thin {
 		--height: 42px;
@@ -256,9 +269,23 @@ onUnmounted(() => {
 	}
 
 	&.reduceBlurEffect {
-		background: color(from var(--MI_THEME-bg) srgb r g b / 1);
+		background-color: color(from var(--MI_THEME-bg) srgb r g b / 1);
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
+	}
+
+	&.reduceAnimation {
+		transition: background-color 0s;
+	}
+
+	&.scrollToTransparent {
+		background-color: transparent;
+	}
+}
+
+@container style(--MI_THEME-pageHeaderBg: var(--MI_THEME-bg)) {
+	.root {
+		border-bottom: solid 0.5px var(--MI_THEME-divider);
 	}
 }
 

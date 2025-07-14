@@ -14,6 +14,10 @@ export interface Locale extends ILocale {
      */
     "_lang_": string;
     /**
+     * ノートの本文を離して表示
+     */
+    "showGapBodyOfTheNote": string;
+    /**
      * {user}さんに返信
      */
     "replyTo": ParameterizedString<"user">;
@@ -388,7 +392,7 @@ export interface Locale extends ILocale {
     "infoButtonForNoteActionsDescription": string;
     /**
      * 「サーバーのマシン情報を公開する」設定がオフになっています。
-     * サーバーメトリクスを表示するには、「コントロールパネル - その他」で「サーバーのマシン情報を公開する」設定を有効にしてください。
+     * サーバーメトリクスを表示するには、「コントロールパネル → その他」で「サーバーのマシン情報を公開する」設定を有効にしてください。
      */
     "disabledServerMachineStats": string;
     /**
@@ -432,7 +436,7 @@ export interface Locale extends ILocale {
      */
     "renoteConfirm": string;
     /**
-     * この設定は「設定 - CherryPick」で変更できます。
+     * この設定は「設定 → CherryPick」で変更できます。
      */
     "renoteConfirmDescription": string;
     /**
@@ -505,7 +509,7 @@ export interface Locale extends ILocale {
      */
     "cherrypickUpdatedCacheClear": string;
     /**
-     * あとでキャッシュをクリアするには、<b>設定</b> - <b>キャッシュをクリア</b>でできます！
+     * あとでキャッシュをクリアするには、<b>設定</b> → <b>キャッシュをクリア</b>でできます！
      */
     "cherrypickUpdatedCacheClearLater": string;
     /**
@@ -1430,6 +1434,10 @@ export interface Locale extends ILocale {
      */
     "software": string;
     /**
+     * ソフトウェア名
+     */
+    "softwareName": string;
+    /**
      * バージョン
      */
     "version": string;
@@ -2246,9 +2254,9 @@ export interface Locale extends ILocale {
      */
     "withFileAntenna": string;
     /**
-     * センシティブなチャンネルのノートを非表示
+     * センシティブなチャンネルのノートを除外
      */
-    "hideNotesInSensitiveChannel": string;
+    "excludeNotesInSensitiveChannel": string;
     /**
      * ブラウザへのプッシュ通知を有効にする
      */
@@ -4563,6 +4571,10 @@ export interface Locale extends ILocale {
      */
     "logoutConfirm": string;
     /**
+     * ログアウトするとクライアントの設定情報がブラウザから消去されます。再ログイン時に設定情報を復元できるようにするためには、設定の自動バックアップを有効にしてください。
+     */
+    "logoutWillClearClientData": string;
+    /**
      * 最終利用日時
      */
     "lastActiveDate": string;
@@ -6051,6 +6063,33 @@ export interface Locale extends ILocale {
      */
     "embed": string;
     /**
+     * 設定を移行しています。しばらくお待ちください... (後ほど、設定→その他→旧設定情報を移行 で手動で移行することもできます)
+     */
+    "settingsMigrating": string;
+    /**
+     * 読み取り専用
+     */
+    "readonly": string;
+    /**
+     * デッキへ戻る
+     */
+    "goToDeck": string;
+    /**
+     * 連合ジョブ
+     */
+    "federationJobs": string;
+    /**
+     * ドライブでは、過去にアップロードしたファイルの一覧が表示されます。<br>
+     * ノートに添付する際に再利用したり、あとで投稿するファイルを予めアップロードしておくこともできます。<br>
+     * <b>ファイルを削除すると、今までそのファイルを使用した全ての場所(ノート、ページ、アバター、バナー等)からも見えなくなるので注意してください。</b><br>
+     * フォルダを作って整理することもできます。
+     */
+    "driveAboutTip": string;
+    /**
+     * スクロールして閉じる
+     */
+    "scrollToClose": string;
+    /**
      * 下書き
      */
     "draft": string;
@@ -6255,6 +6294,10 @@ export interface Locale extends ILocale {
          */
         "chatNotAvailableForThisAccountOrServer": string;
         /**
+         * このサーバー、またはこのアカウントでチャットは読み取り専用となっています。新たに書き込んだり、チャットルームを作成・参加したりすることはできません。
+         */
+        "chatIsReadOnlyForThisAccountOrServer": string;
+        /**
          * 相手のアカウントでチャット機能が使えない状態になっています。
          */
         "chatNotAvailableInOtherAccount": string;
@@ -6436,6 +6479,14 @@ export interface Locale extends ILocale {
          * デバイス間でインストールしたテーマを同期
          */
         "enableSyncThemesBetweenDevices": string;
+        /**
+         * ひっぱって更新
+         */
+        "enablePullToRefresh": string;
+        /**
+         * マウスでは、ホイールを押し込みながらドラッグします。
+         */
+        "enablePullToRefresh_description": string;
         "_chat": {
             /**
              * 送信者の名前を表示
@@ -6460,6 +6511,10 @@ export interface Locale extends ILocale {
          * 例: 「メインPC」、「スマホ」など
          */
         "profileNameDescription2": string;
+        /**
+         * プロファイルの管理
+         */
+        "manageProfiles": string;
     };
     "_preferencesBackup": {
         /**
@@ -6602,6 +6657,10 @@ export interface Locale extends ILocale {
              * サーバー応答なしのため停止中
              */
             "autoSuspendedForNotResponding": string;
+            /**
+             * 配信停止中のソフトウェアであるため停止中
+             */
+            "softwareSuspended": string;
         };
     };
     "_bubbleGame": {
@@ -6761,7 +6820,7 @@ export interface Locale extends ILocale {
          */
         "showRenoteConfirmPopup": string;
         /**
-         * この設定は「全般 - リノートと引用ボタンを分けて表示する」設定がオンになっている必要があります。
+         * この設定は「全般 → リノートと引用ボタンを分けて表示する」設定がオンになっている必要があります。
          */
         "showRenoteConfirmPopupDescription": string;
         /**
@@ -6979,7 +7038,7 @@ export interface Locale extends ILocale {
          */
         "skipAreYouSure": string;
         /**
-         * 今すぐ初期設定を中断しても、[もっと！ - ヘルプ - 初期設定のリプレイ]から再開することができます。
+         * 今すぐ初期設定を中断しても、[もっと！ → ヘルプ → 初期設定のリプレイ]から再開することができます。
          */
         "skipAreYouSureDescription": string;
         /**
@@ -7418,6 +7477,14 @@ export interface Locale extends ILocale {
          * 一定期間モデレーターのアクティビティが検出されなかった場合、スパム防止のためこの設定は自動でオフになります。
          */
         "thisSettingWillAutomaticallyOffWhenModeratorsInactive": string;
+        /**
+         * 配信停止中のソフトウェア
+         */
+        "deliverSuspendedSoftware": string;
+        /**
+         * 脆弱性などの理由で、サーバーのソフトウェアの名前及びバージョンの範囲を指定して配信を停止できます。このバージョン情報はサーバーが提供したものであり、信頼性は保証されません。バージョン指定には semver の範囲指定が使用できますが、>= 2024.3.1 と指定すると 2024.3.1-custom.0 のようなカスタムバージョンが含まれないため、>= 2024.3.1-0 のように prerelease の指定を行うことを推奨します。
+         */
+        "deliverSuspendedSoftwareDescription": string;
     };
     "_accountMigration": {
         /**
@@ -8556,6 +8623,10 @@ export interface Locale extends ILocale {
              */
             "driveCapacity": string;
             /**
+             * アップロード可能な最大ファイルサイズ
+             */
+            "maxFileSize": string;
+            /**
              * ファイルにNSFWを常に付与
              */
             "alwaysMarkNsfw": string;
@@ -8654,7 +8725,7 @@ export interface Locale extends ILocale {
             /**
              * チャットを許可
              */
-            "canChat": string;
+            "chatAvailability": string;
             /**
              * サーバーサイドのノートの下書きの作成可能数
              */
@@ -10701,6 +10772,10 @@ export interface Locale extends ILocale {
          */
         "birthdayFollowings": string;
         /**
+         * チャット
+         */
+        "chat": string;
+        /**
          * 検索
          */
         "search": string;
@@ -11826,6 +11901,10 @@ export interface Locale extends ILocale {
              * ロールタイムライン
              */
             "roleTimeline": string;
+            /**
+             * チャット
+             */
+            "chat": string;
         };
     };
     "_dialog": {
@@ -13341,7 +13420,7 @@ export interface Locale extends ILocale {
          */
         "noAltWarning": string;
         /**
-         * この設定は「設定 - アピアランス」で変更できます。
+         * この設定は「設定 → アピアランス」で変更できます。
          */
         "noAltWarningDescription": string;
     };
@@ -13483,6 +13562,10 @@ export interface Locale extends ILocale {
              * 検索ページに移動
              */
             "redirectToSearch": string;
+            /**
+             * キーボードショートカット一覧を見る
+             */
+            "viewKeyboardShortCutList": string;
         };
         "_postForm": {
             /**
@@ -13494,7 +13577,7 @@ export interface Locale extends ILocale {
              */
             "toggleLocalOnly": string;
             /**
-             * この機能は「設定 - CherryPick」から該当の機能を有効にすることで利用できます。
+             * この機能は「設定 → CherryPick」から該当の機能を有効にすることで利用できます。
              */
             "featureWarn": string;
             /**

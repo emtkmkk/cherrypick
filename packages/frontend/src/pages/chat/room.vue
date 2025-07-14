@@ -5,68 +5,70 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <PageWithHeader v-model:tab="tab" :reversed="tab === 'chat'" :tabs="headerTabs" :actions="headerActions">
-	<MkSpacer v-if="tab === 'chat'" :contentMax="700">
-		<div v-if="initializing">
-			<MkLoading/>
-		</div>
-
-		<div v-else-if="messages.length === 0">
-			<div class="_gaps" style="text-align: center;">
-				<div>{{ i18n.ts._chat.noMessagesYet }}</div>
-				<template v-if="user">
-					<div v-if="user.chatScope === 'followers'">{{ i18n.ts._chat.thisUserAllowsChatOnlyFromFollowers }}</div>
-					<div v-else-if="user.chatScope === 'following'">{{ i18n.ts._chat.thisUserAllowsChatOnlyFromFollowing }}</div>
-					<div v-else-if="user.chatScope === 'mutual'">{{ i18n.ts._chat.thisUserAllowsChatOnlyFromMutualFollowing }}</div>
-					<div v-else-if="user.chatScope === 'none'">{{ i18n.ts._chat.thisUserNotAllowedChatAnyone }}</div>
-				</template>
-				<template v-else-if="room">
-					<div>{{ i18n.ts._chat.inviteUserToChat }}</div>
-				</template>
-			</div>
-		</div>
-
-		<div v-else ref="timelineEl" class="_gaps">
-			<div v-if="canFetchMore">
-				<MkButton :class="$style.more" :wait="moreFetching" primary rounded @click="fetchMore">{{ i18n.ts.loadMore }}</MkButton>
+	<div v-if="tab === 'chat'" class="_spacer" style="--MI_SPACER-w: 700px;">
+		<div class="_gaps">
+			<div v-if="initializing">
+				<MkLoading/>
 			</div>
 
-			<TransitionGroup
-				:enterActiveClass="prefer.s.animation ? $style.transition_x_enterActive : ''"
-				:leaveActiveClass="prefer.s.animation ? $style.transition_x_leaveActive : ''"
-				:enterFromClass="prefer.s.animation ? $style.transition_x_enterFrom : ''"
-				:leaveToClass="prefer.s.animation ? $style.transition_x_leaveTo : ''"
-				:moveClass="prefer.s.animation ? $style.transition_x_move : ''"
-				tag="div" class="_gaps"
-			>
-				<template v-for="item in timeline.toReversed()" :key="item.id">
-					<XMessage v-if="item.type === 'item'" :message="item.data"/>
-					<div v-else-if="item.type === 'date'" :class="$style.dateDivider">
-						<span><i class="ti ti-chevron-up"></i> {{ item.nextText }}</span>
-						<span style="height: 1em; width: 1px; background: var(--MI_THEME-divider);"></span>
-						<span>{{ item.prevText }} <i class="ti ti-chevron-down"></i></span>
-					</div>
-				</template>
-			</TransitionGroup>
+			<div v-else-if="messages.length === 0">
+				<div class="_gaps" style="text-align: center;">
+					<div>{{ i18n.ts._chat.noMessagesYet }}</div>
+					<template v-if="user">
+						<div v-if="user.chatScope === 'followers'">{{ i18n.ts._chat.thisUserAllowsChatOnlyFromFollowers }}</div>
+						<div v-else-if="user.chatScope === 'following'">{{ i18n.ts._chat.thisUserAllowsChatOnlyFromFollowing }}</div>
+						<div v-else-if="user.chatScope === 'mutual'">{{ i18n.ts._chat.thisUserAllowsChatOnlyFromMutualFollowing }}</div>
+						<div v-else-if="user.chatScope === 'none'">{{ i18n.ts._chat.thisUserNotAllowedChatAnyone }}</div>
+					</template>
+					<template v-else-if="room">
+						<div>{{ i18n.ts._chat.inviteUserToChat }}</div>
+					</template>
+				</div>
+			</div>
+
+			<div v-else ref="timelineEl" class="_gaps">
+				<div v-if="canFetchMore">
+					<MkButton :class="$style.more" :wait="moreFetching" primary rounded @click="fetchMore">{{ i18n.ts.loadMore }}</MkButton>
+				</div>
+
+				<TransitionGroup
+					:enterActiveClass="prefer.s.animation ? $style.transition_x_enterActive : ''"
+					:leaveActiveClass="prefer.s.animation ? $style.transition_x_leaveActive : ''"
+					:enterFromClass="prefer.s.animation ? $style.transition_x_enterFrom : ''"
+					:leaveToClass="prefer.s.animation ? $style.transition_x_leaveTo : ''"
+					:moveClass="prefer.s.animation ? $style.transition_x_move : ''"
+					tag="div" class="_gaps"
+				>
+					<template v-for="item in timeline.toReversed()" :key="item.id">
+						<XMessage v-if="item.type === 'item'" :message="item.data"/>
+						<div v-else-if="item.type === 'date'" :class="$style.dateDivider">
+							<span><i class="ti ti-chevron-up"></i> {{ item.nextText }}</span>
+							<span style="height: 1em; width: 1px; background: var(--MI_THEME-divider);"></span>
+							<span>{{ item.prevText }} <i class="ti ti-chevron-down"></i></span>
+						</div>
+					</template>
+				</TransitionGroup>
+			</div>
+
+			<div v-if="user && (!user.canChat || user.host !== null)">
+				<MkInfo warn>{{ i18n.ts._chat.chatNotAvailableInOtherAccount }}</MkInfo>
+			</div>
+
+			<MkInfo v-if="$i.policies.chatAvailability !== 'available'" warn>{{ $i.policies.chatAvailability === 'readonly' ? i18n.ts._chat.chatIsReadOnlyForThisAccountOrServer : i18n.ts._chat.chatNotAvailableForThisAccountOrServer }}</MkInfo>
 		</div>
+	</div>
 
-		<div v-if="user && (!user.canChat || user.host !== null)">
-			<MkInfo warn>{{ i18n.ts._chat.chatNotAvailableInOtherAccount }}</MkInfo>
-		</div>
-
-		<MkInfo v-if="!$i.policies.canChat" warn>{{ i18n.ts._chat.chatNotAvailableForThisAccountOrServer }}</MkInfo>
-	</MkSpacer>
-
-	<MkSpacer v-else-if="tab === 'search'" :contentMax="700">
+	<div v-else-if="tab === 'search'" class="_spacer" style="--MI_SPACER-w: 700px;">
 		<XSearch :userId="userId" :roomId="roomId"/>
-	</MkSpacer>
+	</div>
 
-	<MkSpacer v-else-if="tab === 'members'" :contentMax="700">
+	<div v-else-if="tab === 'members'" class="_spacer" style="--MI_SPACER-w: 700px;">
 		<XMembers v-if="room != null" :room="room" @inviteUser="inviteUser"/>
-	</MkSpacer>
+	</div>
 
-	<MkSpacer v-else-if="tab === 'info'" :contentMax="700">
+	<div v-else-if="tab === 'info'" class="_spacer" style="--MI_SPACER-w: 700px;">
 		<XInfo v-if="room != null" :room="room"/>
-	</MkSpacer>
+	</div>
 
 	<template #footer>
 		<div v-if="tab === 'chat'" :class="$style.footer">

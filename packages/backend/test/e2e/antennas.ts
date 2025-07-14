@@ -147,7 +147,7 @@ describe('アンテナ', () => {
 			caseSensitive: false,
 			createdAt: new Date(response.createdAt).toISOString(),
 			excludeKeywords: [['']],
-			hideNotesInSensitiveChannel: false,
+			excludeNotesInSensitiveChannel: false,
 			hasUnreadNote: false,
 			isActive: true,
 			keywords: [['keyword']],
@@ -221,8 +221,8 @@ describe('アンテナ', () => {
 		{ parameters: () => ({ withReplies: true }) },
 		{ parameters: () => ({ withFile: false }) },
 		{ parameters: () => ({ withFile: true }) },
-		{ parameters: () => ({ hideNotesInSensitiveChannel: false }) },
-		{ parameters: () => ({ hideNotesInSensitiveChannel: true }) },
+		{ parameters: () => ({ excludeNotesInSensitiveChannel: false }) },
+		{ parameters: () => ({ excludeNotesInSensitiveChannel: true }) },
 	];
 	test.each(antennaParamPattern)('を作成できること($#)', async ({ parameters }) => {
 		const response = await successfulApiCall({
@@ -378,14 +378,23 @@ describe('アンテナ', () => {
 				],
 			},
 			{
-				// https://github.com/misskey-dev/misskey/issues/9025
-				label: 'ただし、フォロワー限定投稿とDM投稿を含まない。フォロワーであっても。',
+				label: 'フォロワー限定投稿とDM投稿を含む',
 				parameters: () => ({}),
 				posts: [
 					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}`, visibility: 'public' }), included: true },
 					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}`, visibility: 'home' }), included: true },
-					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}`, visibility: 'followers' }) },
-					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}`, visibility: 'specified', visibleUserIds: [alice.id] }) },
+					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}`, visibility: 'followers' }), included: true },
+					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, visibility: 'specified', visibleUserIds: [alice.id] }), included: true },
+				],
+			},
+			{
+				label: 'フォロワー限定投稿とDM投稿を含まない',
+				parameters: () => ({}),
+				posts: [
+					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, visibility: 'public' }), included: true },
+					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, visibility: 'home' }), included: true },
+					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, visibility: 'followers' }) },
+					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, visibility: 'specified', visibleUserIds: [carol.id] }) },
 				],
 			},
 			{
@@ -636,7 +645,7 @@ describe('アンテナ', () => {
 			const keyword = 'キーワード';
 			const antenna = await successfulApiCall({
 				endpoint: 'antennas/create',
-				parameters: { ...defaultParam, keywords: [[keyword]], hideNotesInSensitiveChannel: true },
+				parameters: { ...defaultParam, keywords: [[keyword]], excludeNotesInSensitiveChannel: true },
 				user: alice,
 			});
 			const nonSensitiveChannel = await successfulApiCall({

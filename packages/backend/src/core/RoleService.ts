@@ -50,6 +50,7 @@ export type RolePolicies = {
 	canUseAutoTranslate: boolean;
 	canHideAds: boolean;
 	driveCapacityMb: number;
+	maxFileSizeMb: number;
 	alwaysMarkNsfw: boolean;
 	canUpdateBioMedia: boolean;
 	pinLimit: number;
@@ -67,7 +68,7 @@ export type RolePolicies = {
 	canImportFollowing: boolean;
 	canImportMuting: boolean;
 	canImportUserLists: boolean;
-	canChat: boolean;
+	chatAvailability: 'available' | 'readonly' | 'unavailable';
 	noteDraftLimit: number;
 	canSetFederationAvatarShape: boolean;
 };
@@ -91,6 +92,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canUseAutoTranslate: false,
 	canHideAds: false,
 	driveCapacityMb: 100,
+	maxFileSizeMb: 10,
 	alwaysMarkNsfw: false,
 	canUpdateBioMedia: true,
 	pinLimit: 5,
@@ -108,7 +110,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canImportFollowing: true,
 	canImportMuting: true,
 	canImportUserLists: true,
-	canChat: true,
+	chatAvailability: 'available',
 	noteDraftLimit: 10,
 	canSetFederationAvatarShape: true,
 };
@@ -384,6 +386,12 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			return aggregate(policies.map(policy => policy.useDefault ? basePolicies[name] : policy.value));
 		}
 
+		function aggregateChatAvailability(vs: RolePolicies['chatAvailability'][]) {
+			if (vs.some(v => v === 'available')) return 'available';
+			if (vs.some(v => v === 'readonly')) return 'readonly';
+			return 'unavailable';
+		}
+
 		return {
 			gtlAvailable: calc('gtlAvailable', vs => vs.some(v => v === true)),
 			ltlAvailable: calc('ltlAvailable', vs => vs.some(v => v === true)),
@@ -403,6 +411,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canUseAutoTranslate: calc('canUseAutoTranslate', vs => vs.some(v => v === true)),
 			canHideAds: calc('canHideAds', vs => vs.some(v => v === true)),
 			driveCapacityMb: calc('driveCapacityMb', vs => Math.max(...vs)),
+			maxFileSizeMb: calc('maxFileSizeMb', vs => Math.max(...vs)),
 			alwaysMarkNsfw: calc('alwaysMarkNsfw', vs => vs.some(v => v === true)),
 			canUpdateBioMedia: calc('canUpdateBioMedia', vs => vs.some(v => v === true)),
 			pinLimit: calc('pinLimit', vs => Math.max(...vs)),
@@ -420,7 +429,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canImportFollowing: calc('canImportFollowing', vs => vs.some(v => v === true)),
 			canImportMuting: calc('canImportMuting', vs => vs.some(v => v === true)),
 			canImportUserLists: calc('canImportUserLists', vs => vs.some(v => v === true)),
-			canChat: calc('canChat', vs => vs.some(v => v === true)),
+			chatAvailability: calc('chatAvailability', aggregateChatAvailability),
 			noteDraftLimit: calc('noteDraftLimit', vs => Math.max(...vs)),
 			canSetFederationAvatarShape: calc('canSetFederationAvatarShape', vs => vs.some(v => v === true)),
 		};

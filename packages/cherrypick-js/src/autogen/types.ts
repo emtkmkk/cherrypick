@@ -616,14 +616,68 @@ export type paths = {
      */
     post: operations['admin___queue___inbox-delayed'];
   };
-  '/admin/queue/promote': {
+  '/admin/queue/jobs': {
     /**
-     * admin/queue/promote
+     * admin/queue/jobs
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:admin:queue*
+     */
+    post: operations['admin___queue___jobs'];
+  };
+  '/admin/queue/promote-jobs': {
+    /**
+     * admin/queue/promote-jobs
      * @description No description provided.
      *
      * **Credential required**: *Yes* / **Permission**: *write:admin:queue*
      */
-    post: operations['admin___queue___promote'];
+    post: operations['admin___queue___promote-jobs'];
+  };
+  '/admin/queue/queue-stats': {
+    /**
+     * admin/queue/queue-stats
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:admin:queue*
+     */
+    post: operations['admin___queue___queue-stats'];
+  };
+  '/admin/queue/queues': {
+    /**
+     * admin/queue/queues
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:admin:queue*
+     */
+    post: operations['admin___queue___queues'];
+  };
+  '/admin/queue/remove-job': {
+    /**
+     * admin/queue/remove-job
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:admin:queue*
+     */
+    post: operations['admin___queue___remove-job'];
+  };
+  '/admin/queue/retry-job': {
+    /**
+     * admin/queue/retry-job
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:admin:queue*
+     */
+    post: operations['admin___queue___retry-job'];
+  };
+  '/admin/queue/show-job': {
+    /**
+     * admin/queue/show-job
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:admin:queue*
+     */
+    post: operations['admin___queue___show-job'];
   };
   '/admin/queue/stats': {
     /**
@@ -4602,10 +4656,7 @@ export type components = {
         }]>;
       };
       emailNotificationTypes: string[];
-      achievements: {
-          name: string;
-          unlockedAt: number;
-        }[];
+      achievements: components['schemas']['Achievement'][];
       loggedInDays: number;
       policies: components['schemas']['RolePolicies'];
       /** @default false */
@@ -4656,6 +4707,12 @@ export type components = {
       ownerId: string;
       userIds?: string[];
     };
+    Achievement: {
+      name: components['schemas']['AchievementName'];
+      unlockedAt: number;
+    };
+    /** @enum {string} */
+    AchievementName: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveCherryPick' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'setNameToNoriDev' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead';
     Ad: {
       /**
        * Format: id
@@ -4999,16 +5056,15 @@ export type components = {
       /** @enum {string} */
       type: 'chatRoomInvitationReceived';
       invitation: components['schemas']['ChatRoomInvitation'];
-    } | ({
+    } | {
       /** Format: id */
       id: string;
       /** Format: date-time */
       createdAt: string;
       /** @enum {string} */
       type: 'achievementEarned';
-      /** @enum {string} */
-      achievement: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveCherryPick' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'setNameToNoriDev' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead';
-    }) | ({
+      achievement: components['schemas']['AchievementName'];
+    } | ({
       /** Format: id */
       id: string;
       /** Format: date-time */
@@ -5359,7 +5415,7 @@ export type components = {
       /** @default false */
       notify: boolean;
       /** @default false */
-      hideNotesInSensitiveChannel: boolean;
+      excludeNotesInSensitiveChannel: boolean;
     };
     Clip: {
       /**
@@ -5395,7 +5451,7 @@ export type components = {
       isNotResponding: boolean;
       isSuspended: boolean;
       /** @enum {string} */
-      suspensionState: 'none' | 'manuallySuspended' | 'goneSuspended' | 'autoSuspendedForNotResponding';
+      suspensionState: 'none' | 'manuallySuspended' | 'goneSuspended' | 'autoSuspendedForNotResponding' | 'softwareSuspended';
       isBlocked: boolean;
       /** @example cherrypick */
       softwareName: string | null;
@@ -5624,6 +5680,7 @@ export type components = {
       canUseAutoTranslate: boolean;
       canHideAds: boolean;
       driveCapacityMb: number;
+      maxFileSizeMb: number;
       alwaysMarkNsfw: boolean;
       canUpdateBioMedia: boolean;
       pinLimit: number;
@@ -5645,7 +5702,8 @@ export type components = {
       canEditNote: boolean;
       scheduleNoteMax: number;
       canSetFederationAvatarShape: boolean;
-      canChat: boolean;
+      /** @enum {string} */
+      chatAvailability: 'available' | 'readonly' | 'unavailable';
     };
     ReversiGameLite: {
       /** Format: id */
@@ -9751,6 +9809,10 @@ export type operations = {
             moderatorInactivityLimitDays: number;
             bubbleInstances: string[];
             customRobotsTxt: string | null;
+            deliverSuspendedSoftware: {
+                software: string;
+                versionRange: string;
+              }[];
           };
         };
       };
@@ -9846,6 +9908,16 @@ export type operations = {
    * **Credential required**: *Yes* / **Permission**: *write:admin:queue*
    */
   admin___queue___clear: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          queue: 'system' | 'endedPollNotification' | 'deliver' | 'inbox' | 'db' | 'relationship' | 'objectStorage' | 'userWebhookDeliver' | 'systemWebhookDeliver';
+          /** @enum {string} */
+          state: '*' | 'completed' | 'wait' | 'active' | 'paused' | 'prioritized' | 'delayed' | 'failed';
+        };
+      };
+    };
     responses: {
       /** @description OK (without any results) */
       204: {
@@ -9976,17 +10048,326 @@ export type operations = {
     };
   };
   /**
-   * admin/queue/promote
+   * admin/queue/jobs
    * @description No description provided.
    *
-   * **Credential required**: *Yes* / **Permission**: *write:admin:queue*
+   * **Credential required**: *Yes* / **Permission**: *read:admin:queue*
    */
-  admin___queue___promote: {
+  admin___queue___jobs: {
     requestBody: {
       content: {
         'application/json': {
           /** @enum {string} */
-          type: 'deliver' | 'inbox';
+          queue: 'system' | 'endedPollNotification' | 'deliver' | 'inbox' | 'db' | 'relationship' | 'objectStorage' | 'userWebhookDeliver' | 'systemWebhookDeliver';
+          state: ('active' | 'wait' | 'delayed' | 'completed' | 'failed')[];
+          search?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/queue/promote-jobs
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:admin:queue*
+   */
+  'admin___queue___promote-jobs': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          queue: 'system' | 'endedPollNotification' | 'deliver' | 'inbox' | 'db' | 'relationship' | 'objectStorage' | 'userWebhookDeliver' | 'systemWebhookDeliver';
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/queue/queue-stats
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:admin:queue*
+   */
+  'admin___queue___queue-stats': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          queue: 'system' | 'endedPollNotification' | 'deliver' | 'inbox' | 'db' | 'relationship' | 'objectStorage' | 'userWebhookDeliver' | 'systemWebhookDeliver';
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/queue/queues
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:admin:queue*
+   */
+  admin___queue___queues: {
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/queue/remove-job
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:admin:queue*
+   */
+  'admin___queue___remove-job': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          queue: 'system' | 'endedPollNotification' | 'deliver' | 'inbox' | 'db' | 'relationship' | 'objectStorage' | 'userWebhookDeliver' | 'systemWebhookDeliver';
+          jobId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/queue/retry-job
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:admin:queue*
+   */
+  'admin___queue___retry-job': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          queue: 'system' | 'endedPollNotification' | 'deliver' | 'inbox' | 'db' | 'relationship' | 'objectStorage' | 'userWebhookDeliver' | 'systemWebhookDeliver';
+          jobId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/queue/show-job
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:admin:queue*
+   */
+  'admin___queue___show-job': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          queue: 'system' | 'endedPollNotification' | 'deliver' | 'inbox' | 'db' | 'relationship' | 'objectStorage' | 'userWebhookDeliver' | 'systemWebhookDeliver';
+          jobId: string;
         };
       };
     };
@@ -12131,6 +12512,10 @@ export type operations = {
           /** @enum {string} */
           federation?: 'all' | 'none' | 'specified';
           federationHosts?: string[];
+          deliverSuspendedSoftware?: {
+              software: string;
+              versionRange: string;
+            }[];
           doNotSendNotificationEmailsForAbuseReport?: boolean;
           emailToReceiveAbuseReport?: string | null;
           enableReceivePrerelease?: boolean;
@@ -12428,7 +12813,7 @@ export type operations = {
           excludeBots?: boolean;
           withReplies: boolean;
           withFile: boolean;
-          hideNotesInSensitiveChannel?: boolean;
+          excludeNotesInSensitiveChannel?: boolean;
         };
       };
     };
@@ -12712,7 +13097,7 @@ export type operations = {
           excludeBots?: boolean;
           withReplies?: boolean;
           withFile?: boolean;
-          hideNotesInSensitiveChannel?: boolean;
+          excludeNotesInSensitiveChannel?: boolean;
         };
       };
     };
@@ -15310,11 +15695,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -15365,11 +15748,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -15593,11 +15974,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -15767,11 +16146,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -15883,11 +16260,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -16055,11 +16430,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -16167,11 +16540,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -16282,11 +16653,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -27033,6 +27402,8 @@ export type operations = {
           renoteId?: string | null;
           /** Format: misskey:id */
           channelId?: string | null;
+          /** @default false */
+          localOnly?: boolean;
           text?: string | null;
           fileIds?: string[];
           mediaIds?: string[];
@@ -30322,10 +30693,7 @@ export type operations = {
       /** @description OK (with results) */
       200: {
         content: {
-          'application/json': {
-              name: string;
-              unlockedAt: number;
-            }[];
+          'application/json': components['schemas']['Achievement'][];
         };
       };
       /** @description Client error */
