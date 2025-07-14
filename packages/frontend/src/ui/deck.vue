@@ -11,83 +11,84 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<XSidebar v-if="!isMobile && prefer.r['deck.navbarPosition'].value === 'left'"/>
 
 		<div :class="[$style.main, { [$style.withWallpaper]: withWallpaper, [$style.withSidebarAndTitlebar]: !isMobile && prefer.r['deck.navbarPosition'].value === 'left' && prefer.r.showTitlebar.value }]" :style="{ backgroundImage: prefer.s['deck.wallpaper'] != null ? `url(${ prefer.s['deck.wallpaper'] })` : null }">
-			<XNavbarH v-if="!isMobile && prefer.r['deck.navbarPosition'].value === 'top'"/>
+				<XNavbarH v-if="!isMobile && prefer.r['deck.navbarPosition'].value === 'top'"/>
 
-			<XAnnouncements v-if="$i"/>
-			<XStatusBars/>
-			<div :class="$style.columnsWrapper">
-				<!-- passive: https://bugs.webkit.org/show_bug.cgi?id=281300 -->
-				<div ref="columnsEl" :class="[$style.columns, { [$style.center]: prefer.r['deck.columnAlign'].value === 'center', [$style.snapScroll]: snapScroll }]" @contextmenu.self.prevent="onContextmenu" @wheel.passive.self="onWheel">
-					<!-- sectionを利用しているのは、deck.vue側でcolumnに対してfirst-of-typeを効かせるため -->
-					<section
-						v-for="ids in layout"
-						:class="$style.section"
-						:style="columns.filter(c => ids.includes(c.id)).some(c => c.flexible) ? { flex: 1, minWidth: '350px' } : { width: Math.max(...columns.filter(c => ids.includes(c.id)).map(c => c.width)) + 'px' }"
-						@wheel.passive.self="onWheel"
-					>
-						<component
-							:is="columnComponents[columns.find(c => c.id === id)!.type] ?? XTlColumn"
-							v-for="id in ids"
-							:ref="id"
-							:key="id"
-							:class="[$style.column, { '_shadow': withWallpaper }]"
-							:column="columns.find(c => c.id === id)!"
-							:isStacked="ids.length > 1"
-							@headerWheel="onWheel"
-						/>
-					</section>
-					<div v-if="layout.length === 0" class="_panel" :class="$style.onboarding">
-						<div>{{ i18n.ts._deck.introduction }}</div>
-						<div>{{ i18n.ts._deck.introduction2 }}</div>
+				<XAnnouncements v-if="$i"/>
+				<XStatusBars/>
+				<div :class="$style.columnsWrapper">
+					<!-- passive: https://bugs.webkit.org/show_bug.cgi?id=281300 -->
+					<div ref="columnsEl" :class="[$style.columns, { [$style.center]: prefer.r['deck.columnAlign'].value === 'center', [$style.snapScroll]: snapScroll }]" @contextmenu.self.prevent="onContextmenu" @wheel.passive.self="onWheel">
+						<!-- sectionを利用しているのは、deck.vue側でcolumnに対してfirst-of-typeを効かせるため -->
+						<section
+							v-for="ids in layout"
+							:class="$style.section"
+							:style="columns.filter(c => ids.includes(c.id)).some(c => c.flexible) ? { flex: 1, minWidth: '350px' } : { width: Math.max(...columns.filter(c => ids.includes(c.id)).map(c => c.width)) + 'px' }"
+							@wheel.passive.self="onWheel"
+						>
+							<component
+								:is="columnComponents[columns.find(c => c.id === id)!.type] ?? XTlColumn"
+								v-for="id in ids"
+								:ref="id"
+								:key="id"
+								:class="[$style.column, { '_shadow': withWallpaper }]"
+								:column="columns.find(c => c.id === id)!"
+								:isStacked="ids.length > 1"
+								@headerWheel="onWheel"
+							/>
+						</section>
+						<div v-if="layout.length === 0" class="_panel" :class="$style.onboarding">
+							<div>{{ i18n.ts._deck.introduction }}</div>
+							<div>{{ i18n.ts._deck.introduction2 }}</div>
+						</div>
+					</div>
+
+					<div v-if="prefer.r['deck.menuPosition'].value === 'right'" :class="$style.sideMenu">
+						<div :class="$style.sideMenuTop">
+							<button v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" v-tooltip.noDelay.left="`${i18n.ts._deck.profile}: ${prefer.s['deck.profile']}`" :class="$style.sideMenuButton" class="_button" @click="switchProfileMenu"><i class="ti ti-caret-down"></i></button>
+							<button v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" v-tooltip.noDelay.left="i18n.ts._deck.deleteProfile" :class="$style.sideMenuButton" class="_button" @click="deleteProfile"><i class="ti ti-trash"></i></button>
+						</div>
+						<div :class="$style.sideMenuMiddle">
+							<button v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" v-tooltip.noDelay.left="i18n.ts._deck.addColumn" :class="$style.sideMenuButton" class="_button" @click="addColumn"><i class="ti ti-plus"></i></button>
+						</div>
+						<div :class="$style.sideMenuBottom">
+							<button v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" v-tooltip.noDelay.left="i18n.ts.settings" :class="$style.sideMenuButton" class="_button" @click="showSettings"><i class="ti ti-settings-2"></i></button>
+						</div>
 					</div>
 				</div>
 
-				<div v-if="prefer.r['deck.menuPosition'].value === 'right'" :class="$style.sideMenu">
-					<div :class="$style.sideMenuTop">
-						<button v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" v-tooltip.noDelay.left="`${i18n.ts._deck.profile}: ${prefer.s['deck.profile']}`" :class="$style.sideMenuButton" class="_button" @click="switchProfileMenu"><i class="ti ti-caret-down"></i></button>
-						<button v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" v-tooltip.noDelay.left="i18n.ts._deck.deleteProfile" :class="$style.sideMenuButton" class="_button" @click="deleteProfile"><i class="ti ti-trash"></i></button>
+				<div v-if="prefer.r['deck.menuPosition'].value === 'bottom'" :class="$style.bottomMenu">
+					<div :class="$style.bottomMenuLeft">
+						<button v-tooltip.noDelay.left="`${i18n.ts._deck.profile}: ${prefer.s['deck.profile']}`" :class="$style.bottomMenuButton" class="_button" @click="switchProfileMenu"><i class="ti ti-caret-down"></i></button>
+						<button v-tooltip.noDelay.left="i18n.ts._deck.deleteProfile" :class="$style.bottomMenuButton" class="_button" @click="deleteProfile"><i class="ti ti-trash"></i></button>
 					</div>
-					<div :class="$style.sideMenuMiddle">
-						<button v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" v-tooltip.noDelay.left="i18n.ts._deck.addColumn" :class="$style.sideMenuButton" class="_button" @click="addColumn"><i class="ti ti-plus"></i></button>
+					<div :class="$style.bottomMenuMiddle">
+						<button v-tooltip.noDelay.left="i18n.ts._deck.addColumn" :class="$style.bottomMenuButton" class="_button" @click="addColumn"><i class="ti ti-plus"></i></button>
 					</div>
-					<div :class="$style.sideMenuBottom">
-						<button v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" v-tooltip.noDelay.left="i18n.ts.settings" :class="$style.sideMenuButton" class="_button" @click="showSettings"><i class="ti ti-settings-2"></i></button>
+					<div :class="$style.bottomMenuRight">
+						<button v-tooltip.noDelay.left="i18n.ts.settings" :class="$style.bottomMenuButton" class="_button" @click="showSettings"><i class="ti ti-settings-2"></i></button>
 					</div>
 				</div>
-			</div>
 
-			<div v-if="prefer.r['deck.menuPosition'].value === 'bottom'" :class="$style.bottomMenu">
-				<div :class="$style.bottomMenuLeft">
-					<button v-tooltip.noDelay.left="`${i18n.ts._deck.profile}: ${prefer.s['deck.profile']}`" :class="$style.bottomMenuButton" class="_button" @click="switchProfileMenu"><i class="ti ti-caret-down"></i></button>
-					<button v-tooltip.noDelay.left="i18n.ts._deck.deleteProfile" :class="$style.bottomMenuButton" class="_button" @click="deleteProfile"><i class="ti ti-trash"></i></button>
-				</div>
-				<div :class="$style.bottomMenuMiddle">
-					<button v-tooltip.noDelay.left="i18n.ts._deck.addColumn" :class="$style.bottomMenuButton" class="_button" @click="addColumn"><i class="ti ti-plus"></i></button>
-				</div>
-				<div :class="$style.bottomMenuRight">
-					<button v-tooltip.noDelay.left="i18n.ts.settings" :class="$style.bottomMenuButton" class="_button" @click="showSettings"><i class="ti ti-settings-2"></i></button>
-				</div>
-			</div>
+				<XNavbarH v-if="!isMobile && prefer.r['deck.navbarPosition'].value === 'bottom'"/>
 
 			<XNavbarH v-if="!isMobile && prefer.r['deck.navbarPosition'].value === 'bottom'"/>
 
-		<XNavbarH v-if="!isMobile && prefer.r['deck.navbarPosition'].value === 'bottom'"/>
-
-		<div v-if="isMobile" :class="$style.nav">
-			<button v-if="store.s.showMenuButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="drawerMenuShowing = true"><i :class="$style.navButtonIcon" class="ti ti-menu-2"></i><span v-if="menuIndicated" :class="$style.navButtonIndicator" class="_blink"><i class="_indicatorCircle"></i></span></button>
-			<button v-if="store.s.showHomeButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.push('/')"><i :class="$style.navButtonIcon" class="ti ti-home"></i></button>
-			<button v-if="store.s.showExploreButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.push('/explore')"><i :class="$style.navButtonIcon" class="ti ti-hash"></i></button>
-			<button v-if="store.s.showSearchButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.push('/search')"><i :class="$style.navButtonIcon" class="ti ti-search"></i></button>
-			<button v-if="store.s.showNotificationButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.push('/my/notifications')">
-				<i :class="$style.navButtonIcon" class="ti ti-bell"></i>
-				<span v-if="$i?.hasUnreadNotification" :class="$style.navButtonIndicator" class="_blink">
-					<span v-if="prefer.s.showUnreadNotificationsCount" class="_indicateCounter" :class="$style.itemIndicateValueIcon">{{ $i.unreadNotificationsCount > 99 ? '99+' : $i.unreadNotificationsCount }}</span>
-					<i v-else class="_indicatorCircle"></i>
-				</span>
-			</button>
-			<button v-if="store.s.showChatButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.push('/chat')"><i :class="$style.navButtonIcon" class="ti ti-messages"></i><span v-if="$i != null && $i.hasUnreadChatMessages" :class="$style.navButtonIndicator" class="_blink"><i class="_indicatorCircle"></i></span></button>
-			<button v-if="store.s.showReloadButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="reload()"><i :class="$style.navButtonIcon" class="ti ti-refresh"></i></button>
-		    <button v-if="store.s.showPostButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.postButton" class="_button" @click="os.post()"><i :class="$style.navButtonIcon" class="ti ti-pencil"></i></button>
+			<div v-if="isMobile" :class="$style.nav">
+				<button v-if="store.s.showMenuButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="drawerMenuShowing = true"><i :class="$style.navButtonIcon" class="ti ti-menu-2"></i><span v-if="menuIndicated" :class="$style.navButtonIndicator" class="_blink"><i class="_indicatorCircle"></i></span></button>
+				<button v-if="store.s.showHomeButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.push('/')"><i :class="$style.navButtonIcon" class="ti ti-home"></i></button>
+				<button v-if="store.s.showExploreButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.push('/explore')"><i :class="$style.navButtonIcon" class="ti ti-hash"></i></button>
+				<button v-if="store.s.showSearchButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.push('/search')"><i :class="$style.navButtonIcon" class="ti ti-search"></i></button>
+				<button v-if="store.s.showNotificationButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.push('/my/notifications')">
+					<i :class="$style.navButtonIcon" class="ti ti-bell"></i>
+					<span v-if="$i?.hasUnreadNotification" :class="$style.navButtonIndicator" class="_blink">
+						<span v-if="prefer.s.showUnreadNotificationsCount" class="_indicateCounter" :class="$style.itemIndicateValueIcon">{{ $i.unreadNotificationsCount > 99 ? '99+' : $i.unreadNotificationsCount }}</span>
+						<i v-else class="_indicatorCircle"></i>
+					</span>
+				</button>
+				<button v-if="store.s.showChatButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="mainRouter.push('/chat')"><i :class="$style.navButtonIcon" class="ti ti-messages"></i><span v-if="$i != null && $i.hasUnreadChatMessages" :class="$style.navButtonIndicator" class="_blink"><i class="_indicatorCircle"></i></span></button>
+				<button v-if="store.s.showReloadButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.navButton" class="_button" @click="reload()"><i :class="$style.navButtonIcon" class="ti ti-refresh"></i></button>
+				<button v-if="store.s.showPostButtonInNavbar" v-vibrate="prefer.s['vibrate.on.system'] ? 5 : []" :class="$style.postButton" class="_button" @click="os.post()"><i :class="$style.navButtonIcon" class="ti ti-pencil"></i></button>
+			</div>
 		</div>
 	</div>
 
