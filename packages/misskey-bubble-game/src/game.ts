@@ -337,18 +337,24 @@ export class DropAndFusionGame extends EventEmitter<{
                        this.lostLifeThisDrop = true;
                        if (this.lives > 1) {
                                this.lives--;
-                               this.removeOverflowBodies();
+                               this.removeOverflowBodies(body);
                        } else {
                                this.finalizeGameOver();
                        }
                } else {
-                       this.removeOverflowBodies();
+                       this.removeOverflowBodies(body);
                }
        }
 
-       private removeOverflowBodies() {
+       private removeOverflowBodies(target: Matter.Body) {
+               if (target.label === '_wall_' || target.label === '_overflow_') return;
+               this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(x => x !== target.id);
+               this.gameOverReadyBodyIds = this.gameOverReadyBodyIds.filter(x => x !== target.id);
+               Matter.Composite.remove(this.engine.world, target);
+
+               // 念のため残っているオーバーフロー中のオブジェクトも除去する
                for (const b of [...this.engine.world.bodies]) {
-                       if (b.label === '_wall_' || b.label === '_overflow_') continue;
+                       if (b.label === '_wall_' || b.label === '_overflow_' || b.id === target.id) continue;
                        const collision = Matter.SAT.collides(b, this.overflowCollider);
                        if ((collision && collision.collided) || b.bounds.min.y < 0) {
                                this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(x => x !== b.id);
