@@ -4,7 +4,6 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { MoreThan } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { BubbleGameRecordsRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
@@ -59,25 +58,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private userEntityService: UserEntityService,
 	) {
 		super(meta, paramDef, async (ps) => {
-			const records = await this.bubbleGameRecordsRepository.find({
-				where: {
-					gameMode: ps.gameMode,
-					seededAt: MoreThan(new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)),
-				},
-				order: {
-					score: 'DESC',
-				},
-				take: 10,
-				relations: ['user'],
-			});
+                        const raw = await this.bubbleGameRecordsRepository.createQueryBuilder('record')
+                                .select('record.userId', 'userId')
+                                .addSelect('MAX(record.score)', 'score')
+                                .where('record.gameMode = :gameMode', { gameMode: ps.gameMode })
+                                .groupBy('record.userId')
+                                .orderBy('score', 'DESC')
+                                .limit(10)
+                                .getRawMany<{ userId: string; score: string }>();
 
-			const users = await this.userEntityService.packMany(records.map(r => r.user!), null);
+                        const users = await this.userEntityService.packMany(raw.map(r => r.userId), null);
 
-			return records.map(r => ({
-				id: r.id,
-				score: r.score,
-				user: users.find(u => u.id === r.user!.id),
-			}));
+                        return raw.map(r => ({
+                                id: r.userId,
+                                score: parseInt(r.score, 10),
+                                user: users.find(u => u.id === r.userId),
+                        }));
 		});
 	}
 }
