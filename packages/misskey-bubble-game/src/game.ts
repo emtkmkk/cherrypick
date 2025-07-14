@@ -45,7 +45,7 @@ export class DropAndFusionGame extends EventEmitter<{
         gameOver: () => void;
 }> {
 	private PHYSICS_QUALITY_FACTOR = 16; // 低いほどパフォーマンスが高いがガタガタして安定しなくなる、逆に高すぎても何故か不安定になる
-	private COMBO_INTERVAL = 60; // frame
+	private COMBO_INTERVAL = 120; // frame
 	public readonly GAME_VERSION = 3;
 	public readonly GAME_WIDTH = 450;
 	public readonly GAME_HEIGHT = 600;
@@ -266,7 +266,7 @@ export class DropAndFusionGame extends EventEmitter<{
                         additionalScore = 9999;
                 } else {
                         const hasComboBonus = this.gameMode !== 'yen' && this.gameMode !== 'sweets';
-                        additionalScore = currentMono.score + (hasComboBonus ? Math.floor(this.combo / 3) : 0);
+                        additionalScore = currentMono.score + (hasComboBonus && this.combo >= 3 ? Math.min(this.combo - 2, 8) : 0);
                 }
                 this.score += additionalScore;
 
