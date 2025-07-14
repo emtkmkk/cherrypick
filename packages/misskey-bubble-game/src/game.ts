@@ -314,7 +314,8 @@ export class DropAndFusionGame extends EventEmitter<{
                         // ハコからあふれたかどうかの判定
                         if (bodyA.id === this.overflowCollider.id || bodyB.id === this.overflowCollider.id) {
                                 const other = bodyA.id === this.overflowCollider.id ? bodyB : bodyA;
-                                if (this.gameOverReadyBodyIds.includes(other.id) && other.bounds.min.y < 0) {
+                                if (this.gameOverReadyBodyIds.includes(other.id)) {
+                                if (this.gameOverReadyBodyIds.includes(other.id)) {
                                         this.handleOverflow(other);
                                         if (this.isGameOver) break;
                                 }
@@ -359,7 +360,6 @@ export class DropAndFusionGame extends EventEmitter<{
        }
 
        private finalizeGameOver() {
-               this.removeOverflowBodies();
                this.isGameOver = true;
                this.emit('gameOver');
        }
