@@ -244,11 +244,11 @@ export class DropAndFusionGame extends EventEmitter<{
 			throw new Error('Current Mono Not Found');
 		}
 
-		const nextMono = this.monoDefinitions.find(x => x.level === currentMono.level + 1) ?? null;
+                const nextMono = this.monoDefinitions.find(x => x.level === currentMono.level + 1) ?? null;
 
-		if (nextMono) {
-			const body = this.createBody(nextMono, newX, newY);
-			Matter.Composite.add(this.engine.world, body);
+                if (nextMono) {
+                        const body = this.createBody(nextMono, newX, newY);
+                        Matter.Composite.add(this.engine.world, body);
 
 			// 連鎖してfusionした場合の分かりやすさのため少し間を置いてからfusion対象になるようにする
 			this.tickCallbackQueue.push({
@@ -261,11 +261,16 @@ export class DropAndFusionGame extends EventEmitter<{
 			this.emit('monoAdded', nextMono);
 		}
 
-                const hasComboBonus = this.gameMode !== 'yen' && this.gameMode !== 'sweets';
-                const additionalScore = currentMono.score + (hasComboBonus ? Math.floor(this.combo / 3) : 0);
+                let additionalScore: number;
+                if (!nextMono && this.gameMode !== 'yen' && this.gameMode !== 'sweets') {
+                        additionalScore = 9999;
+                } else {
+                        const hasComboBonus = this.gameMode !== 'yen' && this.gameMode !== 'sweets';
+                        additionalScore = currentMono.score + (hasComboBonus ? Math.floor(this.combo / 3) : 0);
+                }
                 this.score += additionalScore;
 
-		this.emit('fusioned', newX, newY, nextMono, additionalScore);
+                this.emit('fusioned', newX, newY, nextMono, additionalScore);
 	}
 
 	private onCollision(event: Matter.IEventCollision<Matter.Engine>) {
