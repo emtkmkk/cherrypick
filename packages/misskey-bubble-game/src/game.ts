@@ -307,23 +307,21 @@ export class DropAndFusionGame extends EventEmitter<{
 		}
 	}
 
-	private onCollisionActive(event: Matter.IEventCollision<Matter.Engine>) {
-		for (const pairs of event.pairs) {
-			const { bodyA, bodyB } = pairs;
+       private onCollisionActive(event: Matter.IEventCollision<Matter.Engine>) {
+               for (const pairs of event.pairs) {
+                       const { bodyA, bodyB } = pairs;
 
-                        // ハコからあふれたかどうかの判定
-                        if (bodyA.id === this.overflowCollider.id || bodyB.id === this.overflowCollider.id) {
-                                const other = bodyA.id === this.overflowCollider.id ? bodyB : bodyA;
-                                if (this.gameOverReadyBodyIds.includes(other.id)) {
-                                if (this.gameOverReadyBodyIds.includes(other.id)) {
-                                        this.handleOverflow(other);
-                                        if (this.isGameOver) break;
-                                }
-                                continue;
-                        }
-                }
-        }
-	}
+                       // ハコからあふれたかどうかの判定
+                       if (bodyA.id === this.overflowCollider.id || bodyB.id === this.overflowCollider.id) {
+                               const other = bodyA.id === this.overflowCollider.id ? bodyB : bodyA;
+                               if (this.gameOverReadyBodyIds.includes(other.id)) {
+                                       this.handleOverflow(other);
+                                       if (this.isGameOver) break;
+                               }
+                               continue;
+                       }
+               }
+       }
 
         public surrender() {
                 this.logs.push({
@@ -352,7 +350,7 @@ export class DropAndFusionGame extends EventEmitter<{
                for (const b of [...this.engine.world.bodies]) {
                        if (b.label === '_wall_' || b.label === '_overflow_') continue;
                        const collision = Matter.SAT.collides(b, this.overflowCollider);
-                       if (collision.collided) {
+                       if (collision.collided || b.bounds.min.y < 0) {
                                this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(x => x !== b.id);
                                this.gameOverReadyBodyIds = this.gameOverReadyBodyIds.filter(x => x !== b.id);
                                Matter.Composite.remove(this.engine.world, b);
