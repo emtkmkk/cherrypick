@@ -352,7 +352,6 @@ export class DropAndFusionGame extends EventEmitter<{
        }
 
        private finalizeGameOver() {
-               this.removeOverflowBodies();
                this.isGameOver = true;
                this.emit('gameOver');
        }
