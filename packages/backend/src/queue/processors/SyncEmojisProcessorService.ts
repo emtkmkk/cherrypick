@@ -1,25 +1,22 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { Job } from "bullmq";
-import { DI } from '@/di-symbols.js';
-import { Logger } from "winston";
-import { QueueProcessor } from "../QueueProcessor.js";
+import type Logger from '@/logger.js';
+import { QueueLoggerService } from '../QueueLoggerService.js';
 import { EmojiSyncService } from "@/core/EmojiSyncService.js";
-
-type SyncEmojisJobData = {};
+import { bindThis } from '@/decorators.js';
 
 @Injectable()
-export class SyncEmojisProcessorService extends QueueProcessor<SyncEmojisJobData> {
+export class SyncEmojisProcessorService {
+	private logger: Logger;
+
 	constructor(
-    @Inject(DI.Logger)
-    private readonly rootLogger: Logger,
-    @Inject(DI.EmojiSyncService)
-    private readonly emojiSyncService: EmojiSyncService,
+		private queueLoggerService: QueueLoggerService,
+		private emojiSyncService: EmojiSyncService,
   ) {
-    super();
-    this.logger = this.rootLogger.child({ service: 'SyncEmojisProcessorService' });
+		this.logger = this.queueLoggerService.logger.createSubLogger('syncEmoji');
   }
 
-	async process(): Promise<void> {
+	@bindThis
+	public async process(): Promise<void> {
 		this.logger.info(`Processing job : Syncing emojis...`);
 		await this.emojiSyncService.syncEmojis();
 		this.logger.info(`Job completed: Emojis synced.`);

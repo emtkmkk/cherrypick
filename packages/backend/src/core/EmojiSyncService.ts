@@ -1,11 +1,10 @@
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Logger } from 'winston';
 import { DI } from '@/di-symbols.js';
 import { MiEmoji } from '@/models/Emoji.js';
 import type { EmojisRepository } from '@/models/_.js';
-import { CustomEmojiService } from './CustomEmojiService.js';
 import { HttpRequestService } from './HttpRequestService.js';
+import Logger from '@/logger.js';
+import { bindThis } from '@/decorators.js';
 
 // リモート絵文字のインターフェース定義
 interface RemoteEmoji {
@@ -25,21 +24,11 @@ export class EmojiSyncService implements OnApplicationShutdown {
   private readonly logger: Logger;
 
   constructor(
-    @Inject(DI.EmojisRepository)
+    @Inject(DI.emojisRepository)
     private readonly emojisRepository: EmojisRepository,
-    @Inject(DI.ConfigService)
-    private readonly config: ConfigService,
-    @Inject(DI.CustomEmojiService)
-    private readonly customEmojiService: CustomEmojiService,
-    @Inject(DI.HttpRequestService)
-    private readonly httpRequestService: HttpRequestService,
-    @Inject(DI.Logger)
-    private readonly rootLogger: Logger,
+    private httpRequestService: HttpRequestService,
   ) {
-    this.logger = this.rootLogger.child({ service: 'EmojiSyncService' });
-  }
-
-  async onApplicationShutdown() {
+		this.logger = new Logger('emojiSync', 'blue');
   }
 
   /**
@@ -47,6 +36,7 @@ export class EmojiSyncService implements OnApplicationShutdown {
    * リモートAPIから絵文字を取得し、追加、更新、削除を行います。
    * APIアクセスに失敗した場合は、何も変更せずに処理を終了します。
    */
+	@bindThis
   async syncEmojis() {
     this.logger.info('絵文字の同期を開始します...');
     try {
