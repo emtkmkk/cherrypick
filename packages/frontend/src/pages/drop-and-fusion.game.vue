@@ -69,7 +69,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					:leaveToClass="$style.transition_combo_leaveTo"
 					:moveClass="$style.transition_combo_move"
 				>
-					<div v-show="combo > 1" :class="$style.combo" :style="{ fontSize: `${100 + ((comboPrev - 2) * 15)}%` }">{{ comboPrev }} Chain!</div>
+                                        <div v-show="combo > 2" :class="$style.combo" :style="{ fontSize: `${100 + ((comboPrev - 2) * 15)}%` }">{{ comboPrev }} Chain!</div>
 				</Transition>
 				<div v-if="!isGameOver && !replaying && readyGo !== 'ready'" :class="$style.dropperContainer" :style="{ left: dropperX + 'px' }">
 					<!--<img v-if="currentPick" src="/client-assets/drop-and-fusion/dropper.png" :class="$style.dropper" :style="{ left: dropperX + 'px' }"/>-->
@@ -964,7 +964,19 @@ function attachGameEvents() {
         });
 
         game.addListener('changeLives', value => {
+                const prev = lives.value;
                 lives.value = value;
+                if (value < prev && !props.mute) {
+                        if (props.gameMode === 'yen') {
+                                sound.playUrl('/client-assets/drop-and-fusion/gameover_yen.mp3', {
+                                        volume: 0.5 * sfxVolume.value,
+                                });
+                        } else {
+                                sound.playUrl('/client-assets/drop-and-fusion/gameover.mp3', {
+                                        volume: sfxVolume.value,
+                                });
+                        }
+                }
         });
 
 	game.addListener('changeHolding', value => {

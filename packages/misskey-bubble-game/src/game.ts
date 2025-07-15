@@ -45,7 +45,7 @@ export class DropAndFusionGame extends EventEmitter<{
         gameOver: () => void;
 }> {
 	private PHYSICS_QUALITY_FACTOR = 16; // 低いほどパフォーマンスが高いがガタガタして安定しなくなる、逆に高すぎても何故か不安定になる
-	private COMBO_INTERVAL = 60; // frame
+	private COMBO_INTERVAL = 180; // frame
 	public readonly GAME_VERSION = 3;
 	public readonly GAME_WIDTH = 450;
 	public readonly GAME_HEIGHT = 600;
@@ -60,6 +60,7 @@ export class DropAndFusionGame extends EventEmitter<{
         private overflowCollider: Matter.Body;
         private isGameOver = false;
         private lostLifeThisDrop = false;
+        private dropsSinceLifeLost = 0;
         private _lives = 3;
 	private gameMode: 'normal' | 'yen' | 'square' | 'sweets' | 'space';
 	private rng: () => number;
@@ -200,7 +201,7 @@ export class DropAndFusionGame extends EventEmitter<{
 		const options: Matter.IBodyDefinition = {
 			label: mono.id,
 			density: this.gameMode === 'space' ? 0.01 : ((mono.sizeX * mono.sizeY) / 10000),
-			restitution: this.gameMode === 'space' ? 0.5 : 0.2,
+			restitution: this.gameMode === 'space' ? 0.5 : 0.25,
 			frictionAir: this.gameMode === 'space' ? 0 : 0.01,
 			friction: this.gameMode === 'space' ? 0.5 : 0.7,
 			frictionStatic: this.gameMode === 'space' ? 0 : 5,
@@ -243,11 +244,11 @@ export class DropAndFusionGame extends EventEmitter<{
 			throw new Error('Current Mono Not Found');
 		}
 
-		const nextMono = this.monoDefinitions.find(x => x.level === currentMono.level + 1) ?? null;
+                const nextMono = this.monoDefinitions.find(x => x.level === currentMono.level + 1) ?? null;
 
-		if (nextMono) {
-			const body = this.createBody(nextMono, newX, newY);
-			Matter.Composite.add(this.engine.world, body);
+                if (nextMono) {
+                        const body = this.createBody(nextMono, newX, newY);
+                        Matter.Composite.add(this.engine.world, body);
 
 			// 連鎖してfusionした場合の分かりやすさのため少し間を置いてからfusion対象になるようにする
 			this.tickCallbackQueue.push({
@@ -260,12 +261,16 @@ export class DropAndFusionGame extends EventEmitter<{
 			this.emit('monoAdded', nextMono);
 		}
 
-		const hasComboBonus = this.gameMode !== 'yen' && this.gameMode !== 'sweets';
-		const comboBonus = hasComboBonus ? 1 + ((this.combo - 1) / 5) : 1;
-		const additionalScore = Math.round(currentMono.score * comboBonus);
-		this.score += additionalScore;
+                let additionalScore: number;
+                if (!nextMono && this.gameMode !== 'yen' && this.gameMode !== 'sweets') {
+                        additionalScore = 9999;
+                } else {
+                        const hasComboBonus = this.gameMode !== 'yen' && this.gameMode !== 'sweets';
+                        additionalScore = currentMono.score + (hasComboBonus && this.combo >= 3 ? Math.min(this.combo - 2, 8) : 0);
+                }
+                this.score += additionalScore;
 
-		this.emit('fusioned', newX, newY, nextMono, additionalScore);
+                this.emit('fusioned', newX, newY, nextMono, additionalScore);
 	}
 
 	private onCollision(event: Matter.IEventCollision<Matter.Engine>) {
@@ -307,23 +312,21 @@ export class DropAndFusionGame extends EventEmitter<{
 		}
 	}
 
-	private onCollisionActive(event: Matter.IEventCollision<Matter.Engine>) {
-		for (const pairs of event.pairs) {
-			const { bodyA, bodyB } = pairs;
+       private onCollisionActive(event: Matter.IEventCollision<Matter.Engine>) {
+               for (const pairs of event.pairs) {
+                       const { bodyA, bodyB } = pairs;
 
-                        // ハコからあふれたかどうかの判定
-                        if (bodyA.id === this.overflowCollider.id || bodyB.id === this.overflowCollider.id) {
-                                const other = bodyA.id === this.overflowCollider.id ? bodyB : bodyA;
-                                if (this.gameOverReadyBodyIds.includes(other.id)) {
-                                if (this.gameOverReadyBodyIds.includes(other.id)) {
-                                        this.handleOverflow(other);
-                                        if (this.isGameOver) break;
-                                }
-                                continue;
-                        }
-                }
-        }
-	}
+                       // ハコからあふれたかどうかの判定
+                       if (bodyA.id === this.overflowCollider.id || bodyB.id === this.overflowCollider.id) {
+                               const other = bodyA.id === this.overflowCollider.id ? bodyB : bodyA;
+                               if (this.gameOverReadyBodyIds.includes(other.id)) {
+                                       this.handleOverflow(other);
+                                       if (this.isGameOver) break;
+                               }
+                               continue;
+                       }
+               }
+       }
 
         public surrender() {
                 this.logs.push({
@@ -337,22 +340,30 @@ export class DropAndFusionGame extends EventEmitter<{
        private handleOverflow(body: Matter.Body) {
                if (!this.lostLifeThisDrop) {
                        this.lostLifeThisDrop = true;
+                       this.dropsSinceLifeLost = 0;
                        if (this.lives > 1) {
                                this.lives--;
-                               this.removeOverflowBodies();
+                               this.removeOverflowBodies(body);
                        } else {
+                               this.lives--;
                                this.finalizeGameOver();
                        }
                } else {
-                       this.removeOverflowBodies();
+                       this.removeOverflowBodies(body);
                }
        }
 
-       private removeOverflowBodies() {
+       private removeOverflowBodies(target: Matter.Body) {
+               if (target.label === '_wall_' || target.label === '_overflow_') return;
+               this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(x => x !== target.id);
+               this.gameOverReadyBodyIds = this.gameOverReadyBodyIds.filter(x => x !== target.id);
+               Matter.Composite.remove(this.engine.world, target);
+
+               // 念のため残っているオーバーフロー中のオブジェクトも除去する
                for (const b of [...this.engine.world.bodies]) {
-                       if (b.label === '_wall_' || b.label === '_overflow_') continue;
+                       if (b.label === '_wall_' || b.label === '_overflow_' || b.id === target.id) continue;
                        const collision = Matter.SAT.collides(b, this.overflowCollider);
-                       if (collision.collided) {
+                       if ((collision && collision.collided) || b.bounds.min.y < 0) {
                                this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(x => x !== b.id);
                                this.gameOverReadyBodyIds = this.gameOverReadyBodyIds.filter(x => x !== b.id);
                                Matter.Composite.remove(this.engine.world, b);
@@ -367,6 +378,7 @@ export class DropAndFusionGame extends EventEmitter<{
 
         public start() {
                 this.lostLifeThisDrop = false;
+                this.dropsSinceLifeLost = 0;
                 this.emit('changeLives', this.lives);
                 for (let i = 0; i < this.STOCK_MAX; i++) {
                         this.stock.push({
@@ -445,9 +457,16 @@ export class DropAndFusionGame extends EventEmitter<{
 
                 Matter.Composite.add(this.engine.world, body);
                 this.lostLifeThisDrop = false;
+                if (this.lives < 3) {
+                        this.dropsSinceLifeLost++;
+                        if (this.dropsSinceLifeLost >= 10) {
+                                this.lives = Math.min(3, this.lives + 1);
+                                this.dropsSinceLifeLost = 0;
+                        }
+                }
 
-		this.fusionReadyBodyIds.push(body.id);
-		this.latestDroppedAt = this.frame;
+                this.fusionReadyBodyIds.push(body.id);
+                this.latestDroppedAt = this.frame;
 
 		this.emit('dropped', x);
 		this.emit('monoAdded', head.mono);
