@@ -19,6 +19,10 @@ interface RemoteEmoji {
   updatedAt: string;
 }
 
+interface emojiApi {
+	emojis: RemoteEmoji[]
+}
+
 @Injectable()
 export class EmojiSyncService implements OnApplicationShutdown {
   private readonly logger: Logger;
@@ -40,7 +44,7 @@ export class EmojiSyncService implements OnApplicationShutdown {
   async syncEmojis() {
     this.logger.info('絵文字の同期を開始します...');
     try {
-      const remoteEmojis: RemoteEmoji[] = await this.httpRequestService.getJson<RemoteEmoji[]>('https://mkkey.net/api/emojis', 'application/json, */*', undefined, false, 25 * 1024 * 1024);
+      const remoteEmojis: RemoteEmoji[] = (await this.httpRequestService.getJson<emojiApi>('https://mkkey.net/api/emojis', 'application/json, */*', undefined, false, 25 * 1024 * 1024))?.emojis;
 
       if (!Array.isArray(remoteEmojis)) {
         this.logger.error('リモート絵文字の取得に失敗しました: 期待される配列形式ではありません。');
