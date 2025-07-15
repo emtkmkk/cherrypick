@@ -201,7 +201,7 @@ export class DropAndFusionGame extends EventEmitter<{
 		const options: Matter.IBodyDefinition = {
 			label: mono.id,
 			density: this.gameMode === 'space' ? 0.01 : ((mono.sizeX * mono.sizeY) / 10000),
-			restitution: this.gameMode === 'space' ? 0.5 : 0.2,
+			restitution: this.gameMode === 'space' ? 0.5 : 0.25,
 			frictionAir: this.gameMode === 'space' ? 0 : 0.01,
 			friction: this.gameMode === 'space' ? 0.5 : 0.7,
 			frictionStatic: this.gameMode === 'space' ? 0 : 5,
