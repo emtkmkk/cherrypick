@@ -5,6 +5,7 @@ import type { EmojisRepository } from '@/models/_.js';
 import { HttpRequestService } from './HttpRequestService.js';
 import Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
+import { IsNull } from 'typeorm';
 
 // リモート絵文字のインターフェース定義
 interface RemoteEmoji {
@@ -52,7 +53,7 @@ export class EmojiSyncService implements OnApplicationShutdown {
       }
 
       // 既存のmkkey.netの絵文字を取得
-      const existingEmojis = await this.emojisRepository.find({ where: { host: null } });
+      const existingEmojis = await this.emojisRepository.find({ where: { host: IsNull() } });
       const existingEmojiMap = new Map<string, MiEmoji>(existingEmojis.map(e => [e.name, e]));
       const remoteEmojiMap = new Map<string, RemoteEmoji>(remoteEmojis.map(e => [e.name, e]));
 
