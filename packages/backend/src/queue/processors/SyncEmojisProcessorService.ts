@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Job } from "bullmq";
-import { DI } from "@/di";
+import { DI } from '@/di-symbols.js';
 import { Logger } from "winston";
 import { QueueProcessor } from "../QueueProcessor.js";
 import { EmojiSyncService } from "@/core/EmojiSyncService.js";

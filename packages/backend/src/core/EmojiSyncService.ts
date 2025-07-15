@@ -1,7 +1,7 @@
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'winston';
-import { DI } from '@/di';
+import { DI } from '@/di-symbols.js';
 import { MiEmoji } from '@/models/Emoji.js';
 import type { EmojisRepository } from '@/models/_.js';
 import { CustomEmojiService } from './CustomEmojiService.js';
