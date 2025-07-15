@@ -81,6 +81,7 @@ import { FanoutTimelineService } from './FanoutTimelineService.js';
 import { ChannelFollowingService } from './ChannelFollowingService.js';
 import { RegistryApiService } from './RegistryApiService.js';
 import { ReversiService } from './ReversiService.js';
+import { EmojiSyncService } from './EmojiSyncService.js';
 
 import { ChartLoggerService } from './chart/ChartLoggerService.js';
 import FederationChart from './chart/charts/federation.js';
@@ -235,6 +236,7 @@ const $FanoutTimelineEndpointService: Provider = { provide: 'FanoutTimelineEndpo
 const $ChannelFollowingService: Provider = { provide: 'ChannelFollowingService', useExisting: ChannelFollowingService };
 const $RegistryApiService: Provider = { provide: 'RegistryApiService', useExisting: RegistryApiService };
 const $ReversiService: Provider = { provide: 'ReversiService', useExisting: ReversiService };
+const $EmojiSyncService: Provider = { provide: 'EmojiSyncService', useExisting: EmojiSyncService };
 
 const $ChartLoggerService: Provider = { provide: 'ChartLoggerService', useExisting: ChartLoggerService };
 const $FederationChart: Provider = { provide: 'FederationChart', useExisting: FederationChart };
@@ -392,6 +394,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		ChannelFollowingService,
 		RegistryApiService,
 		ReversiService,
+		EmojiSyncService,
 
 		ChartLoggerService,
 		FederationChart,
@@ -545,6 +548,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$ChannelFollowingService,
 		$RegistryApiService,
 		$ReversiService,
+		$EmojiSyncService,
 
 		$ChartLoggerService,
 		$FederationChart,
@@ -699,6 +703,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		ChannelFollowingService,
 		RegistryApiService,
 		ReversiService,
+		EmojiSyncService,
 
 		FederationChart,
 		NotesChart,

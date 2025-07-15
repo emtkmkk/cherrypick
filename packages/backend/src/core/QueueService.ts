@@ -59,6 +59,11 @@ export class QueueService {
 		@Inject('queue:scheduledNoteDelete') public scheduledNoteDeleteQueue: ScheduledNoteDeleteQueue,
 		@Inject('queue:scheduleNotePost') public ScheduleNotePostQueue: ScheduleNotePostQueue,
 	) {
+		this.systemQueue.add('syncEmojis', {}, {
+			repeat: { pattern: '0 3 * * *' },
+			removeOnComplete: true,
+		});
+
 		this.systemQueue.add('tickCharts', {
 		}, {
 			repeat: { pattern: '55 * * * *' },
