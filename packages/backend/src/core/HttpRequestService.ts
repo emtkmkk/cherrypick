@@ -238,14 +238,14 @@ export class HttpRequestService {
 	}
 
 	@bindThis
-	public async getJson<T = unknown>(url: string, accept = 'application/json, */*', headers?: Record<string, string>, isLocalAddressAllowed = false): Promise<T> {
+	public async getJson<T = unknown>(url: string, accept = 'application/json, */*', headers?: Record<string, string>, isLocalAddressAllowed = false, size?: number): Promise<T> {
 		const res = await this.send(url, {
 			method: 'GET',
 			headers: Object.assign({
 				Accept: accept,
 			}, headers ?? {}),
 			timeout: 5000,
-			size: 1024 * 256,
+			size: size ?? 1024 * 256,
 			isLocalAddressAllowed: isLocalAddressAllowed,
 		});
 

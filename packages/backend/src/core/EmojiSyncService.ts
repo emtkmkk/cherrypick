@@ -40,7 +40,7 @@ export class EmojiSyncService implements OnApplicationShutdown {
   async syncEmojis() {
     this.logger.info('絵文字の同期を開始します...');
     try {
-      const remoteEmojis: RemoteEmoji[] = await this.httpRequestService.getJson<RemoteEmoji[]>('https://mkkey.net/api/emojis');
+      const remoteEmojis: RemoteEmoji[] = await this.httpRequestService.getJson<RemoteEmoji[]>('https://mkkey.net/api/emojis', 'application/json, */*', undefined, false, 25 * 1024 * 1024);
 
       // 既存のmkkey.netの絵文字を取得
       const existingEmojis = await this.emojisRepository.find({ where: { host: null } });
