@@ -42,6 +42,11 @@ export class EmojiSyncService implements OnApplicationShutdown {
     try {
       const remoteEmojis: RemoteEmoji[] = await this.httpRequestService.getJson<RemoteEmoji[]>('https://mkkey.net/api/emojis', 'application/json, */*', undefined, false, 25 * 1024 * 1024);
 
+      if (!Array.isArray(remoteEmojis)) {
+        this.logger.error('リモート絵文字の取得に失敗しました: 期待される配列形式ではありません。');
+        return;
+      }
+
       // 既存のmkkey.netの絵文字を取得
       const existingEmojis = await this.emojisRepository.find({ where: { host: null } });
       const existingEmojiMap = new Map<string, MiEmoji>(existingEmojis.map(e => [e.name, e]));
