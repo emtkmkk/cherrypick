@@ -558,6 +558,11 @@ const extension_context_definition = {
 	'_misskey_requireSigninToViewContents': 'misskey:_misskey_requireSigninToViewContents',
 	'_misskey_makeNotesFollowersOnlyBefore': 'misskey:_misskey_makeNotesFollowersOnlyBefore',
 	'_misskey_makeNotesHiddenBefore': 'misskey:_misskey_makeNotesHiddenBefore',
+	'_misskey_license': 'misskey:_misskey_license',
+	'freeText': {
+		'@id': 'misskey:freeText',
+		'@type': 'schema:text',
+	},
 	'_misskey_talk': 'misskey:_misskey_talk',
 	'isCat': 'misskey:isCat',
 	// vcard
@@ -567,6 +572,10 @@ const extension_context_definition = {
 	_mk_localVisibility: 'mkkey:_mk_localVisibility',
 	host: "schema:host",
 	keywords: "schema:keywords",
+	// CherryPick
+	cherrypick: 'https://kokonect.link/ns#',
+	setFederationAvatarShape: 'cherrypick:setFederationAvatarShape',
+	isSquareAvatars: 'cherrypick:isSquareAvatars',
 } satisfies Context;
 
 export const CONTEXT: (string | Context)[] = [...context_iris, extension_context_definition];

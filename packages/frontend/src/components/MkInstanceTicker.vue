@@ -4,19 +4,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="$style.root" :style="bg">
+<div :class="$style.root" :style="themeColorStyle">
 	<img v-if="faviconUrl" :class="$style.icon" :src="faviconUrl"/>
-	<div :class="$style.name">{{ instance.name }}</div>
+	<div :class="$style.name">{{ instanceName }}</div>
 </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { instanceName } from '@@/js/config.js';
-import { instance as Instance } from '@/instance.js';
-import { getProxiedImageUrlNullable } from '@/scripts/media-proxy.js';
+import { instanceName as localInstanceName } from '@@/js/config.js';
+import type { CSSProperties } from 'vue';
+import { instance as localInstance } from '@/instance.js';
+import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 
 const props = defineProps<{
+	host: string | null;
 	instance?: {
 		faviconUrl?: string | null
 		name?: string | null
@@ -25,18 +27,28 @@ const props = defineProps<{
 }>();
 
 // if no instance data is given, this is for the local instance
-const instance = props.instance ?? {
-	name: instanceName,
-	themeColor: (document.querySelector('meta[name="theme-color-orig"]') as HTMLMetaElement).content,
-};
+const instanceName = computed(() => props.host == null ? localInstanceName : props.instance?.name ?? props.host);
 
-const faviconUrl = computed(() => props.instance ? getProxiedImageUrlNullable(props.instance.faviconUrl, 'preview') : getProxiedImageUrlNullable(Instance.iconUrl, 'preview') ?? '/favicon.ico');
+const faviconUrl = computed(() => {
+	let imageSrc: string | null = null;
+	if (props.host == null) {
+		if (localInstance.iconUrl == null) {
+			return '/favicon.ico';
+		} else {
+			imageSrc = localInstance.iconUrl;
+		}
+	} else {
+		imageSrc = props.instance?.faviconUrl ?? null;
+	}
+	return getProxiedImageUrlNullable(imageSrc);
+});
 
-const themeColor = instance.themeColor ?? '#777777';
-
-const bg = {
-	background: `${themeColor}`,
-};
+const themeColorStyle = computed<CSSProperties>(() => {
+	const themeColor = (props.host == null ? localInstance.themeColor : props.instance?.themeColor) ?? '#777777';
+	return {
+		background: `${themeColor}`,
+	};
+});
 </script>
 
 <style lang="scss" module>
@@ -52,19 +64,14 @@ $height: 2ex;
 	color: #000;
 	margin-top: 5px;
 	padding: 1px 5px 1px 0;
-	text-shadow: /* .866 ≈ sin(60deg) */
-		1px 0 1px #fff,
-		.866px .5px 1px #fff,
-		.5px .866px 1px #fff,
-		0 1px 1px #fff,
-		-.5px .866px 1px #fff,
-		-.866px .5px 1px #fff,
-		-1px 0 1px #fff,
-		-.866px -.5px 1px #fff,
-		-.5px -.866px 1px #fff,
-		0 -1px 1px #fff,
-		.5px -.866px 1px #fff,
-		.866px -.5px 1px #fff;
+
+	// text-shadowは重いから使うな
+
+	//mask-image: linear-gradient(90deg,
+	//	rgb(0,0,0),
+	//	rgb(0,0,0) calc(100% - 16px),
+	//	rgba(0,0,0,0) 100%
+	//);
 }
 
 .icon {
@@ -82,6 +89,9 @@ $height: 2ex;
   overflow-wrap: anywhere;
   max-width: 300px;
   text-overflow: ellipsis;
+	padding: 1px;
+	-webkit-text-stroke: 3px #fff;
+	paint-order: stroke fill;
 
   &::-webkit-scrollbar {
     display: none;

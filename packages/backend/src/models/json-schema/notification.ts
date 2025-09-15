@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { ACHIEVEMENT_TYPES } from '@/core/AchievementService.js';
 import { notificationTypes, userExportableEntities } from '@/types.js';
 
 const baseSchema = {
@@ -294,12 +293,25 @@ export const packedNotificationSchema = {
 			type: {
 				type: 'string',
 				optional: false, nullable: false,
+				enum: ['chatRoomInvitationReceived'],
+			},
+			invitation: {
+				type: 'object',
+				ref: 'ChatRoomInvitation',
+				optional: false, nullable: false,
+			},
+		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
 				enum: ['achievementEarned'],
 			},
 			achievement: {
-				type: 'string',
-				optional: false, nullable: false,
-				enum: ACHIEVEMENT_TYPES,
+				ref: 'AchievementName',
 			},
 		},
 	}, {
@@ -334,6 +346,16 @@ export const packedNotificationSchema = {
 			ip: {
 				type: 'string',
 				optional: false, nullable: false,
+			},
+		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['createToken'],
 			},
 		},
 	}, {
@@ -449,10 +471,31 @@ export const packedNotificationSchema = {
 				optional: false, nullable: false,
 				enum: ['groupInvited'],
 			},
-			invitation: {
-				type: 'string',
+			user: {
+				type: 'object',
+				ref: 'UserLite',
 				optional: false, nullable: false,
-				format: 'id',
+			},
+			invitation: {
+				type: 'object',
+				properties: {
+					id: {
+						type: 'string',
+						optional: false, nullable: false,
+						format: 'id',
+					},
+					group: {
+						type: 'object',
+						properties: {
+							name: {
+								type: 'string',
+								optional: false, nullable: false,
+							},
+						},
+						optional: false, nullable: false,
+					},
+				},
+				optional: false, nullable: false,
 			},
 		},
 	}],
