@@ -19,6 +19,7 @@ import { ApiCallService } from './ApiCallService.js';
 import { SignupApiService } from './SignupApiService.js';
 import { SigninApiService } from './SigninApiService.js';
 import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
+import { MkkeySsoApiService } from './MkkeySsoApiService.js';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 @Injectable()
@@ -40,6 +41,7 @@ export class ApiServerService {
 		private signupApiService: SignupApiService,
 		private signinApiService: SigninApiService,
 		private signinWithPasskeyApiService: SigninWithPasskeyApiService,
+		private mkkeySsoApiService: MkkeySsoApiService,
 	) {
 		//this.createServer = this.createServer.bind(this);
 	}
@@ -115,6 +117,7 @@ export class ApiServerService {
 				host?: string;
 				invitationCode?: string;
 				emailAddress?: string;
+				mkkeyOauthToken?: string;
 				'hcaptcha-response'?: string;
 				'g-recaptcha-response'?: string;
 				'turnstile-response'?: string;
@@ -145,6 +148,13 @@ export class ApiServerService {
 		}>('/signin-with-passkey', (request, reply) => this.signinWithPasskeyApiService.signin(request, reply));
 
 		fastify.post<{ Body: { code: string; } }>('/signup-pending', (request, reply) => this.signupApiService.signupPending(request, reply));
+
+
+		fastify.post<{ Body: { mode: 'signin' | 'signup'; } }>('/mkkey-sso/authorize-url', (request, reply) => this.mkkeySsoApiService.getAuthorizeUrl(request));
+
+		fastify.get<{ Querystring: { code?: string; state?: string; }; }>('/mkkey-sso/callback', (request, reply) => this.mkkeySsoApiService.callback(request, reply));
+
+		fastify.post<{ Body: { oauthToken: string; } }>('/mkkey-sso/signin', (request, reply) => this.mkkeySsoApiService.signin(request, reply));
 
 		fastify.get('/v1/instance/peers', async (request, reply) => {
 			const instances = await this.instancesRepository.find({
