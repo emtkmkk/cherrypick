@@ -3,23 +3,23 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { EventEmitter } from "eventemitter3";
-import * as Matter from "matter-js";
-import seedrandom from "seedrandom";
-import { DropBag } from "./drop-bag.js";
+import { EventEmitter } from 'eventemitter3';
+import * as Matter from 'matter-js';
+import seedrandom from 'seedrandom';
+import { DropBag } from './drop-bag.js';
 import {
 	NORAML_MONOS,
 	SQUARE_MONOS,
 	SWEETS_MONOS,
 	YEN_MONOS,
-} from "./monos.js";
+} from './monos.js';
 
 export type Mono = {
 	id: string;
 	level: number;
 	sizeX: number;
 	sizeY: number;
-	shape: "circle" | "rectangle" | "custom";
+	shape: 'circle' | 'rectangle' | 'custom';
 	vertices?: Matter.Vector[][];
 	verticesSize?: number;
 	score: number;
@@ -29,16 +29,16 @@ export type Mono = {
 type Log =
 	| {
 			frame: number;
-			operation: "drop";
+			operation: 'drop';
 			x: number;
 	  }
 	| {
 			frame: number;
-			operation: "hold";
+			operation: 'hold';
 	  }
 	| {
 			frame: number;
-			operation: "surrender";
+			operation: 'surrender';
 	  };
 
 export class DropAndFusionGame extends EventEmitter<{
@@ -81,7 +81,7 @@ export class DropAndFusionGame extends EventEmitter<{
 	private lostLifeThisDrop = false;
 	private dropsSinceLifeLost = 0;
 	private _lives = 3;
-	private gameMode: "normal" | "yen" | "square" | "sweets" | "space";
+	private gameMode: 'normal' | 'yen' | 'square' | 'sweets' | 'space';
 	private rng: () => number;
 	private dropBag: DropBag;
 	private logs: Log[] = [];
@@ -89,9 +89,9 @@ export class DropAndFusionGame extends EventEmitter<{
 	/**
 	 * フィールドに出ていて、かつ合体の対象となるアイテム
 	 */
-	private fusionReadyBodyIds: Matter.Body["id"][] = [];
+	private fusionReadyBodyIds: Matter.Body['id'][] = [];
 
-	private gameOverReadyBodyIds: Matter.Body["id"][] = [];
+	private gameOverReadyBodyIds: Matter.Body['id'][] = [];
 
 	/**
 	 * fusion予約アイテムのペア
@@ -107,13 +107,13 @@ export class DropAndFusionGame extends EventEmitter<{
 	 * NOTE: すべての2体合体後に登録し、100ms以内に level-1 が接触したら productLevel+1 へ昇格する
 	 */
 	private recentSpecialFusions: {
-		bodyId: Matter.Body["id"];
+		bodyId: Matter.Body['id'];
 		productLevel: number;
 		expiresFrame: number;
 	}[] = [];
 
 	/** 同一フレーム内のクラスター合体二重処理防止 */
-	private clusterFusedBodyIds = new Set<Matter.Body["id"]>();
+	private clusterFusedBodyIds = new Set<Matter.Body['id']>();
 
 	private latestDroppedAt = 0; // frame
 	private latestFusionedAt = 0; // frame
@@ -122,15 +122,15 @@ export class DropAndFusionGame extends EventEmitter<{
 
 	public get monoDefinitions() {
 		switch (this.gameMode) {
-			case "normal":
+			case 'normal':
 				return NORAML_MONOS;
-			case "yen":
+			case 'yen':
 				return YEN_MONOS;
-			case "square":
+			case 'square':
 				return SQUARE_MONOS;
-			case "sweets":
+			case 'sweets':
 				return SWEETS_MONOS;
-			case "space":
+			case 'space':
 				return NORAML_MONOS;
 		}
 	}
@@ -141,7 +141,7 @@ export class DropAndFusionGame extends EventEmitter<{
 	}
 	private set combo(value: number) {
 		this._combo = value;
-		this.emit("changeCombo", value);
+		this.emit('changeCombo', value);
 	}
 
 	private _score = 0;
@@ -150,7 +150,7 @@ export class DropAndFusionGame extends EventEmitter<{
 	}
 	private set score(value: number) {
 		this._score = value;
-		this.emit("changeScore", value);
+		this.emit('changeScore', value);
 	}
 
 	private get lives() {
@@ -158,7 +158,7 @@ export class DropAndFusionGame extends EventEmitter<{
 	}
 	private set lives(value: number) {
 		this._lives = value;
-		this.emit("changeLives", value);
+		this.emit('changeLives', value);
 	}
 
 	private getMonoRenderOptions:
@@ -169,7 +169,7 @@ export class DropAndFusionGame extends EventEmitter<{
 
 	constructor(env: {
 		seed: string;
-		gameMode: DropAndFusionGame["gameMode"];
+		gameMode: DropAndFusionGame['gameMode'];
 		getMonoRenderOptions?: (mono: Mono) => Partial<Matter.IBodyRenderOptions>;
 	}) {
 		super();
@@ -188,14 +188,14 @@ export class DropAndFusionGame extends EventEmitter<{
 
 		// sweetsモードは重いため
 		const physicsQualityFactor =
-			this.gameMode === "sweets" ? 4 : this.PHYSICS_QUALITY_FACTOR;
+			this.gameMode === 'sweets' ? 4 : this.PHYSICS_QUALITY_FACTOR;
 		this.engine = Matter.Engine.create({
 			constraintIterations: 2 * physicsQualityFactor,
 			positionIterations: 6 * physicsQualityFactor,
 			velocityIterations: 4 * physicsQualityFactor,
 			gravity: {
 				x: 0,
-				y: this.gameMode === "space" ? 0.0125 : 1,
+				y: this.gameMode === 'space' ? 0.0125 : 1,
 			},
 			timing: {
 				timeScale: 2,
@@ -207,13 +207,13 @@ export class DropAndFusionGame extends EventEmitter<{
 
 		//#region walls
 		const WALL_OPTIONS: Matter.IChamferableBodyDefinition = {
-			label: "_wall_",
+			label: '_wall_',
 			isStatic: true,
 			friction: 0.7,
-			slop: this.gameMode === "space" ? 0.01 : 0.7,
+			slop: this.gameMode === 'space' ? 0.01 : 0.7,
 			render: {
-				strokeStyle: "transparent",
-				fillStyle: "transparent",
+				strokeStyle: 'transparent',
+				fillStyle: 'transparent',
 			},
 		};
 
@@ -249,12 +249,12 @@ export class DropAndFusionGame extends EventEmitter<{
 			this.GAME_WIDTH,
 			200,
 			{
-				label: "_overflow_",
+				label: '_overflow_',
 				isStatic: true,
 				isSensor: true,
 				render: {
-					strokeStyle: "transparent",
-					fillStyle: "transparent",
+					strokeStyle: 'transparent',
+					fillStyle: 'transparent',
 				},
 			},
 		);
@@ -273,27 +273,28 @@ export class DropAndFusionGame extends EventEmitter<{
 		const options: Matter.IBodyDefinition = {
 			label: mono.id,
 			density:
-				this.gameMode === "space" ? 0.01 : (mono.sizeX * mono.sizeY) / 10000,
-			restitution: this.gameMode === "space" ? 0.5 : 0.25,
-			frictionAir: this.gameMode === "space" ? 0 : 0.01,
-			friction: this.gameMode === "space" ? 0.5 : 0.7,
-			frictionStatic: this.gameMode === "space" ? 0 : 5,
-			slop: this.gameMode === "space" ? 0.01 : 0.7,
+				this.gameMode === 'space'
+					? 0.01
+					: (mono.sizeX * mono.sizeY) ** 0.8 / 2500,
+			restitution: this.gameMode === 'space' ? 0.5 : 0.25,
+			frictionAir: this.gameMode === 'space' ? 0 : 0.01,
+			friction: this.gameMode === 'space' ? 0.5 : 0.7,
+			frictionStatic: this.gameMode === 'space' ? 0 : 5,
+			slop: this.gameMode === 'space' ? 0.01 : 0.7,
 			//mass: 0,
 			render: this.getMonoRenderOptions
 				? this.getMonoRenderOptions(mono)
 				: undefined,
 		};
-		if (mono.shape === "circle") {
+		if (mono.shape === 'circle') {
 			return Matter.Bodies.circle(x, y, mono.sizeX / 2, options);
-		} else if (mono.shape === "rectangle") {
+		} else if (mono.shape === 'rectangle') {
 			return Matter.Bodies.rectangle(x, y, mono.sizeX, mono.sizeY, options);
 		} else if (
-			mono.shape === "custom" &&
+			mono.shape === 'custom' &&
 			mono.vertices != null &&
 			mono.verticesSize != null
 		) {
-			//eslint-disable-line @typescript-eslint/no-unnecessary-condition
 			return Matter.Bodies.fromVertices(
 				x,
 				y,
@@ -306,7 +307,7 @@ export class DropAndFusionGame extends EventEmitter<{
 				options,
 			);
 		} else {
-			throw new Error("unrecognized shape");
+			throw new Error('unrecognized shape');
 		}
 	}
 
@@ -328,8 +329,8 @@ export class DropAndFusionGame extends EventEmitter<{
 	 */
 	private isFusibleMonoBody(body: Matter.Body): boolean {
 		return (
-			body.label !== "_wall_" &&
-			body.label !== "_overflow_" &&
+			body.label !== '_wall_' &&
+			body.label !== '_overflow_' &&
 			!body.isStatic &&
 			this.monoDefinitions.some((m) => m.id === body.label)
 		);
@@ -344,6 +345,16 @@ export class DropAndFusionGame extends EventEmitter<{
 	 */
 	private getMonoByBody(body: Matter.Body): Mono | null {
 		return this.monoDefinitions.find((m) => m.id === body.label) ?? null;
+	}
+
+	/**
+	 * モノ定義の最高レベルを返す
+	 *
+	 * @returns 最高レベル
+	 * @internal
+	 */
+	private getMaxMonoLevel(): number {
+		return Math.max(...this.monoDefinitions.map((m) => m.level));
 	}
 
 	/**
@@ -371,12 +382,12 @@ export class DropAndFusionGame extends EventEmitter<{
 	private fusionPairScore(mono: Mono, isMaxLevelFusion: boolean): number {
 		if (
 			isMaxLevelFusion &&
-			this.gameMode !== "yen" &&
-			this.gameMode !== "sweets"
+			this.gameMode !== 'yen' &&
+			this.gameMode !== 'sweets'
 		) {
 			return 9999;
 		}
-		const hasComboBonus = this.gameMode !== "yen" && this.gameMode !== "sweets";
+		const hasComboBonus = this.gameMode !== 'yen' && this.gameMode !== 'sweets';
 		return (
 			mono.score +
 			(hasComboBonus && this.combo >= 3 ? Math.min(this.combo - 2, 8) : 0)
@@ -407,7 +418,7 @@ export class DropAndFusionGame extends EventEmitter<{
 	 * @param bodyId - 対象ボディID
 	 * @internal
 	 */
-	private unregisterSpecialFusion(bodyId: Matter.Body["id"]): void {
+	private unregisterSpecialFusion(bodyId: Matter.Body['id']): void {
 		this.recentSpecialFusions = this.recentSpecialFusions.filter(
 			(x) => x.bodyId !== bodyId,
 		);
@@ -472,7 +483,7 @@ export class DropAndFusionGame extends EventEmitter<{
 			},
 		});
 
-		this.emit("monoAdded", nextMono);
+		this.emit('monoAdded', nextMono);
 		this.registerSpecialFusion(body, nextMono.level);
 		return body;
 	}
@@ -487,8 +498,8 @@ export class DropAndFusionGame extends EventEmitter<{
 	private buildSameLabelConnectedComponents(
 		pairs: Matter.Pair[],
 	): Matter.Body[][] {
-		const adjacency = new Map<Matter.Body["id"], Set<Matter.Body["id"]>>();
-		const bodyById = new Map<Matter.Body["id"], Matter.Body>();
+		const adjacency = new Map<Matter.Body['id'], Set<Matter.Body['id']>>();
+		const bodyById = new Map<Matter.Body['id'], Matter.Body>();
 
 		const addEdge = (a: Matter.Body, b: Matter.Body) => {
 			if (!this.isFusibleMonoBody(a) || !this.isFusibleMonoBody(b)) return;
@@ -505,7 +516,7 @@ export class DropAndFusionGame extends EventEmitter<{
 			addEdge(pair.bodyA, pair.bodyB);
 		}
 
-		const visited = new Set<Matter.Body["id"]>();
+		const visited = new Set<Matter.Body['id']>();
 		const components: Matter.Body[][] = [];
 
 		for (const startId of adjacency.keys()) {
@@ -539,8 +550,8 @@ export class DropAndFusionGame extends EventEmitter<{
 	 * @returns この呼び出しで合体したボディID
 	 * @internal
 	 */
-	private tryTripleClusterFusion(pairs: Matter.Pair[]): Set<Matter.Body["id"]> {
-		const fused = new Set<Matter.Body["id"]>();
+	private tryTripleClusterFusion(pairs: Matter.Pair[]): Set<Matter.Body['id']> {
+		const fused = new Set<Matter.Body['id']>();
 		const components = this.buildSameLabelConnectedComponents(pairs);
 
 		for (const component of components) {
@@ -564,10 +575,13 @@ export class DropAndFusionGame extends EventEmitter<{
 	}
 
 	/**
-	 * 3体をまとめて level+2 に融合する（経路①）
+	 * 3体をまとめて融合する（経路①）
 	 *
 	 * @param bodies - 同ラベル3体
 	 * @returns 融合に成功したら true
+	 * @remarks
+	 * NOTE: 要求レベルが最大レベルを超える場合（例: 9×3 => level 11）は
+	 * 生成物なし（消滅）で 9999 点を加算する
 	 * @internal
 	 */
 	private fusionCluster(bodies: Matter.Body[]): boolean {
@@ -580,10 +594,14 @@ export class DropAndFusionGame extends EventEmitter<{
 			return false;
 		}
 
-		const targetLevel = currentMono.level + 2;
-		const nextMono =
-			this.monoDefinitions.find((m) => m.level === targetLevel) ?? null;
-		if (nextMono == null) return false;
+		const requestedTargetLevel = currentMono.level + 2;
+		const maxLevel = this.getMaxMonoLevel();
+		const isOverflowFusion = requestedTargetLevel > maxLevel;
+		const nextMono = isOverflowFusion
+			? null
+			: (this.monoDefinitions.find((m) => m.level === requestedTargetLevel) ??
+				null);
+		if (!isOverflowFusion && nextMono == null) return false;
 
 		const newX =
 			bodies.reduce((sum, b) => sum + b.position.x, 0) / bodies.length;
@@ -592,16 +610,21 @@ export class DropAndFusionGame extends EventEmitter<{
 
 		this.removeBodiesForFusion(...bodies);
 
-		this.advanceFusionCombo();
-		const score1 = this.fusionPairScore(currentMono, false);
-		this.score += score1;
-
-		this.advanceFusionCombo();
-		const score2 = this.fusionPairScore(currentMono, false);
-		this.score += score2;
-
-		this.addFusionProductBody(nextMono, newX, newY);
-		this.emit("fusioned", newX, newY, nextMono, score1 + score2);
+		let additionalScore: number;
+		if (isOverflowFusion) {
+			this.advanceFusionCombo();
+			additionalScore = this.fusionPairScore(currentMono, true);
+		} else {
+			if (nextMono == null) return false;
+			this.advanceFusionCombo();
+			const score1 = this.fusionPairScore(currentMono, false);
+			this.advanceFusionCombo();
+			const score2 = this.fusionPairScore(currentMono, false);
+			additionalScore = score1 + score2;
+			this.addFusionProductBody(nextMono, newX, newY);
+		}
+		this.score += additionalScore;
+		this.emit('fusioned', newX, newY, nextMono, additionalScore);
 		return true;
 	}
 
@@ -644,7 +667,7 @@ export class DropAndFusionGame extends EventEmitter<{
 		catcherBody: Matter.Body,
 		productBody: Matter.Body,
 		entry: {
-			bodyId: Matter.Body["id"];
+			bodyId: Matter.Body['id'];
 			productLevel: number;
 			expiresFrame: number;
 		},
@@ -662,10 +685,14 @@ export class DropAndFusionGame extends EventEmitter<{
 			return false;
 		}
 
-		const targetLevel = entry.productLevel + 1;
-		const nextMono =
-			this.monoDefinitions.find((m) => m.level === targetLevel) ?? null;
-		if (nextMono == null) return false;
+		const requestedTargetLevel = entry.productLevel + 1;
+		const maxLevel = this.getMaxMonoLevel();
+		const isOverflowFusion = requestedTargetLevel > maxLevel;
+		const nextMono = isOverflowFusion
+			? null
+			: (this.monoDefinitions.find((m) => m.level === requestedTargetLevel) ??
+				null);
+		if (!isOverflowFusion && nextMono == null) return false;
 
 		const newX = (catcherBody.position.x + productBody.position.x) / 2;
 		const newY = (catcherBody.position.y + productBody.position.y) / 2;
@@ -674,17 +701,13 @@ export class DropAndFusionGame extends EventEmitter<{
 		this.removeBodiesForFusion(catcherBody, productBody);
 
 		this.advanceFusionCombo();
-		const hasNextLevel = this.monoDefinitions.some(
-			(m) => m.level === targetLevel + 1,
-		);
-		const additionalScore = this.fusionPairScore(
-			catcherMono,
-			!hasNextLevel && this.gameMode !== "yen" && this.gameMode !== "sweets",
-		);
+		const additionalScore = this.fusionPairScore(catcherMono, isOverflowFusion);
 		this.score += additionalScore;
 
-		this.addFusionProductBody(nextMono, newX, newY);
-		this.emit("fusioned", newX, newY, nextMono, additionalScore);
+		if (nextMono) {
+			this.addFusionProductBody(nextMono, newX, newY);
+		}
+		this.emit('fusioned', newX, newY, nextMono, additionalScore);
 		return true;
 	}
 
@@ -708,7 +731,7 @@ export class DropAndFusionGame extends EventEmitter<{
 		const currentMono = this.monoDefinitions.find((y) => y.id === bodyA.label);
 
 		if (currentMono == null) {
-			throw new Error("Current Mono Not Found");
+			throw new Error('Current Mono Not Found');
 		}
 
 		const nextMono =
@@ -721,11 +744,11 @@ export class DropAndFusionGame extends EventEmitter<{
 
 		const additionalScore = this.fusionPairScore(
 			currentMono,
-			nextMono == null && this.gameMode !== "yen" && this.gameMode !== "sweets",
+			nextMono == null && this.gameMode !== 'yen' && this.gameMode !== 'sweets',
 		);
 		this.score += additionalScore;
 
-		this.emit("fusioned", newX, newY, nextMono, additionalScore);
+		this.emit('fusioned', newX, newY, nextMono, additionalScore);
 	}
 
 	private onCollision(event: Matter.IEventCollision<Matter.Engine>) {
@@ -769,17 +792,14 @@ export class DropAndFusionGame extends EventEmitter<{
 			} else {
 				const energy = pairs.collision.depth;
 
-				if (bodyA.label === "_overflow_" || bodyB.label === "_overflow_")
-					continue;
+				if (bodyA.label === '_overflow_' || bodyB.label === '_overflow_') continue;
 
-				if (bodyA.label !== "_wall_" && bodyB.label !== "_wall_") {
-					if (!this.gameOverReadyBodyIds.includes(bodyA.id))
-						this.gameOverReadyBodyIds.push(bodyA.id);
-					if (!this.gameOverReadyBodyIds.includes(bodyB.id))
-						this.gameOverReadyBodyIds.push(bodyB.id);
+				if (bodyA.label !== '_wall_' && bodyB.label !== '_wall_') {
+					if (!this.gameOverReadyBodyIds.includes(bodyA.id)) this.gameOverReadyBodyIds.push(bodyA.id);
+					if (!this.gameOverReadyBodyIds.includes(bodyB.id)) this.gameOverReadyBodyIds.push(bodyB.id);
 				}
 
-				this.emit("collision", energy, bodyA, bodyB);
+				this.emit('collision', energy, bodyA, bodyB);
 			}
 		}
 	}
@@ -819,7 +839,7 @@ export class DropAndFusionGame extends EventEmitter<{
 	public surrender() {
 		this.logs.push({
 			frame: this.frame,
-			operation: "surrender",
+			operation: 'surrender',
 		});
 
 		this.finalizeGameOver();
@@ -842,7 +862,7 @@ export class DropAndFusionGame extends EventEmitter<{
 	}
 
 	private removeOverflowBodies(target: Matter.Body) {
-		if (target.label === "_wall_" || target.label === "_overflow_") return;
+		if (target.label === '_wall_' || target.label === '_overflow_') return;
 		this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(
 			(x) => x !== target.id,
 		);
@@ -854,11 +874,10 @@ export class DropAndFusionGame extends EventEmitter<{
 		// 念のため残っているオーバーフロー中のオブジェクトも除去する
 		for (const b of [...this.engine.world.bodies]) {
 			if (
-				b.label === "_wall_" ||
-				b.label === "_overflow_" ||
+				b.label === '_wall_' ||
+				b.label === '_overflow_' ||
 				b.id === target.id
-			)
-				continue;
+			) continue;
 			const collision = Matter.SAT.collides(b, this.overflowCollider);
 			if ((collision && collision.collided) || b.bounds.min.y < 0) {
 				this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(
@@ -874,26 +893,26 @@ export class DropAndFusionGame extends EventEmitter<{
 
 	private finalizeGameOver() {
 		this.isGameOver = true;
-		this.emit("gameOver");
+		this.emit('gameOver');
 	}
 
 	public start() {
 		this.lostLifeThisDrop = false;
 		this.dropsSinceLifeLost = 0;
-		this.emit("changeLives", this.lives);
+		this.emit('changeLives', this.lives);
 		for (let i = 0; i < this.STOCK_MAX; i++) {
 			this.stock.push(this.createStockItem());
 		}
-		this.emit("changeStock", this.stock);
+		this.emit('changeStock', this.stock);
 
 		Matter.Events.on(
 			this.engine,
-			"collisionStart",
+			'collisionStart',
 			this.onCollision.bind(this),
 		);
 		Matter.Events.on(
 			this.engine,
-			"collisionActive",
+			'collisionActive',
 			this.onCollisionActive.bind(this),
 		);
 	}
@@ -942,7 +961,7 @@ export class DropAndFusionGame extends EventEmitter<{
 		if (!head) return;
 
 		this.stock.push(this.createStockItem());
-		this.emit("changeStock", this.stock);
+		this.emit('changeStock', this.stock);
 
 		const inputX = Math.round(_x);
 		const x = Math.min(
@@ -952,12 +971,12 @@ export class DropAndFusionGame extends EventEmitter<{
 		const body = this.createBody(head.mono, x, 50 + head.mono.sizeY / 2);
 		this.logs.push({
 			frame: this.frame,
-			operation: "drop",
+			operation: 'drop',
 			x: inputX,
 		});
 
 		// add force
-		if (this.gameMode === "space") {
+		if (this.gameMode === 'space') {
 			Matter.Body.applyForce(body, body.position, {
 				x: 0,
 				y: (Math.PI * head.mono.sizeX * head.mono.sizeY) / 65536,
@@ -977,8 +996,8 @@ export class DropAndFusionGame extends EventEmitter<{
 		this.fusionReadyBodyIds.push(body.id);
 		this.latestDroppedAt = this.frame;
 
-		this.emit("dropped", x);
-		this.emit("monoAdded", head.mono);
+		this.emit('dropped', x);
+		this.emit('monoAdded', head.mono);
 	}
 
 	public hold() {
@@ -986,7 +1005,7 @@ export class DropAndFusionGame extends EventEmitter<{
 
 		this.logs.push({
 			frame: this.frame,
-			operation: "hold",
+			operation: 'hold',
 		});
 
 		if (this.holding) {
@@ -994,15 +1013,15 @@ export class DropAndFusionGame extends EventEmitter<{
 			if (!head) return;
 			this.stock.unshift(this.holding);
 			this.holding = head;
-			this.emit("changeHolding", this.holding);
-			this.emit("changeStock", this.stock);
+			this.emit('changeHolding', this.holding);
+			this.emit('changeStock', this.stock);
 		} else {
 			const head = this.stock.shift();
 			if (!head) return;
 			this.holding = head;
 			this.stock.push(this.createStockItem());
-			this.emit("changeHolding", this.holding);
-			this.emit("changeStock", this.stock);
+			this.emit('changeHolding', this.holding);
+			this.emit('changeStock', this.stock);
 		}
 	}
 
@@ -1014,13 +1033,13 @@ export class DropAndFusionGame extends EventEmitter<{
 			const frameDelta = i === 0 ? log.frame : log.frame - logs[i - 1].frame;
 
 			switch (log.operation) {
-				case "drop":
+				case 'drop':
 					_logs.push([frameDelta, 0, log.x]);
 					break;
-				case "hold":
+				case 'hold':
 					_logs.push([frameDelta, 1]);
 					break;
-				case "surrender":
+				case 'surrender':
 					_logs.push([frameDelta, 2]);
 					break;
 			}
@@ -1044,20 +1063,20 @@ export class DropAndFusionGame extends EventEmitter<{
 				case 0:
 					_logs.push({
 						frame,
-						operation: "drop",
+						operation: 'drop',
 						x: log[2],
 					});
 					break;
 				case 1:
 					_logs.push({
 						frame,
-						operation: "hold",
+						operation: 'hold',
 					});
 					break;
 				case 2:
 					_logs.push({
 						frame,
-						operation: "surrender",
+						operation: 'surrender',
 					});
 					break;
 			}
