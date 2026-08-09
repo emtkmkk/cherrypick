@@ -38,6 +38,7 @@ import {
 	MiHashtag,
 	MiInstance,
 	MiMessagingMessage,
+	MiMkkeyAccountLink,
 	MiMeta,
 	MiModerationLog,
 	MiMuting,
@@ -364,6 +365,12 @@ const $messagingMessagesRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $mkkeyAccountLinksRepository: Provider = {
+	provide: DI.mkkeyAccountLinksRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiMkkeyAccountLink).extend(miRepository as MiRepository<MiMkkeyAccountLink>),
+	inject: [DI.db],
+};
+
 const $pagesRepository: Provider = {
 	provide: DI.pagesRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiPage).extend(miRepository as MiRepository<MiPage>),
@@ -593,6 +600,7 @@ const $noteScheduleRepository: Provider = {
 		$accessTokensRepository,
 		$signinsRepository,
 		$messagingMessagesRepository,
+		$mkkeyAccountLinksRepository,
 		$pagesRepository,
 		$pageLikesRepository,
 		$galleryPostsRepository,
@@ -671,6 +679,7 @@ const $noteScheduleRepository: Provider = {
 		$accessTokensRepository,
 		$signinsRepository,
 		$messagingMessagesRepository,
+		$mkkeyAccountLinksRepository,
 		$pagesRepository,
 		$pageLikesRepository,
 		$galleryPostsRepository,

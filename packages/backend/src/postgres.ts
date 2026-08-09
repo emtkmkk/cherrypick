@@ -37,6 +37,7 @@ import { MiGalleryPost } from '@/models/GalleryPost.js';
 import { MiHashtag } from '@/models/Hashtag.js';
 import { MiInstance } from '@/models/Instance.js';
 import { MiMessagingMessage } from '@/models/MessagingMessage.js';
+import { MiMkkeyAccountLink } from '@/models/MkkeyAccountLink.js';
 import { MiMeta } from '@/models/Meta.js';
 import { MiModerationLog } from '@/models/ModerationLog.js';
 import { MiMuting } from '@/models/Muting.js';
@@ -185,6 +186,7 @@ export const entities = [
 	MiAbuseReportNotificationRecipient,
 	MiRegistrationTicket,
 	MiMessagingMessage,
+	MiMkkeyAccountLink,
 	MiSignin,
 	MiModerationLog,
 	MiClip,

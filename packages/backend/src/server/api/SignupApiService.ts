@@ -20,6 +20,7 @@ import { FastifyReplyError } from '@/misc/fastify-reply-error.js';
 import { bindThis } from '@/decorators.js';
 import { L_CHARS, secureRndstr } from '@/misc/secure-rndstr.js';
 import { SigninService } from './SigninService.js';
+import { MkkeySsoApiService } from './MkkeySsoApiService.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
 @Injectable()
@@ -51,6 +52,7 @@ export class SignupApiService {
 		private captchaService: CaptchaService,
 		private signupService: SignupService,
 		private signinService: SigninService,
+		private mkkeySsoApiService: MkkeySsoApiService,
 		private emailService: EmailService,
 	) {
 	}
@@ -64,6 +66,7 @@ export class SignupApiService {
 				host?: string;
 				invitationCode?: string;
 				emailAddress?: string;
+				mkkeyOauthToken?: string;
 				'hcaptcha-response'?: string;
 				'g-recaptcha-response'?: string;
 				'turnstile-response'?: string;
@@ -75,8 +78,6 @@ export class SignupApiService {
 	) {
 		const body = request.body;
 
-		// Verify *Captcha
-		// ただしテスト時はこの機構は障害となるため無効にする
 		if (process.env.NODE_ENV !== 'test') {
 			if (this.meta.enableHcaptcha && this.meta.hcaptchaSecretKey) {
 				await this.captchaService.verifyHcaptcha(this.meta.hcaptchaSecretKey, body['hcaptcha-response']).catch(err => {
@@ -114,6 +115,18 @@ export class SignupApiService {
 		const host: string | null = process.env.NODE_ENV === 'test' ? (body['host'] ?? null) : null;
 		const invitationCode = body['invitationCode'];
 		const emailAddress = body['emailAddress'];
+		const mkkeyOauthToken = body['mkkeyOauthToken'];
+
+		const mkkeyIdentity = typeof mkkeyOauthToken === 'string' && mkkeyOauthToken.length > 0
+			? this.mkkeySsoApiService.verifyOauthToken(mkkeyOauthToken)
+			: null;
+
+		if (mkkeyIdentity) {
+			const linkedUser = await this.mkkeySsoApiService.findLinkedUser(mkkeyIdentity);
+			if (linkedUser) {
+				return this.signinService.signin(request, reply, linkedUser);
+			}
+		}
 
 		if (this.meta.emailRequiredForSignup) {
 			if (emailAddress == null || typeof emailAddress !== 'string') {
@@ -131,39 +144,40 @@ export class SignupApiService {
 		let ticket: MiRegistrationTicket | null = null;
 
 		if (this.meta.disableRegistration) {
-			if (invitationCode == null || typeof invitationCode !== 'string') {
+			if ((invitationCode == null || typeof invitationCode !== 'string') && !mkkeyIdentity) {
 				reply.code(400);
 				return;
 			}
 
-			ticket = await this.registrationTicketsRepository.findOneBy({
-				code: invitationCode,
-			});
+			if (invitationCode != null && typeof invitationCode === 'string') {
+				ticket = await this.registrationTicketsRepository.findOneBy({
+					code: invitationCode,
+				});
+			}
 
-			if (ticket == null || ticket.usedById != null) {
+			if (!mkkeyIdentity) {
+				if (ticket == null || ticket.usedById != null) {
+					reply.code(400);
+					return;
+				}
+			}
+
+			if (ticket && ticket.expiresAt && ticket.expiresAt < new Date()) {
 				reply.code(400);
 				return;
 			}
 
-			if (ticket.expiresAt && ticket.expiresAt < new Date()) {
-				reply.code(400);
-				return;
-			}
-
-			// メアド認証が有効の場合
-			if (this.meta.emailRequiredForSignup) {
-				// メアド認証済みならエラー
+			if (ticket && this.meta.emailRequiredForSignup) {
 				if (ticket.usedBy) {
 					reply.code(400);
 					return;
 				}
 
-				// 認証しておらず、メール送信から30分以内ならエラー
 				if (ticket.usedAt && ticket.usedAt.getTime() + (1000 * 60 * 30) > Date.now()) {
 					reply.code(400);
 					return;
 				}
-			} else if (ticket.usedAt) {
+			} else if (ticket && ticket.usedAt) {
 				reply.code(400);
 				return;
 			}
@@ -174,7 +188,6 @@ export class SignupApiService {
 				throw new FastifyReplyError(400, 'DUPLICATED_USERNAME');
 			}
 
-			// Check deleted username duplication
 			if (await this.usedUsernamesRepository.exists({ where: { username: username.toLowerCase() } })) {
 				throw new FastifyReplyError(400, 'USED_USERNAME');
 			}
@@ -185,17 +198,16 @@ export class SignupApiService {
 			}
 
 			const code = secureRndstr(16, { chars: L_CHARS });
-
-			// Generate hash of password
-			//const salt = await bcrypt.genSalt(8);
 			const hash = await argon2.hash(password);
 
 			const pendingUser = await this.userPendingsRepository.insertOne({
 				id: this.idService.gen(),
 				code,
 				email: emailAddress!,
-				username: username,
+				username,
 				password: hash,
+				mkkeyUserId: mkkeyIdentity?.mkkeyUserId ?? null,
+				mkkeyUsernameLower: mkkeyIdentity?.mkkeyUsernameLower ?? null,
 			});
 
 			const link = `${this.config.url}/signup-complete/${code}`;
@@ -213,39 +225,46 @@ export class SignupApiService {
 
 			reply.code(204);
 			return;
-		} else {
-			try {
-				const { account, secret } = await this.signupService.signup({
-					username, password, host,
+		}
+
+		try {
+			const { account, secret } = await this.signupService.signup({
+				username, password, host,
+			});
+
+			const res = await this.userEntityService.pack(account, account, {
+				schema: 'MeDetailed',
+				includeSecrets: true,
+			});
+
+			if (mkkeyIdentity) {
+				await this.mkkeySsoApiService.saveLink({
+					mkkeyUserId: mkkeyIdentity.mkkeyUserId,
+					mkkeyUsernameLower: mkkeyIdentity.mkkeyUsernameLower,
+					userId: account.id,
 				});
-
-				const res = await this.userEntityService.pack(account, account, {
-					schema: 'MeDetailed',
-					includeSecrets: true,
-				});
-
-				if (ticket) {
-					await this.registrationTicketsRepository.update(ticket.id, {
-						usedAt: new Date(),
-						usedBy: account,
-						usedById: account.id,
-					});
-				}
-
-				return {
-					...res,
-					token: secret,
-				};
-			} catch (err) {
-				throw new FastifyReplyError(400, typeof err === 'string' ? err : (err as Error).toString());
 			}
+
+			if (ticket) {
+				await this.registrationTicketsRepository.update(ticket.id, {
+					usedAt: new Date(),
+					usedBy: account,
+					usedById: account.id,
+				});
+			}
+
+			return {
+				...res,
+				token: secret,
+			};
+		} catch (err) {
+			throw new FastifyReplyError(400, typeof err === 'string' ? err : (err as Error).toString());
 		}
 	}
 
 	@bindThis
 	public async signupPending(request: FastifyRequest<{ Body: { code: string; } }>, reply: FastifyReply) {
 		const body = request.body;
-
 		const code = body['code'];
 
 		try {
@@ -255,7 +274,7 @@ export class SignupApiService {
 				throw new FastifyReplyError(400, 'EXPIRED');
 			}
 
-			const { account, secret } = await this.signupService.signup({
+			const { account } = await this.signupService.signup({
 				username: pendingUser.username,
 				passwordHash: pendingUser.password,
 			});
@@ -271,6 +290,14 @@ export class SignupApiService {
 				emailVerified: true,
 				emailVerifyCode: null,
 			});
+
+			if (pendingUser.mkkeyUserId && pendingUser.mkkeyUsernameLower) {
+				await this.mkkeySsoApiService.saveLink({
+					mkkeyUserId: pendingUser.mkkeyUserId,
+					mkkeyUsernameLower: pendingUser.mkkeyUsernameLower,
+					userId: account.id,
+				});
+			}
 
 			const ticket = await this.registrationTicketsRepository.findOneBy({ pendingUserId: pendingUser.id });
 			if (ticket) {

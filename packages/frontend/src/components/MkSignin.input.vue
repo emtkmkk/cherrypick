@@ -39,6 +39,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkButton type="submit" large primary rounded style="margin: 0 auto;" data-cy-signin-page-input-continue>{{ i18n.ts.continue }} <i class="ti ti-arrow-right"></i></MkButton>
 		</form>
 
+		<MkButton type="button" rounded style="margin: 0 auto;" @click="signinWithMkkeySso">mkkey.net でログイン</MkButton>
+
 		<!-- パスワードレスログイン -->
 		<div :class="$style.orHr">
 			<p :class="$style.orMsg">{{ i18n.ts.or }}</p>
@@ -57,15 +59,22 @@ import { ref } from 'vue';
 import { toUnicode } from 'punycode/';
 
 import { query, extractDomain } from '@@/js/url.js';
-import { host as configHost } from '@@/js/config.js';
+import { apiUrl, host as configHost } from '@@/js/config.js';
 import type { OpenOnRemoteOptions } from '@/scripts/please-login.js';
 import { i18n } from '@/i18n.js';
+import { login } from '@/account.js';
 import * as os from '@/os.js';
 import { defaultStore } from '@/store.js';
 
 import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkInfo from '@/components/MkInfo.vue';
+
+type MkkeySsoMessage = {
+	source: 'mkkey-sso';
+	mode: 'signin' | 'signup';
+	oauthToken: string;
+};
 
 const props = withDefaults(defineProps<{
 	message?: string,
@@ -83,6 +92,44 @@ const emit = defineEmits<{
 const host = toUnicode(configHost);
 
 const username = ref('');
+
+function isMkkeySsoMessage(data: unknown): data is MkkeySsoMessage {
+	if (typeof data !== 'object' || data == null) return false;
+	const payload = data as Record<string, unknown>;
+	return payload.source === 'mkkey-sso' && typeof payload.oauthToken === 'string' && (payload.mode === 'signin' || payload.mode === 'signup');
+}
+
+async function runMkkeyOauth(mode: 'signin' | 'signup'): Promise<string | null> {
+	const res = await fetch(`${apiUrl}/mkkey-sso/authorize-url`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({ mode }),
+	});
+
+	if (!res.ok) return null;
+	const body = await res.json() as { url: string; };
+	const popup = window.open(body.url, 'mkkey-sso', 'width=520,height=700');
+	if (!popup) return null;
+
+	return await new Promise((resolve) => {
+		const timer = setTimeout(() => {
+			window.removeEventListener('message', onMessage);
+			resolve(null);
+		}, 1000 * 60 * 3);
+
+		const onMessage = (event: MessageEvent<unknown>) => {
+			if (!isMkkeySsoMessage(event.data)) return;
+			if (event.data.mode !== mode) return;
+			clearTimeout(timer);
+			window.removeEventListener('message', onMessage);
+			resolve(event.data.oauthToken);
+		};
+
+		window.addEventListener('message', onMessage);
+	});
+}
 
 //#region Open on remote
 function openRemote(options: OpenOnRemoteOptions, targetHost?: string): void {
@@ -139,6 +186,36 @@ async function specifyHostAndOpenRemote(options: OpenOnRemoteOptions): Promise<v
 		return;
 	}
 	openRemote(options, targetHost);
+}
+
+async function signinWithMkkeySso(): Promise<void> {
+	const oauthToken = await runMkkeyOauth('signin');
+	if (!oauthToken) {
+		os.alert({
+			type: 'error',
+			text: 'mkkey.net OAuthに失敗しました。',
+		});
+		return;
+	}
+
+	const res = await fetch(`${apiUrl}/mkkey-sso/signin`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({ oauthToken }),
+	});
+
+	if (!res.ok) {
+		os.alert({
+			type: 'error',
+			text: 'mkkey.net連携済みのアカウントが見つかりませんでした。',
+		});
+		return;
+	}
+
+	const body = await res.json() as { i: string; };
+	await login(body.i);
 }
 //#endregion
 </script>
