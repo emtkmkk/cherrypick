@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: noridev and cherrypick-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 import { Inject, Injectable } from '@nestjs/common';
 import { Brackets } from 'typeorm';
 import type { NotesRepository, MiMeta } from '@/models/_.js';
@@ -88,9 +93,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.leftJoinAndSelect('reply.user', 'replyUser')
 				.leftJoinAndSelect('renote.user', 'renoteUser');
 
+			this.queryService.generateBlockedHostQueryForNote(query);
+			this.queryService.generateSuspendedUserQueryForNote(query);
 			if (me) {
-				this.queryService.generateMutedUserQuery(query, me);
-				this.queryService.generateBlockedUserQuery(query, me);
+				this.queryService.generateMutedUserQueryForNotes(query, me);
+				this.queryService.generateBlockedUserQueryForNotes(query, me);
 				this.queryService.generateMutedUserRenotesQueryForNotes(query, me);
 			}
 
@@ -120,7 +127,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			let timeline = await query.limit(ps.limit).getMany();
 
 			timeline = timeline.filter(note => {
-				return !(note.user?.isSilenced && me && followings && note.userId !== me.id && !followings[note.userId]);
+				return !(note.user?.isSuspended && me && followings && note.userId !== me.id && !followings[note.userId]);
 			});
 
 			process.nextTick(() => {

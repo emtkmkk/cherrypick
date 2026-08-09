@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: syuilo and other misskey contributors
+ * SPDX-FileCopyrightText: syuilo and misskey-project
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
@@ -31,14 +31,14 @@ export class ScheduleNotePostProcessorService {
 		@Inject(DI.channelsRepository)
 		private channelsRepository: ChannelsRepository,
 
-			private noteCreateService: NoteCreateService,
-			private queueLoggerService: QueueLoggerService,
-			private notificationService: NotificationService,
+		private noteCreateService: NoteCreateService,
+		private queueLoggerService: QueueLoggerService,
+		private notificationService: NotificationService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('schedule-note-post');
 	}
 
-    @bindThis
+	@bindThis
 	public async process(job: Bull.Job<ScheduleNotePostJobData>): Promise<void> {
 		this.noteScheduleRepository.findOneBy({ id: job.data.scheduleNoteId }).then(async (data) => {
 			if (!data) {

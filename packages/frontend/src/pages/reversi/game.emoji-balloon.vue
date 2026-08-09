@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: syuilo and other misskey contributors
+SPDX-FileCopyrightText: syuilo and misskey-project
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
@@ -50,16 +50,16 @@ const active = ref(false);
 
 onMounted(() => {
 	active.value = true;
-	setTimeout(() => {
+	window.setTimeout(() => {
 		active.value = false;
-		setTimeout(() => {
+		window.setTimeout(() => {
 			emit('end');
 		}, 750);
 	}, 3000);
 });
 </script>
 
-<style module>
+<style lang="scss" module>
 .transition_balloon_enterActive {
 	transition: all .15s cubic-bezier(0.65, 0.05, 0.36, 1);
 }

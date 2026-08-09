@@ -200,7 +200,8 @@ export class DriveService {
 				?? `${ objectStorageUseSSL ? 'https' : 'http' }://${ objectStorageEndpoint }${ objectStoragePort ? `:${ objectStoragePort }` : '' }/${ objectStorageBucket }`;
 
 			// for original
-			const key = `${objectStoragePrefix}/${randomUUID()}${ext}`;
+			const prefix = objectStoragePrefix ? `${objectStoragePrefix}/` : '';
+			const key = `${prefix}${randomUUID()}${ext}`;
 			const url = `${ baseUrl }/${ key }`;
 
 			// for alts
@@ -217,7 +218,7 @@ export class DriveService {
 			];
 
 			if (alts.webpublic) {
-				webpublicKey = `${objectStoragePrefix}/webpublic-${randomUUID()}.${alts.webpublic.ext}`;
+				webpublicKey = `${prefix}webpublic-${randomUUID()}.${alts.webpublic.ext}`;
 				webpublicUrl = `${ baseUrl }/${ webpublicKey }`;
 
 				this.registerLogger.info(`uploading webpublic: ${webpublicKey}`);
@@ -225,7 +226,7 @@ export class DriveService {
 			}
 
 			if (alts.thumbnail) {
-				thumbnailKey = `${objectStoragePrefix}/thumbnail-${randomUUID()}.${alts.thumbnail.ext}`;
+				thumbnailKey = `${prefix}thumbnail-${randomUUID()}.${alts.thumbnail.ext}`;
 				thumbnailUrl = `${ baseUrl }/${ thumbnailKey }`;
 
 				this.registerLogger.info(`uploading thumbnail: ${thumbnailKey}`);
@@ -558,8 +559,15 @@ export class DriveService {
 
 			const policies = await this.roleService.getUserPolicies(user.id);
 			const driveCapacity = 1024 * 1024 * policies.driveCapacityMb;
+			const maxFileSize = 1024 * 1024 * policies.maxFileSizeMb;
 			this.registerLogger.debug('drive capacity override applied');
 			this.registerLogger.debug(`overrideCap: ${driveCapacity}bytes, usage: ${usage}bytes, u+s: ${usage + info.size}bytes`);
+
+			if (maxFileSize < info.size) {
+				if (isLocalUser) {
+					throw new IdentifiableError('f9e4e5f3-4df4-40b5-b400-f236945f7073', 'Max file size exceeded.');
+				}
+			}
 
 			// If usage limit exceeded
 			if (driveCapacity < usage + info.size) {

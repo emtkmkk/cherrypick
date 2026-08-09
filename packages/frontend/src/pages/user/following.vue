@@ -4,9 +4,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkStickyContainer>
-	<template #header><MkPageHeader :actions="headerActions" :tabs="headerTabs"/></template>
-	<MkSpacer :contentMax="1000">
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 1000px;">
 		<Transition name="fade" mode="out-in">
 			<div v-if="user">
 				<XFollowList :user="user" type="following"/>
@@ -14,17 +13,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkError v-else-if="error" @retry="fetchUser()"/>
 			<MkLoading v-else/>
 		</Transition>
-	</MkSpacer>
-</MkStickyContainer>
+	</div>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
 import { computed, watch, ref } from 'vue';
 import * as Misskey from 'cherrypick-js';
 import XFollowList from './follow-list.vue';
-import { misskeyApi } from '@/scripts/misskey-api.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
+import number from '@/filters/number.js';
 
 const props = withDefaults(defineProps<{
 	acct: string;
@@ -52,12 +52,12 @@ const headerActions = computed(() => []);
 
 const headerTabs = computed(() => []);
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: i18n.ts.user,
 	icon: 'ti ti-user',
 	...user.value ? {
 		title: user.value.name ? `${user.value.name} (@${user.value.username})` : `@${user.value.username}`,
-		subtitle: i18n.ts.following,
+		subtitle: `${i18n.ts.following} ${number(user.value.followingCount)}`,
 		userName: user.value,
 		avatar: user.value,
 	} : {},
