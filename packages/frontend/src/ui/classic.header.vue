@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="body">
 		<div class="left">
 			<button v-click-anime v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" class="item _button instance" @click="openInstanceMenu">
-				<img :src="instance.iconUrl ?? instance.faviconUrl ?? '/favicon.ico'" class="_ghost"/>
+				<img :src="instance.iconUrl ?? instance.faviconUrl ?? '/favicon.ico?mkkey=1'" class="_ghost"/>
 			</button>
 			<MkA v-click-anime v-tooltip="i18n.ts.timeline" class="item index" activeClass="active" to="/" exact>
 				<i class="ti ti-home ti-fw"></i>

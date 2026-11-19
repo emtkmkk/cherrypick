@@ -30,8 +30,8 @@ html
 		meta(property='instance_url' content= instanceUrl)
 		meta(name='viewport' content='width=device-width, initial-scale=1')
 		meta(name='format-detection' content='telephone=no,date=no,address=no,email=no,url=no')
-		link(rel='icon' href= icon || '/favicon.ico')
-		link(rel='apple-touch-icon' href= appleTouchIcon || '/apple-touch-icon.png')
+		link(rel='icon' href= icon || '/favicon.ico?mkkey=1')
+		link(rel='apple-touch-icon' href= appleTouchIcon || '/apple-touch-icon.png?mkkey=1')
 		link(rel='manifest' href='/manifest.json')
 		link(rel='search' type='application/opensearchdescription+xml' title=(title || "CherryPick") href=`${baseUrl}/opensearch.xml`)
 		link(rel='prefetch' href=serverErrorImageUrl)
@@ -89,7 +89,7 @@ html
 			br
 			| JavaScript를 활성화해주세요
 		div#splash
-			img#splashIcon(src= icon || '/static-assets/splash.png')
+			img#splashIcon(src= icon || '/static-assets/splash.png?mkkey=1')
 			span#splashText
 				block customSplashText
 					= customSplashText

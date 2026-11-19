@@ -169,19 +169,19 @@ export class ClientServerService {
 			'icons': [{
 				// 空文字列の場合右辺を使いたいため
 				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-				'src': this.meta.app192IconUrl || '/static-assets/icons/192.png',
+				'src': this.meta.app192IconUrl || '/static-assets/icons/192.png?mkkey=1',
 				'sizes': '192x192',
 				'type': 'image/png',
-				'purpose': 'maskable',
+				'purpose': 'any',
 			}, {
 				// 空文字列の場合右辺を使いたいため
 				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-				'src': this.meta.app512IconUrl || '/static-assets/icons/512.png',
+				'src': this.meta.app512IconUrl || '/static-assets/icons/512.png?mkkey=1',
 				'sizes': '512x512',
 				'type': 'image/png',
-				'purpose': 'maskable',
+				'purpose': 'any',
 			}, {
-				'src': '/static-assets/splash.png',
+				'src': '/static-assets/splash.png?mkkey=1',
 				'sizes': '300x300',
 				'type': 'image/png',
 				'purpose': 'any',

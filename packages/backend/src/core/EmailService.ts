@@ -41,7 +41,7 @@ export class EmailService {
 	public async sendEmail(to: string, subject: string, html: string, text: string) {
 		if (!this.meta.enableEmail) return;
 
-		const iconUrl = `${this.config.url}/static-assets/mi-white.png`;
+		const iconUrl = `${this.config.url}/static-assets/mi-white.png?mkkey=1`;
 		const emailSettingUrl = `${this.config.url}/settings/email`;
 
 		const enableAuth = this.meta.smtpUser != null && this.meta.smtpUser !== '';
