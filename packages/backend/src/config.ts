@@ -23,6 +23,8 @@ type RedisOptionsSource = Partial<RedisOptions> & {
  * 設定ファイルの型
  */
 type Source = {
+	/** Hosts allowed to subscribe to this server's local public/home note feed. */
+	localRelayHosts?: string[];
 	url?: string;
 	port?: number;
 	socket?: string;
@@ -110,6 +112,7 @@ type Source = {
 };
 
 export type Config = {
+	localRelayHosts?: string[];
 	url: string;
 	port: number;
 	socket: string | undefined;
@@ -283,6 +286,7 @@ export function loadConfig(): Config {
 		proxy: config.proxy,
 		proxySmtp: config.proxySmtp,
 		proxyBypassHosts: config.proxyBypassHosts,
+		localRelayHosts: config.localRelayHosts,
 		allowedPrivateNetworks: config.allowedPrivateNetworks,
 		maxFileSize: config.maxFileSize ?? 262144000,
 		clusterLimit: config.clusterLimit,

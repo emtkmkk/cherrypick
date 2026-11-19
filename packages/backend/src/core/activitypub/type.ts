@@ -325,6 +325,7 @@ export interface ILike extends IActivity {
 
 export interface IAnnounce extends IActivity {
 	type: 'Announce';
+	_mk_localVisibility?: 'public' | 'home';
 }
 
 export interface IBlock extends IActivity {

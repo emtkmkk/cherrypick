@@ -39,7 +39,7 @@ export class RelayService {
 	}
 
 	@bindThis
-	private async getRelayActor(): Promise<MiLocalUser> {
+	public async getRelayActor(): Promise<MiLocalUser> {
 		const user = await this.usersRepository.findOneBy({
 			host: IsNull(),
 			username: ACTOR_USERNAME,
@@ -118,10 +118,10 @@ export class RelayService {
 	}
 
 	@bindThis
-	public async deliverToRelays(user: { id: MiUser['id']; host: null; }, activity: any): Promise<void> {
+	public async deliverToRelays(user: { id: MiUser['id']; host: null; }, activity: any, excludedInboxes: ReadonlySet<string> = new Set()): Promise<void> {
 		if (activity == null) return;
 
-		const relays = await this.getAcceptedRelays();
+		const relays = (await this.getAcceptedRelays()).filter(relay => !excludedInboxes.has(relay.inbox));
 		if (relays.length === 0) return;
 
 		const copy = deepClone(activity);

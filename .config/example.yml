@@ -79,6 +79,11 @@
 # Final accessible URL seen by a user.
 url: https://example.tld/
 
+# Local note relay: allow only trusted servers sharing the local note scope.
+# After deploying both sides, add https://mkkey.net/inbox in this server's relay settings.
+# Public/home local posts only; followers/direct and disabled federation remain unchanged.
+#localRelayHosts: ['mkkey.net']
+
 # ONCE YOU HAVE STARTED THE INSTANCE, DO NOT CHANGE THE
 # URL SETTINGS AFTER THAT!
 

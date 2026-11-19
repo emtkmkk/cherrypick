@@ -55,6 +55,7 @@ import { QueryService } from './QueryService.js';
 import { ReactionService } from './ReactionService.js';
 import { ReactionsBufferingService } from './ReactionsBufferingService.js';
 import { RelayService } from './RelayService.js';
+import { LocalRelayService } from './LocalRelayService.js';
 import { RoleService } from './RoleService.js';
 import { S3Service } from './S3Service.js';
 import { SignupService } from './SignupService.js';
@@ -205,6 +206,7 @@ const $QueryService: Provider = { provide: 'QueryService', useExisting: QuerySer
 const $ReactionService: Provider = { provide: 'ReactionService', useExisting: ReactionService };
 const $ReactionsBufferingService: Provider = { provide: 'ReactionsBufferingService', useExisting: ReactionsBufferingService };
 const $RelayService: Provider = { provide: 'RelayService', useExisting: RelayService };
+const $LocalRelayService: Provider = { provide: 'LocalRelayService', useExisting: LocalRelayService };
 const $RoleService: Provider = { provide: 'RoleService', useExisting: RoleService };
 const $S3Service: Provider = { provide: 'S3Service', useExisting: S3Service };
 const $SignupService: Provider = { provide: 'SignupService', useExisting: SignupService };
@@ -362,6 +364,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		ReactionService,
 		ReactionsBufferingService,
 		RelayService,
+		LocalRelayService,
 		RoleService,
 		S3Service,
 		SignupService,
@@ -515,6 +518,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$ReactionService,
 		$ReactionsBufferingService,
 		$RelayService,
+		$LocalRelayService,
 		$RoleService,
 		$S3Service,
 		$SignupService,
@@ -669,6 +673,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		ReactionService,
 		ReactionsBufferingService,
 		RelayService,
+		LocalRelayService,
 		RoleService,
 		S3Service,
 		SignupService,
@@ -821,6 +826,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$ReactionService,
 		$ReactionsBufferingService,
 		$RelayService,
+		$LocalRelayService,
 		$RoleService,
 		$S3Service,
 		$SignupService,

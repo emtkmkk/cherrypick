@@ -13,6 +13,7 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { ApRendererService } from '@/core/activitypub/ApRendererService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { LocalRelayService } from '@/core/LocalRelayService.js';
 
 @Injectable()
 export class DeleteAccountService {
@@ -28,6 +29,7 @@ export class DeleteAccountService {
 		private queueService: QueueService,
 		private globalEventService: GlobalEventService,
 		private moderationLogService: ModerationLogService,
+		private localRelayService: LocalRelayService,
 	) {
 	}
 
@@ -70,6 +72,10 @@ export class DeleteAccountService {
 
 			for (const inbox of queue) {
 				this.queueService.deliver(user, content, inbox, true);
+			}
+			// Relay subscribers may have no ordinary user follow on this server.
+			for (const [inbox, shared] of await this.localRelayService.getInboxes({ userHost: null, visibility: 'public', localOnly: false })) {
+				if (!queue.includes(inbox)) await this.queueService.deliver(user, content, inbox, shared);
 			}
 
 			this.queueService.createDeleteAccountJob(user, {
