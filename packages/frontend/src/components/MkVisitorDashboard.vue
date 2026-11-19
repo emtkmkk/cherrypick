@@ -22,8 +22,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkInfo warn>{{ i18n.ts.mkkeyAccountRequiredToRegister }}</MkInfo>
 			</div>
 			<div class="_gaps_s" :class="$style.mainActions">
-				<MkButton :class="$style.mainAction" full rounded gradate :disabled="mkkeyAuthenticating" data-cy-mkkey-signup @click="signupWithMkkey()">{{ i18n.ts.signupWithMkkey }}</MkButton>
-				<MkButton :class="$style.mainAction" full rounded data-cy-signup @click="signup()">{{ i18n.ts.signupWithInvitationCode }}</MkButton>
+				<MkButton :class="$style.mainAction" full rounded gradate data-cy-mkkey-signup @click="signup('mkkey')">{{ i18n.ts.signupWithMkkey }}</MkButton>
+				<MkButton :class="$style.mainAction" full rounded data-cy-signup @click="signup('invitation')">{{ i18n.ts.signupWithInvitationCode }}</MkButton>
 				<MkButton :class="$style.mainAction" full rounded data-cy-signin @click="signin()">{{ i18n.ts.login }}</MkButton>
 			</div>
 		</div>
@@ -63,14 +63,11 @@ import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
-import { runMkkeyAuth, mkkeyAuthError } from '@/scripts/mkkey-sso.js';
-import { signinOrContinueMkkeySignup } from '@/scripts/mkkey-signup.js';
 import MkNumber from '@/components/MkNumber.vue';
 import XActiveUsersChart from '@/components/MkVisitorDashboard.ActiveUsersChart.vue';
 import { openInstanceMenu } from '@/ui/_common_/common.js';
 
 const stats = ref<Misskey.entities.StatsResponse | null>(null);
-const mkkeyAuthenticating = ref(false);
 
 misskeyApi('stats', {}).then((res) => {
 	stats.value = res;
@@ -84,23 +81,10 @@ function signin() {
 	});
 }
 
-async function signupWithMkkey() {
-	if (mkkeyAuthenticating.value) return;
-	mkkeyAuthenticating.value = true;
-	try {
-		const mkkeyOauthToken = await runMkkeyAuth('signup');
-		if (await signinOrContinueMkkeySignup(mkkeyOauthToken) === 'signup') signup(mkkeyOauthToken);
-	} catch (error) {
-		await os.alert({ type: 'error', text: mkkeyAuthError(error) });
-	} finally {
-		mkkeyAuthenticating.value = false;
-	}
-}
-
-function signup(mkkeyOauthToken?: string) {
+function signup(method: 'mkkey' | 'invitation') {
 	const { dispose } = os.popup(XSignupDialog, {
 		autoSet: true,
-		mkkeyOauthToken,
+		method,
 	}, {
 		closed: () => dispose(),
 	});

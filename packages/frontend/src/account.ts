@@ -427,6 +427,10 @@ export function getAccountWithSigninDialog(): Promise<{ id: string, token: strin
 export function getAccountWithSignupDialog(): Promise<{ id: string, token: string } | null> {
 	return new Promise((resolve) => {
 		const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkSignupDialog.vue')), {}, {
+			signin: async (res: { id: string; token: string; }) => {
+				await addAccount(res.id, res.token);
+				resolve(res);
+			},
 			done: async (res: Misskey.entities.SignupResponse) => {
 				await addAccount(res.id, res.token);
 				resolve({ id: res.id, token: res.token });
