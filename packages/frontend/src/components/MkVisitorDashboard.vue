@@ -64,6 +64,7 @@ import { misskeyApi } from '@/scripts/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import { runMkkeyAuth, mkkeyAuthError } from '@/scripts/mkkey-sso.js';
+import { signinOrContinueMkkeySignup } from '@/scripts/mkkey-signup.js';
 import MkNumber from '@/components/MkNumber.vue';
 import XActiveUsersChart from '@/components/MkVisitorDashboard.ActiveUsersChart.vue';
 import { openInstanceMenu } from '@/ui/_common_/common.js';
@@ -88,7 +89,7 @@ async function signupWithMkkey() {
 	mkkeyAuthenticating.value = true;
 	try {
 		const mkkeyOauthToken = await runMkkeyAuth('signup');
-		signup(mkkeyOauthToken);
+		if (await signinOrContinueMkkeySignup(mkkeyOauthToken) === 'signup') signup(mkkeyOauthToken);
 	} catch (error) {
 		await os.alert({ type: 'error', text: mkkeyAuthError(error) });
 	} finally {

@@ -194,9 +194,16 @@ export class MkkeySsoApiService {
 		this.assertOrigin(request);
 		await this.limit(request, 'signin', 10);
 		const proof = await this.record<Proof>('proof', request.body.oauthToken, request);
-		if (proof.data.mode !== 'signin') throw new FastifyReplyError(400, 'INVALID_MKKEY_TOKEN_PURPOSE');
+		if (proof.data.mode !== 'signin' && proof.data.mode !== 'signup') throw new FastifyReplyError(400, 'INVALID_MKKEY_TOKEN_PURPOSE');
 		const user = await this.findLinkedUser(proof.data);
-		if (!user) throw new FastifyReplyError(404, 'MKKEY_ACCOUNT_NOT_LINKED');
+		if (!user) {
+			// Keep an unlinked signup proof available for the registration form.
+			// An existing but unavailable account must never fall back to registration.
+			if (proof.data.mode === 'signup' && !await this.links.existsBy({ mkkeyUserId: proof.data.mkkeyUserId })) {
+				return { finished: false as const, next: 'signup' as const };
+			}
+			throw new FastifyReplyError(404, 'MKKEY_ACCOUNT_NOT_LINKED');
+		}
 		const profile = await this.profiles.findOneByOrFail({ userId: user.id });
 		if (profile.twoFactorEnabled) {
 			if (!profile.twoFactorSecret) throw new FastifyReplyError(403, 'LOCAL_SIGNIN_REQUIRED');

@@ -90,6 +90,7 @@ import * as config from '@@/js/config.js';
 import MkButton from './MkButton.vue';
 import MkInput from './MkInput.vue';
 import { runMkkeyAuth, mkkeyAuthError } from '@/scripts/mkkey-sso.js';
+import { signinOrContinueMkkeySignup } from '@/scripts/mkkey-signup.js';
 import MkCaptcha, { type Captcha } from '@/components/MkCaptcha.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
@@ -278,7 +279,9 @@ async function signupWithMkkeySso(): Promise<void> {
 	if (mkkeyAuthenticating.value) return;
 	mkkeyAuthenticating.value = true;
 	try {
-		mkkeyOauthToken.value = await runMkkeyAuth('signup');
+		const oauthToken = await runMkkeyAuth('signup');
+		if (await signinOrContinueMkkeySignup(oauthToken) !== 'signup') return;
+		mkkeyOauthToken.value = oauthToken;
 		await os.alert({ type: 'success', text: 'もこきーでの本人確認ができました。招待コードなしで登録できます。登録後は同じもこきーアカウントでログインできます。' });
 	} catch (error) {
 		await os.alert({ type: 'error', text: mkkeyAuthError(error) });

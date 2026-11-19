@@ -138,11 +138,40 @@ describe('mkkey authentication', () => {
 		await expect(t.service.signin(t.request({ oauthToken: flow.oauthToken }) as never, t.reply as never)).rejects.toThrow('LOCAL_SIGNIN_REQUIRED');
 	});
 
-	test('signup proofs cannot be used to sign in, and are consumed once for registration', async () => {
+	test('an unlinked signup continues registration without consuming its proof', async () => {
 		const t = setup(); const flow = await t.proof('signup'); const request = t.request({});
-		await expect(t.service.signin(t.request({ oauthToken: flow.oauthToken }) as never, t.reply as never)).rejects.toThrow('INVALID_MKKEY_TOKEN_PURPOSE');
+		t.links.findOne.mockResolvedValue(null as never);
+		expect(await t.service.signin(t.request({ oauthToken: flow.oauthToken }) as never, t.reply as never)).toEqual({ finished: false, next: 'signup' });
+		expect(t.signin.signin).not.toHaveBeenCalled();
 		expect(await t.service.consumeSignupProof(flow.oauthToken, request as never)).toEqual({ mkkeyUserId: 'mkkey-stable-id', mkkeyUsernameLower: 'mkkeyname' });
 		await expect(t.service.consumeSignupProof(flow.oauthToken, request as never)).rejects.toThrow('MKKEY_AUTH_EXPIRED');
+	});
+
+	test('a linked signup signs in the existing account and prevents proof replay', async () => {
+		const t = setup(); const flow = await t.proof('signup');
+		const request = t.request({ oauthToken: flow.oauthToken });
+		expect(await t.service.signin(request as never, t.reply as never)).toEqual({ finished: true, i: 'native-token' });
+		expect(t.links.insert).not.toHaveBeenCalled();
+		await expect(t.service.signin(request as never, t.reply as never)).rejects.toThrow('MKKEY_AUTH_EXPIRED');
+	});
+
+	test('a linked signup still requires local two-factor authentication', async () => {
+		const t = setup(); const flow = await t.proof('signup'); t.profile.twoFactorEnabled = true;
+		expect(await t.service.signin(t.request({ oauthToken: flow.oauthToken }) as never, t.reply as never)).toEqual({ finished: false, next: 'totp' });
+		await expect(t.service.signin(t.request({ oauthToken: flow.oauthToken, token: 'wrong' }) as never, t.reply as never)).rejects.toThrow('LOCAL_AUTH_FAILED');
+		expect(t.signin.signin).not.toHaveBeenCalled();
+		expect(await t.service.signin(t.request({ oauthToken: flow.oauthToken, token: '123456' }) as never, t.reply as never)).toMatchObject({ finished: true });
+	});
+
+	test.each(['isSuspended', 'isDeleted'] as const)('a linked signup cannot register again or sign in when %s', async flag => {
+		const t = setup(); const flow = await t.proof('signup'); t.user[flag] = true; t.links.existsBy.mockResolvedValue(true);
+		await expect(t.service.signin(t.request({ oauthToken: flow.oauthToken }) as never, t.reply as never)).rejects.toThrow('MKKEY_ACCOUNT_NOT_LINKED');
+		expect(t.signin.signin).not.toHaveBeenCalled();
+	});
+
+	test('a linking proof cannot be used to sign in', async () => {
+		const t = setup(); const flow = await t.proof('link', { i: 'native', password: 'local-password' });
+		await expect(t.service.signin(t.request({ oauthToken: flow.oauthToken }) as never, t.reply as never)).rejects.toThrow('INVALID_MKKEY_TOKEN_PURPOSE');
 	});
 
 	test('a linked identity cannot create another account using a new signup proof', async () => {
