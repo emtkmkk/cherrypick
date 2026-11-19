@@ -63,15 +63,17 @@ describe('MkMediaImage', () => {
 		assert.ok(!alt);
 	});
 
-	test('Attaching APNG should show a GIF indicator', async () => {
+	test('Attaching APNG should show an APNG indicator', async () => {
 		const mkMediaImage = renderMediaImage({
 			type: 'image/apng',
 		});
-		const [gif, alt] = await Promise.all([
+		const [apng, gif, alt] = await Promise.all([
+			mkMediaImage.queryByText('APNG'),
 			mkMediaImage.queryByText('GIF'),
 			mkMediaImage.queryByText('ALT'),
 		]);
-		assert.ok(gif);
+		assert.ok(apng);
+		assert.ok(!gif);
 		assert.ok(!alt);
 	});
 

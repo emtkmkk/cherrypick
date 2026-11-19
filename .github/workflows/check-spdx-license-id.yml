@@ -39,7 +39,7 @@ jobs:
               grep -q "SPDX-License-Identifier: AGPL-3.0-only" "$file"
             ); then
               echo "Missing: $file"
-              ((counter++))
+              counter=$((counter + 1))
             fi
           }
 

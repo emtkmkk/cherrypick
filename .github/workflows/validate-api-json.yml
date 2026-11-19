@@ -33,7 +33,6 @@ jobs:
         cache: 'pnpm'
     - name: Install Redocly CLI
       run: npm i -g @redocly/cli
-    - run: corepack enable
     - run: pnpm i --frozen-lockfile
     - name: Check pnpm-lock.yaml
       run: git diff --exit-code pnpm-lock.yaml
