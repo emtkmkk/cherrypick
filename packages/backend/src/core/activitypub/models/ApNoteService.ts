@@ -22,6 +22,7 @@ import { StatusError } from '@/misc/status-error.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { MessagingService } from '@/core/MessagingService.js';
 import { bindThis } from '@/decorators.js';
+import { localVisibility } from '@/core/activitypub/misc/local-visibility.js';
 import { checkHttps } from '@/misc/check-https.js';
 import { NoteUpdateService } from '@/core/NoteUpdateService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
@@ -229,16 +230,9 @@ export class ApNoteService {
 		}
 
 		const noteAudience = await this.apAudienceService.parseAudience(actor, note.to, note.cc, resolver);
-		let visibility = noteAudience.visibility;
-		
-		let localAndFollowers = false;
-
-		if (note._mk_localVisibility && visibility === "followers") {
-			if (this.meta.bubbleInstances.includes(actor.host)) {
-				visibility = note._mk_localVisibility;
-				localAndFollowers = true;
-			}
-		}
+		const restored = localVisibility(actor.host, noteAudience.visibility, note._mk_localVisibility, this.meta.bubbleInstances);
+		let visibility = restored.visibility;
+		const localAndFollowers = restored.localAndFollowers;
 		const visibleUsers = noteAudience.visibleUsers;
 
 		// Audience (to, cc) が指定されてなかった場合

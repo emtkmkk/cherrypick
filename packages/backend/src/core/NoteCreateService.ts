@@ -27,6 +27,7 @@ import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js
 import type { MiChannel } from '@/models/Channel.js';
 import { normalizeForSearch } from '@/misc/normalize-for-search.js';
 import { RelayService } from '@/core/RelayService.js';
+import { LocalRelayService } from '@/core/LocalRelayService.js';
 import { FederatedInstanceService } from '@/core/FederatedInstanceService.js';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
@@ -209,6 +210,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private noteReadService: NoteReadService,
 		private notificationService: NotificationService,
 		private relayService: RelayService,
+		private localRelayService: LocalRelayService,
 		private federatedInstanceService: FederatedInstanceService,
 		private hashtagService: HashtagService,
 		private antennaService: AntennaService,
@@ -711,9 +713,21 @@ export class NoteCreateService implements OnApplicationShutdown {
 				await (async () => {
 					const noteActivity = await this.renderNoteOrRenoteActivity(data, note);
 
-					if (!noteActivity) return;
+					if (!noteActivity) {
+						// A protected bubble reference may return to its own server, without reaching other remotes.
+						if (data.renote?.localAndFollowers && ['public', 'home'].includes(data.renote.visibility)) {
+							const inboxes = await this.localRelayService.getReferenceInboxes(note, data.renote);
+							if (inboxes.size > 0) {
+								const localActivity = await this.renderNoteOrRenoteActivity(data, note, true);
+								if (localActivity) await this.queueService.deliverMany(user, localActivity, inboxes);
+							}
+						}
+						return;
+					}
 
 					const dm = this.apDeliverManagerService.createDeliverManager(user, noteActivity);
+					const localInboxes = await this.localRelayService.getInboxes(note);
+					dm.addInboxes(localInboxes);
 
 					// メンションされたリモートユーザーに配送
 					for (const u of mentionedUsers.filter(u => this.userEntityService.isRemoteUser(u))) {
@@ -738,7 +752,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 					}
 
 					if (['public'].includes(note.visibility)) {
-						this.relayService.deliverToRelays(user, noteActivity);
+						this.relayService.deliverToRelays(user, noteActivity, new Set(localInboxes.keys()));
 					}
 
 					trackPromise(dm.execute());
@@ -858,10 +872,10 @@ export class NoteCreateService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	private async renderNoteOrRenoteActivity(data: Option, note: MiNote) {
+	private async renderNoteOrRenoteActivity(data: Option, note: MiNote, localPeer = false) {
 		if (data.localOnly) return null;
 		// リモートでRT出来ないはずの投稿がRTされている場合、連合しない
-		if (data.renote?.userId !== note.userId && data.renote?.localAndFollowers) return null;
+		if (!localPeer && data.renote?.userId !== note.userId && data.renote?.localAndFollowers) return null;
 
 		const content = this.isRenote(data) && !this.isQuote(data)
 			? this.apRendererService.renderAnnounce(data.renote.uri ? data.renote.uri : `${this.config.url}/notes/${data.renote.id}`, note)

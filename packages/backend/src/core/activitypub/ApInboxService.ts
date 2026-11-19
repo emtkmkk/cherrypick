@@ -10,6 +10,8 @@ import type { Config } from '@/config.js';
 import { UserFollowingService } from '@/core/UserFollowingService.js';
 import { ReactionService } from '@/core/ReactionService.js';
 import { RelayService } from '@/core/RelayService.js';
+import { LocalRelayService } from '@/core/LocalRelayService.js';
+import { localVisibility } from '@/core/activitypub/misc/local-visibility.js';
 import { NotePiningService } from '@/core/NotePiningService.js';
 import { UserBlockingService } from '@/core/UserBlockingService.js';
 import { NoteDeleteService } from '@/core/NoteDeleteService.js';
@@ -77,6 +79,7 @@ export class ApInboxService {
 		private apAudienceService: ApAudienceService,
 		private reactionService: ReactionService,
 		private relayService: RelayService,
+		private localRelayService: LocalRelayService,
 		private notePiningService: NotePiningService,
 		private userBlockingService: UserBlockingService,
 		private noteCreateService: NoteCreateService,
@@ -187,6 +190,8 @@ export class ApInboxService {
 
 	@bindThis
 	private async follow(actor: MiRemoteUser, activity: IFollow): Promise<string> {
+		const relayResult = await this.localRelayService.follow(actor, activity);
+		if (relayResult !== null) return relayResult;
 		const followee = await this.apDbResolverService.getUserFromApId(activity.object);
 
 		if (followee == null) {
@@ -384,6 +389,7 @@ export class ApInboxService {
 			this.logger.info(`Creating the (Re)Note: ${uri}`);
 
 			const activityAudience = await this.apAudienceService.parseAudience(actor, activity.to, activity.cc, resolver);
+			const restored = localVisibility(actor.host, activityAudience.visibility, activity._mk_localVisibility, this.meta.bubbleInstances);
 			const createdAt = activity.published ? new Date(activity.published) : null;
 
 			if (createdAt && createdAt < this.idService.parse(renote.id).date) {
@@ -393,7 +399,8 @@ export class ApInboxService {
 			await this.noteCreateService.create(actor, {
 				createdAt,
 				renote,
-				visibility: activityAudience.visibility,
+				visibility: restored.visibility,
+				localAndFollowers: restored.localAndFollowers,
 				visibleUsers: activityAudience.visibleUsers,
 				uri,
 			});
@@ -771,6 +778,8 @@ export class ApInboxService {
 
 	@bindThis
 	private async undoFollow(actor: MiRemoteUser, activity: IFollow): Promise<string> {
+		const relayResult = await this.localRelayService.follow(actor, activity, true);
+		if (relayResult !== null) return relayResult;
 		const followee = await this.apDbResolverService.getUserFromApId(activity.object);
 		if (followee == null) {
 			return 'skip: followee not found';

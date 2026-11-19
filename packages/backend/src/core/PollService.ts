@@ -8,6 +8,7 @@ import { DI } from '@/di-symbols.js';
 import type { NotesRepository, UsersRepository, PollsRepository, PollVotesRepository, MiUser } from '@/models/_.js';
 import type { MiNote } from '@/models/Note.js';
 import { RelayService } from '@/core/RelayService.js';
+import { LocalRelayService } from '@/core/LocalRelayService.js';
 import { IdService } from '@/core/IdService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { ApRendererService } from '@/core/activitypub/ApRendererService.js';
@@ -34,6 +35,7 @@ export class PollService {
 		private userEntityService: UserEntityService,
 		private idService: IdService,
 		private relayService: RelayService,
+		private localRelayService: LocalRelayService,
 		private globalEventService: GlobalEventService,
 		private userBlockingService: UserBlockingService,
 		private apRendererService: ApRendererService,
@@ -101,8 +103,12 @@ export class PollService {
 
 		if (this.userEntityService.isLocalUser(user)) {
 			const content = this.apRendererService.addContext(this.apRendererService.renderUpdate(await this.apRendererService.renderNote(note, false), user));
-			this.apDeliverManagerService.deliverToFollowers(user, content);
-			this.relayService.deliverToRelays(user, content);
+			const dm = this.apDeliverManagerService.createDeliverManager(user, content);
+			dm.addFollowersRecipe();
+			const localInboxes = await this.localRelayService.getInboxes(note);
+			dm.addInboxes(localInboxes);
+			await dm.execute();
+			if (note.visibility === 'public') await this.relayService.deliverToRelays(user, content, new Set(localInboxes.keys()));
 		}
 	}
 }

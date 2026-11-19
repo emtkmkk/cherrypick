@@ -37,6 +37,12 @@ class DeliverManager {
 	private actor: ThinUser;
 	private activity: IActivity | null;
 	private recipes: IRecipe[] = [];
+	private additionalInboxes = new Map<string, boolean>();
+
+	/** Adds subscribed relay inboxes while keeping the normal recipient deduplication. */
+	public addInboxes(inboxes: Map<string, boolean>): void {
+		for (const [inbox, shared] of inboxes) this.additionalInboxes.set(inbox, shared);
+	}
 
 	/**
 	 * Constructor
@@ -144,6 +150,7 @@ class DeliverManager {
 		}
 
 		// deliver
+		for (const [inbox, shared] of this.additionalInboxes) inboxes.set(inbox, shared);
 		await this.queueService.deliverMany(this.actor, this.activity, inboxes);
 	}
 }

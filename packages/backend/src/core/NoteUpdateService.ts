@@ -15,6 +15,7 @@ import type { IEvent } from '@/models/Event.js';
 import type { NotesRepository, UsersRepository } from '@/models/_.js';
 import type { MiUser, MiLocalUser, MiRemoteUser } from '@/models/User.js';
 import { RelayService } from '@/core/RelayService.js';
+import { LocalRelayService } from '@/core/LocalRelayService.js';
 import { DI } from '@/di-symbols.js';
 import ActiveUsersChart from '@/core/chart/charts/active-users.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
@@ -71,6 +72,7 @@ export class NoteUpdateService implements OnApplicationShutdown {
 		private globalEventService: GlobalEventService,
 		private queueService: QueueService,
 		private relayService: RelayService,
+		private localRelayService: LocalRelayService,
 		private apDeliverManagerService: ApDeliverManagerService,
 		private apRendererService: ApRendererService,
 		private searchService: SearchService,
@@ -333,12 +335,16 @@ export class NoteUpdateService implements OnApplicationShutdown {
 	@bindThis
 	private async deliverToConcerned(user: { id: MiLocalUser['id']; host: null; }, note: MiNote, content: any) {
 		console.log('deliverToConcerned', util.inspect(content, { depth: null }));
-		await this.apDeliverManagerService.deliverToFollowers(user, content);
-		await this.relayService.deliverToRelays(user, content);
+		const dm = this.apDeliverManagerService.createDeliverManager(user, content);
+		dm.addFollowersRecipe();
+		const localInboxes = await this.localRelayService.getInboxes(note);
+		dm.addInboxes(localInboxes);
+		await this.relayService.deliverToRelays(user, content, new Set(localInboxes.keys()));
 		const remoteUsers = await this.getMentionedRemoteUsers(note);
 		for (const remoteUser of remoteUsers) {
-			await this.apDeliverManagerService.deliverToUser(user, content, remoteUser);
+			dm.addDirectRecipe(remoteUser);
 		}
+		await dm.execute();
 	}
 
 	@bindThis

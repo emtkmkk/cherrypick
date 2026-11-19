@@ -9,6 +9,7 @@ import type { MiUser, MiLocalUser, MiRemoteUser } from '@/models/User.js';
 import type { MiNote, IMentionedRemoteUsers } from '@/models/Note.js';
 import type { InstancesRepository, MiMeta, NotesRepository, UsersRepository } from '@/models/_.js';
 import { RelayService } from '@/core/RelayService.js';
+import { LocalRelayService } from '@/core/LocalRelayService.js';
 import { FederatedInstanceService } from '@/core/FederatedInstanceService.js';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
@@ -45,6 +46,7 @@ export class NoteDeleteService {
 		private userEntityService: UserEntityService,
 		private globalEventService: GlobalEventService,
 		private relayService: RelayService,
+		private localRelayService: LocalRelayService,
 		private federatedInstanceService: FederatedInstanceService,
 		private apRendererService: ApRendererService,
 		private apDeliverManagerService: ApDeliverManagerService,
@@ -197,11 +199,15 @@ export class NoteDeleteService {
 
 	@bindThis
 	private async deliverToConcerned(user: { id: MiLocalUser['id']; host: null; }, note: MiNote, content: any) {
-		this.apDeliverManagerService.deliverToFollowers(user, content);
-		this.relayService.deliverToRelays(user, content);
+		const dm = this.apDeliverManagerService.createDeliverManager(user, content);
+		dm.addFollowersRecipe();
+		const localInboxes = await this.localRelayService.getInboxes(note);
+		dm.addInboxes(localInboxes);
+		this.relayService.deliverToRelays(user, content, new Set(localInboxes.keys()));
 		const remoteUsers = await this.getMentionedRemoteUsers(note);
 		for (const remoteUser of remoteUsers) {
-			this.apDeliverManagerService.deliverToUser(user, content, remoteUser);
+			dm.addDirectRecipe(remoteUser);
 		}
+		await dm.execute();
 	}
 }
