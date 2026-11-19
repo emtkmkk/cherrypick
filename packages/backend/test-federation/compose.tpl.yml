@@ -12,7 +12,7 @@ services:
       retries: 20
 
   cherrypick:
-    image: node:20
+    image: node:22.11.0-bookworm
     env_file:
       - ./.config/docker.env
     environment:
@@ -81,7 +81,7 @@ services:
     working_dir: /cherrypick
     command: >
       bash -c "
-        corepack enable && corepack prepare
+        npm install --global corepack@0.31.0 && corepack enable && corepack prepare &&
         pnpm -F backend migrate
         pnpm -F backend start
       "

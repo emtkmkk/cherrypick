@@ -838,6 +838,7 @@ export class MiMeta {
 
 	@Column('integer', {
 		nullable: false,
+		default: 7,
 	})
 	public moderatorInactivityLimitDays: number;
 
