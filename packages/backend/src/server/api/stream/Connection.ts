@@ -267,7 +267,7 @@ export default class Connection {
 	 * チャンネルに接続
 	 */
 	@bindThis
-	public connectChannel(id: string, params: JsonObject | undefined, channel: string, pong = false) {
+	public async connectChannel(id: string, params: JsonObject | undefined, channel: string, pong = false) {
 		if (this.channels.length >= MAX_CHANNELS_PER_CONNECTION) {
 			return;
 		}
@@ -290,7 +290,7 @@ export default class Connection {
 
 		const ch: Channel = channelService.create(id, this);
 		this.channels.push(ch);
-		ch.init(params ?? {});
+		await ch.init(params ?? {});
 
 		if (pong) {
 			this.sendMessageToWs('connected', {
