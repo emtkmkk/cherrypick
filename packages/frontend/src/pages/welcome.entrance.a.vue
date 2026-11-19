@@ -10,8 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="shape1"></div>
 	<div class="shape2"></div>
 	<div class="logo-wrapper">
-		<div class="powered-by">Powered by</div>
-		<img :src="cherrypicksvg" class="cherrypick"/>
+		<img :src="mkkeyIcon" class="server-icon" alt=""/>
 	</div>
 	<div class="emojis">
 		<MkEmoji :normal="true" :noStyle="true" emoji="👍"/>
@@ -41,8 +40,7 @@ import * as Misskey from 'cherrypick-js';
 import XTimeline from './welcome.timeline.vue';
 import MarqueeText from '@/components/MkMarquee.vue';
 import MkFeaturedPhotos from '@/components/MkFeaturedPhotos.vue';
-import cherrypicksvg from '/client-assets/cherrypick.svg';
-import misskeysvg from '/client-assets/misskey.svg';
+import mkkeyIcon from '/client-assets/mkkey-icon.png';
 import { misskeyApiGet } from '@/scripts/misskey-api.js';
 import MkVisitorDashboard from '@/components/MkVisitorDashboard.vue';
 import { getProxiedImageUrl } from '@/scripts/media-proxy.js';
@@ -122,14 +120,13 @@ misskeyApiGet('federation/instances', {
 		user-select: none;
 		pointer-events: none;
 
-		> .powered-by {
-			margin-bottom: 2px;
-		}
-
-		> .misskey, .cherrypick {
-			width: 140px;
+		> .server-icon {
+			width: 96px;
+			height: 96px;
+			object-fit: contain;
 			@media (max-width: 450px) {
-				width: 130px;
+				width: 64px;
+				height: 64px;
 			}
 		}
 	}

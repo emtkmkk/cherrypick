@@ -42,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="divider"></div>
 	<div class="about">
 		<button v-click-anime v-vibrate="defaultStore.state.vibrateSystem ? 5 : []" class="item _button" @click="openInstanceMenu">
-			<img :src="instance.iconUrl ?? instance.faviconUrl ?? '/favicon.ico'" class="_ghost"/>
+			<img :src="instance.iconUrl ?? instance.faviconUrl ?? '/favicon.ico?mkkey=1'" class="_ghost"/>
 		</button>
 	</div>
 	<!--<CherryPickLogo class="cherrypick"/>-->
