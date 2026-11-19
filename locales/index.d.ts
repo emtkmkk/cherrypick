@@ -4847,6 +4847,18 @@ export interface Locale extends ILocale {
      */
     "invitationRequiredToRegister": string;
     /**
+     * もこきーのアカウントをお持ちの方のみ登録できます。
+     */
+    "mkkeyAccountRequiredToRegister": string;
+    /**
+     * mkkey.netでログインして登録
+     */
+    "signupWithMkkey": string;
+    /**
+     * 招待コードで登録
+     */
+    "signupWithInvitationCode": string;
+    /**
      * このサーバーではメール配信はサポートされていません
      */
     "emailNotSupported": string;

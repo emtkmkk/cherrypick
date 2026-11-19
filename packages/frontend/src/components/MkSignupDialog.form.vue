@@ -99,8 +99,10 @@ import { i18n } from '@/i18n.js';
 
 const props = withDefaults(defineProps<{
 	autoSet?: boolean;
+	mkkeyOauthToken?: string;
 }>(), {
 	autoSet: false,
+	mkkeyOauthToken: '',
 });
 
 const emit = defineEmits<{
@@ -121,7 +123,9 @@ const username = ref<string>('');
 const password = ref<string>('');
 const retypedPassword = ref<string>('');
 const invitationCode = ref<string>('');
-const mkkeyOauthToken = ref<string>('');
+// Seed the form with the completed authentication; reauthentication can replace it locally.
+// eslint-disable-next-line vue/no-setup-props-reactivity-loss
+const mkkeyOauthToken = ref<string>(props.mkkeyOauthToken);
 const email = ref('');
 const usernameState = ref<null | 'wait' | 'ok' | 'unavailable' | 'error' | 'invalid-format' | 'min-range' | 'max-range'>(null);
 const emailState = ref<null | 'wait' | 'ok' | 'unavailable:used' | 'unavailable:format' | 'unavailable:disposable' | 'unavailable:banned' | 'unavailable:mx' | 'unavailable:smtp' | 'unavailable' | 'error'>(null);
