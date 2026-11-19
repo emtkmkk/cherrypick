@@ -17,7 +17,6 @@ export class MiMkkeyAccountLink {
 	})
 	public mkkeyUserId: string;
 
-	@Index({ unique: true })
 	@Column('varchar', {
 		length: 128,
 	})

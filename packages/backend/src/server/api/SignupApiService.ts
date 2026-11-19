@@ -17,6 +17,7 @@ import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { EmailService } from '@/core/EmailService.js';
 import { MiLocalUser } from '@/models/User.js';
 import { FastifyReplyError } from '@/misc/fastify-reply-error.js';
+import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import { bindThis } from '@/decorators.js';
 import { L_CHARS, secureRndstr } from '@/misc/secure-rndstr.js';
 import { SigninService } from './SigninService.js';
@@ -77,6 +78,7 @@ export class SignupApiService {
 		reply: FastifyReply,
 	) {
 		const body = request.body;
+		if (!body || typeof body !== 'object' || Array.isArray(body)) throw new FastifyReplyError(400, 'INVALID_REQUEST');
 
 		if (process.env.NODE_ENV !== 'test') {
 			if (this.meta.enableHcaptcha && this.meta.hcaptchaSecretKey) {
@@ -116,17 +118,12 @@ export class SignupApiService {
 		const invitationCode = body['invitationCode'];
 		const emailAddress = body['emailAddress'];
 		const mkkeyOauthToken = body['mkkeyOauthToken'];
+		if (typeof username !== 'string' || !this.userEntityService.validateLocalUsername(username)) throw new FastifyReplyError(400, 'INVALID_USERNAME');
+		if (typeof password !== 'string' || !this.userEntityService.validatePassword(password)) throw new FastifyReplyError(400, 'INVALID_PASSWORD');
 
 		const mkkeyIdentity = typeof mkkeyOauthToken === 'string' && mkkeyOauthToken.length > 0
-			? this.mkkeySsoApiService.verifyOauthToken(mkkeyOauthToken)
+			? await this.mkkeySsoApiService.verifyOauthToken(mkkeyOauthToken, request)
 			: null;
-
-		if (mkkeyIdentity) {
-			const linkedUser = await this.mkkeySsoApiService.findLinkedUser(mkkeyIdentity);
-			if (linkedUser) {
-				return this.signinService.signin(request, reply, linkedUser);
-			}
-		}
 
 		if (this.meta.emailRequiredForSignup) {
 			if (emailAddress == null || typeof emailAddress !== 'string') {
@@ -149,7 +146,7 @@ export class SignupApiService {
 				return;
 			}
 
-			if (invitationCode != null && typeof invitationCode === 'string') {
+			if (!mkkeyIdentity && invitationCode != null && typeof invitationCode === 'string') {
 				ticket = await this.registrationTicketsRepository.findOneBy({
 					code: invitationCode,
 				});
@@ -197,8 +194,17 @@ export class SignupApiService {
 				throw new FastifyReplyError(400, 'DENIED_USERNAME');
 			}
 
+			if (mkkeyIdentity) {
+				const pending = await this.userPendingsRepository.findOneBy({ mkkeyUserId: mkkeyIdentity.mkkeyUserId });
+				if (pending) {
+					if (this.idService.parse(pending.id).date.getTime() + 30 * 60 * 1000 >= Date.now()) throw new FastifyReplyError(409, 'MKKEY_SIGNUP_PENDING');
+					await this.userPendingsRepository.delete({ id: pending.id });
+				}
+			}
 			const code = secureRndstr(16, { chars: L_CHARS });
 			const hash = await argon2.hash(password);
+
+			if (mkkeyIdentity) await this.mkkeySsoApiService.consumeSignupProof(mkkeyOauthToken!, request);
 
 			const pendingUser = await this.userPendingsRepository.insertOne({
 				id: this.idService.gen(),
@@ -208,6 +214,9 @@ export class SignupApiService {
 				password: hash,
 				mkkeyUserId: mkkeyIdentity?.mkkeyUserId ?? null,
 				mkkeyUsernameLower: mkkeyIdentity?.mkkeyUsernameLower ?? null,
+			}).catch((error: unknown) => {
+				if (mkkeyIdentity && isDuplicateKeyValueError(error)) throw new FastifyReplyError(409, 'MKKEY_SIGNUP_PENDING');
+				throw error;
 			});
 
 			const link = `${this.config.url}/signup-complete/${code}`;
@@ -227,23 +236,16 @@ export class SignupApiService {
 			return;
 		}
 
+		if (mkkeyIdentity) await this.mkkeySsoApiService.consumeSignupProof(mkkeyOauthToken!, request);
 		try {
 			const { account, secret } = await this.signupService.signup({
-				username, password, host,
+				username, password, host, mkkeyIdentity,
 			});
 
 			const res = await this.userEntityService.pack(account, account, {
 				schema: 'MeDetailed',
 				includeSecrets: true,
 			});
-
-			if (mkkeyIdentity) {
-				await this.mkkeySsoApiService.saveLink({
-					mkkeyUserId: mkkeyIdentity.mkkeyUserId,
-					mkkeyUsernameLower: mkkeyIdentity.mkkeyUsernameLower,
-					userId: account.id,
-				});
-			}
 
 			if (ticket) {
 				await this.registrationTicketsRepository.update(ticket.id, {
@@ -277,27 +279,10 @@ export class SignupApiService {
 			const { account } = await this.signupService.signup({
 				username: pendingUser.username,
 				passwordHash: pendingUser.password,
+				pendingUserId: pendingUser.id,
+				verifiedEmail: pendingUser.email,
+				mkkeyIdentity: pendingUser.mkkeyUserId ? { mkkeyUserId: pendingUser.mkkeyUserId, mkkeyUsernameLower: pendingUser.mkkeyUsernameLower ?? '' } : null,
 			});
-
-			this.userPendingsRepository.delete({
-				id: pendingUser.id,
-			});
-
-			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: account.id });
-
-			await this.userProfilesRepository.update({ userId: profile.userId }, {
-				email: pendingUser.email,
-				emailVerified: true,
-				emailVerifyCode: null,
-			});
-
-			if (pendingUser.mkkeyUserId && pendingUser.mkkeyUsernameLower) {
-				await this.mkkeySsoApiService.saveLink({
-					mkkeyUserId: pendingUser.mkkeyUserId,
-					mkkeyUsernameLower: pendingUser.mkkeyUsernameLower,
-					userId: account.id,
-				});
-			}
 
 			const ticket = await this.registrationTicketsRepository.findOneBy({ pendingUserId: pendingUser.id });
 			if (ticket) {

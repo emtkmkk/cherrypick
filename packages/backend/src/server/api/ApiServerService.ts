@@ -20,6 +20,7 @@ import { SignupApiService } from './SignupApiService.js';
 import { SigninApiService } from './SigninApiService.js';
 import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
 import { MkkeySsoApiService } from './MkkeySsoApiService.js';
+import type { MkkeySsoStartBody, MkkeySsoProofBody } from './MkkeySsoApiService.js';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 @Injectable()
@@ -149,12 +150,14 @@ export class ApiServerService {
 
 		fastify.post<{ Body: { code: string; } }>('/signup-pending', (request, reply) => this.signupApiService.signupPending(request, reply));
 
+		fastify.post<{ Body: MkkeySsoStartBody; }>('/mkkey-sso/authorize-url', (request, reply) => this.mkkeySsoApiService.getAuthorizeUrl(request, reply));
 
-		fastify.post<{ Body: { mode: 'signin' | 'signup'; } }>('/mkkey-sso/authorize-url', (request, reply) => this.mkkeySsoApiService.getAuthorizeUrl(request));
+		fastify.get<{ Querystring: { session?: string; }; }>('/mkkey-sso/callback', (request, reply) => this.mkkeySsoApiService.callback(request, reply));
 
-		fastify.get<{ Querystring: { code?: string; state?: string; }; }>('/mkkey-sso/callback', (request, reply) => this.mkkeySsoApiService.callback(request, reply));
-
-		fastify.post<{ Body: { oauthToken: string; } }>('/mkkey-sso/signin', (request, reply) => this.mkkeySsoApiService.signin(request, reply));
+		fastify.post<{ Body: MkkeySsoProofBody; }>('/mkkey-sso/signin', (request, reply) => this.mkkeySsoApiService.signin(request, reply));
+		fastify.post<{ Body: { i?: string; }; }>('/mkkey-sso/status', request => this.mkkeySsoApiService.status(request));
+		fastify.post<{ Body: MkkeySsoProofBody; }>('/mkkey-sso/link', request => this.mkkeySsoApiService.link(request));
+		fastify.post<{ Body: { i?: string; password?: string; token?: string; }; }>('/mkkey-sso/unlink', request => this.mkkeySsoApiService.unlink(request));
 
 		fastify.get('/v1/instance/peers', async (request, reply) => {
 			const instances = await this.instancesRepository.find({

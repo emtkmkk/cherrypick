@@ -69,7 +69,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkCaptcha v-if="instance.enableTestcaptcha" ref="testcaptcha" v-model="testcaptchaResponse" :class="$style.captcha" provider="testcaptcha"/>
 			<div class="_buttonsCenter">
 				<MkButton inline rounded @click="goBack"><i class="ti ti-arrow-left"></i> {{ i18n.ts.goBack }}</MkButton>
-				<MkButton inline rounded type="button" @click="signupWithMkkeySso">mkkey.net でログイン</MkButton>
+				<MkButton inline rounded type="button" :disabled="mkkeyAuthenticating" @click="signupWithMkkeySso">mkkey.net でログイン</MkButton>
 				<MkButton type="submit" :disabled="shouldDisableSubmitting" inline gradate rounded data-cy-signup-submit>
 					<template v-if="submitting">
 						<MkLoading :em="true" :colored="false"/>
@@ -86,22 +86,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { ref, computed } from 'vue';
 import { toUnicode } from 'punycode/';
 import * as Misskey from 'cherrypick-js';
-import { apiUrl } from '@@/js/config.js';
 import * as config from '@@/js/config.js';
 import MkButton from './MkButton.vue';
 import MkInput from './MkInput.vue';
+import { runMkkeyAuth, mkkeyAuthError } from '@/scripts/mkkey-sso.js';
 import MkCaptcha, { type Captcha } from '@/components/MkCaptcha.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { login } from '@/account.js';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
-
-type MkkeySsoMessage = {
-	source: 'mkkey-sso';
-	mode: 'signin' | 'signup';
-	oauthToken: string;
-};
 
 const props = withDefaults(defineProps<{
 	autoSet?: boolean;
@@ -274,59 +268,19 @@ function goBack() {
 	emit('back');
 }
 
-function isMkkeySsoMessage(data: unknown): data is MkkeySsoMessage {
-	if (typeof data !== 'object' || data == null) return false;
-	const payload = data as Record<string, unknown>;
-	return payload.source === 'mkkey-sso' && typeof payload.oauthToken === 'string' && (payload.mode === 'signin' || payload.mode === 'signup');
-}
-
-async function runMkkeyOauth(mode: 'signin' | 'signup'): Promise<string | null> {
-	const res = await fetch(`${apiUrl}/mkkey-sso/authorize-url`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({ mode }),
-	});
-
-	if (!res.ok) return null;
-	const body = await res.json() as { url: string; };
-	const popup = window.open(body.url, 'mkkey-sso', 'width=520,height=700');
-	if (!popup) return null;
-
-	return await new Promise((resolve) => {
-		const timer = setTimeout(() => {
-			window.removeEventListener('message', onMessage);
-			resolve(null);
-		}, 1000 * 60 * 3);
-
-		const onMessage = (event: MessageEvent<unknown>) => {
-			if (!isMkkeySsoMessage(event.data)) return;
-			if (event.data.mode !== mode) return;
-			clearTimeout(timer);
-			window.removeEventListener('message', onMessage);
-			resolve(event.data.oauthToken);
-		};
-
-		window.addEventListener('message', onMessage);
-	});
-}
+const mkkeyAuthenticating = ref(false);
 
 async function signupWithMkkeySso(): Promise<void> {
-	const oauthToken = await runMkkeyOauth('signup');
-	if (!oauthToken) {
-		os.alert({
-			type: 'error',
-			text: 'mkkey.net OAuthに失敗しました。',
-		});
-		return;
+	if (mkkeyAuthenticating.value) return;
+	mkkeyAuthenticating.value = true;
+	try {
+		mkkeyOauthToken.value = await runMkkeyAuth('signup');
+		await os.alert({ type: 'success', text: 'もこきーでの本人確認ができました。招待コードなしで登録できます。登録後は同じもこきーアカウントでログインできます。' });
+	} catch (error) {
+		await os.alert({ type: 'error', text: mkkeyAuthError(error) });
+	} finally {
+		mkkeyAuthenticating.value = false;
 	}
-
-	mkkeyOauthToken.value = oauthToken;
-	os.alert({
-		type: 'success',
-		text: 'mkkey.net連携を確認しました。招待コードなしで登録できます。',
-	});
 }
 
 async function onSubmit(): Promise<void> {
