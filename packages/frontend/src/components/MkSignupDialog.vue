@@ -21,8 +21,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:enterFromClass="$style.transition_x_enterFrom"
 			:leaveToClass="$style.transition_x_leaveTo"
 		>
-			<template v-if="!isAcceptedServerRule">
-				<XServerRules @done="isAcceptedServerRule = true" @cancel="onClose"/>
+			<template v-if="!registrationMethod">
+				<MkSpacer :marginMin="20" :marginMax="32">
+					<div class="_gaps_m">
+						<MkButton full rounded gradate @click="registrationMethod = 'mkkey'">{{ i18n.ts.signupWithMkkey }}</MkButton>
+						<MkButton full rounded @click="registrationMethod = 'invitation'">{{ i18n.ts.signupWithInvitationCode }}</MkButton>
+					</div>
+				</MkSpacer>
+			</template>
+			<template v-else-if="!isAcceptedServerRule">
+				<XServerRules :busy="authenticating" @done="continueAfterRules" @cancel="onClose"/>
 			</template>
 			<template v-else>
 				<XSignup :autoSet="autoSet" :mkkeyOauthToken="mkkeyOauthToken" @back="isAcceptedServerRule = false" @signup="onSignup" @signupEmailPending="onSignupEmailPending"/>
@@ -38,18 +46,24 @@ import * as Misskey from 'cherrypick-js';
 import XSignup from '@/components/MkSignupDialog.form.vue';
 import XServerRules from '@/components/MkSignupDialog.rules.vue';
 import MkModalWindow from '@/components/MkModalWindow.vue';
+import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
+import { login } from '@/account.js';
+import { runMkkeyAuth, mkkeyAuthError } from '@/scripts/mkkey-sso.js';
+import { signinOrContinueMkkeySignup } from '@/scripts/mkkey-signup.js';
+import * as os from '@/os.js';
 
 const props = withDefaults(defineProps<{
 	autoSet?: boolean;
-	mkkeyOauthToken?: string;
+	method?: 'mkkey' | 'invitation';
 }>(), {
 	autoSet: false,
-	mkkeyOauthToken: '',
+	method: undefined,
 });
 
 const emit = defineEmits<{
 	(ev: 'done', res: Misskey.entities.SignupResponse): void;
+	(ev: 'signin', res: { id: string; token: string; }): void;
 	(ev: 'cancelled'): void;
 	(ev: 'closed'): void;
 }>();
@@ -57,8 +71,42 @@ const emit = defineEmits<{
 const dialog = shallowRef<InstanceType<typeof MkModalWindow>>();
 
 const isAcceptedServerRule = ref(false);
+// The caller chooses the initial route; the account creation menu can choose it here.
+// eslint-disable-next-line vue/no-setup-props-reactivity-loss
+const registrationMethod = ref(props.method);
+const mkkeyOauthToken = ref('');
+const authenticating = ref(false);
+let cancelled = false;
+
+async function continueAfterRules() {
+	if (authenticating.value || cancelled) return;
+	if (registrationMethod.value === 'invitation') {
+		isAcceptedServerRule.value = true;
+		return;
+	}
+	authenticating.value = true;
+	try {
+		const oauthToken = await runMkkeyAuth('signup');
+		if (cancelled) return;
+		const result = await signinOrContinueMkkeySignup(oauthToken);
+		if (cancelled || result.type === 'cancelled') return;
+		if (result.type === 'signedIn') {
+			emit('signin', { id: result.id, token: result.token });
+			dialog.value?.close();
+			if (props.autoSet) await login(result.token);
+			return;
+		}
+		mkkeyOauthToken.value = oauthToken;
+		isAcceptedServerRule.value = true;
+	} catch (error) {
+		if (!cancelled) await os.alert({ type: 'error', text: mkkeyAuthError(error) });
+	} finally {
+		authenticating.value = false;
+	}
+}
 
 function onClose() {
+	cancelled = true;
 	emit('cancelled');
 	dialog.value?.close();
 }

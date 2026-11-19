@@ -10,10 +10,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<MkSpacer :marginMin="20" :marginMax="28">
 		<div class="_gaps_m">
-			<div v-if="instance.disableRegistration">
-				<MkInfo warn>{{ i18n.ts.invitationRequiredToRegister }}</MkInfo>
-			</div>
-
 			<div style="text-align: center;">
 				<div>{{ i18n.ts.pleaseConfirmBelowBeforeSignup }}</div>
 				<div style="font-weight: bold; margin-top: 0.5em;">{{ i18n.ts.beSureToReadThisAsItIsImportant }}</div>
@@ -54,7 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<div class="_buttonsCenter">
 				<MkButton inline rounded @click="emit('cancel')">{{ i18n.ts.cancel }}</MkButton>
-				<MkButton inline primary rounded gradate :disabled="!agreed" data-cy-signup-rules-continue @click="emit('done')">{{ i18n.ts.continue }} <i class="ti ti-arrow-right"></i></MkButton>
+				<MkButton inline primary rounded gradate :disabled="!agreed || busy" data-cy-signup-rules-continue @click="emit('done')">{{ i18n.ts.continue }} <i class="ti ti-arrow-right"></i></MkButton>
 			</div>
 		</div>
 	</MkSpacer>
@@ -68,8 +64,9 @@ import { i18n } from '@/i18n.js';
 import MkButton from '@/components/MkButton.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
-import MkInfo from '@/components/MkInfo.vue';
 import * as os from '@/os.js';
+
+withDefaults(defineProps<{ busy?: boolean; }>(), { busy: false });
 
 const availableServerRules = instance.serverRules.length > 0;
 const availableTos = instance.tosUrl != null && instance.tosUrl !== '';
