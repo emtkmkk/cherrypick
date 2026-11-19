@@ -41,7 +41,6 @@ jobs:
       with:
         node-version-file: '.node-version'
         cache: 'pnpm'
-    - run: corepack enable
     - run: pnpm i --frozen-lockfile
 
   lint:
@@ -72,7 +71,6 @@ jobs:
       with:
         node-version-file: '.node-version'
         cache: 'pnpm'
-    - run: corepack enable
     - run: pnpm i --frozen-lockfile
     - name: Restore eslint cache
       uses: actions/cache@v4.1.0
@@ -102,7 +100,6 @@ jobs:
       with:
         node-version-file: '.node-version'
         cache: 'pnpm'
-    - run: corepack enable
     - run: pnpm i --frozen-lockfile
     - run: pnpm --filter cherrypick-js run build
       if: ${{ matrix.workspace == 'backend' || matrix.workspace == 'sw' }}

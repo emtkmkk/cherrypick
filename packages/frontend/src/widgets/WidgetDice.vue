@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 <template>
 <MkContainer :naked="widgetProps.transparent" :showHeader="false">
 	<div class="_monospace" :class="[$style.root, {_panel: !widgetProps.transparent}]">
