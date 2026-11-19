@@ -44,13 +44,14 @@ jobs:
     - name: Install pnpm
       uses: pnpm/action-setup@v4
     - name: Install FFmpeg
-      uses: FedericoCarboni/setup-ffmpeg@v3
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends ffmpeg
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4.0.4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'pnpm'
-    - run: corepack enable
     - run: pnpm i --frozen-lockfile
     - name: Check pnpm-lock.yaml
       run: git diff --exit-code pnpm-lock.yaml
@@ -97,7 +98,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
-      - run: corepack enable
       - run: pnpm i --frozen-lockfile
       - name: Check pnpm-lock.yaml
         run: git diff --exit-code pnpm-lock.yaml

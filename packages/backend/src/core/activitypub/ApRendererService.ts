@@ -297,9 +297,9 @@ export class ApRendererService {
 			_misskey_reaction: sendReaction,
 		};
 
-		if (reaction.startsWith(':')) {
+		if (custom) {
 			const name = custom[1];
-			const host = custom[2] == "." ? null : custom[2] || null;
+			const host = custom[2] === '.' ? null : custom[2] || null;
 			const emoji = host == null
 					? (await this.customEmojiService.localEmojisCache.fetch()).get(name)
 					: await this.emojisRepository.findOneBy({
@@ -307,7 +307,12 @@ export class ApRendererService {
 						name,
 					});
 
-			if (emoji && !emoji.localOnly) object.tag = [this.renderEmoji(emoji)];
+			if (emoji && !emoji.localOnly) {
+				object.tag = [this.renderEmoji(emoji)];
+			} else {
+				object.content = '\u2764';
+				object._misskey_reaction = '\u2764';
+			}
 		}
 
 		return object;
@@ -507,7 +512,7 @@ export class ApRendererService {
 			...asEvent,
 			...asPoll,
 			...asTalk,
-			_mk_localVisibility: remoteFollowerOnly ? note.visibility : undefined,
+			_mk_localVisibility: remoteFollowerOnly && (note.visibility === 'public' || note.visibility === 'home') ? note.visibility : undefined,
 		};
 	}
 

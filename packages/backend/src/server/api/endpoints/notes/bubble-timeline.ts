@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 import { Inject, Injectable } from '@nestjs/common';
 import { Brackets } from 'typeorm';
 import type { NotesRepository, MiMeta } from '@/models/_.js';
@@ -119,9 +123,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			let timeline = await query.limit(ps.limit).getMany();
 
-			timeline = timeline.filter(note => {
-				return !(note.user?.isSilenced && me && followings && note.userId !== me.id && !followings[note.userId]);
-			});
+			if (me && followings) {
+				const visible = await Promise.all(timeline.map(async note =>
+					note.userId === me.id || !!followings[note.userId] || (await this.roleService.getUserPolicies(note.userId)).canPublicNote));
+				timeline = timeline.filter((_, index) => visible[index]);
+			}
 
 			process.nextTick(() => {
 				if (me) {

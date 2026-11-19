@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.4
 
-ARG NODE_VERSION=22.11.0-bullseye
+ARG NODE_VERSION=22.11.0-bookworm
 
 # build assets & compile TypeScript
 
@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 	&& apt-get install -yqq --no-install-recommends \
 	build-essential
 
-RUN corepack enable
+RUN npm install --global corepack@0.31.0 && corepack enable
 
 WORKDIR /cherrypick
 
@@ -48,7 +48,7 @@ RUN apt-get update \
 	&& apt-get install -yqq --no-install-recommends \
 	build-essential
 
-RUN corepack enable
+RUN npm install --global corepack@0.31.0 && corepack enable
 
 WORKDIR /cherrypick
 
@@ -73,6 +73,7 @@ RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 	ffmpeg tini curl libjemalloc-dev libjemalloc2 \
 	&& ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so \
+	&& npm install --global corepack@0.31.0 \
 	&& corepack enable \
 	&& groupadd -g "${GID}" cherrypick \
 	&& useradd -l -u "${UID}" -g "${GID}" -m -d /cherrypick cherrypick \

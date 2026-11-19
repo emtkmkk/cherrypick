@@ -9,14 +9,14 @@ services:
       service: cherrypick
     command: >
       bash -c "
-        corepack enable && corepack prepare
+        npm install --global corepack@0.31.0 && corepack enable && corepack prepare &&
         pnpm -F backend i
         pnpm -F cherrypick-js i
         pnpm -F misskey-reversi i
       "
 
   tester:
-    image: node:20
+    image: node:22.11.0-bookworm
     depends_on:
       a.test:
         condition: service_healthy
@@ -73,7 +73,7 @@ services:
     working_dir: /cherrypick
     entrypoint: >
       bash -c '
-        corepack enable && corepack prepare
+        npm install --global corepack@0.31.0 && corepack enable && corepack prepare &&
         pnpm -F cherrypick-js i --frozen-lockfile
         pnpm -F backend i --frozen-lockfile
         exec "$0" "$@"
@@ -81,7 +81,7 @@ services:
     command: pnpm -F backend test:fed
 
   daemon:
-    image: node:20
+    image: node:22.11.0-bookworm
     depends_on:
       redis.test:
         condition: service_healthy
@@ -113,7 +113,7 @@ services:
     working_dir: /cherrypick
     command: >
       bash -c "
-        corepack enable && corepack prepare
+        npm install --global corepack@0.31.0 && corepack enable && corepack prepare &&
         pnpm -F backend i --frozen-lockfile
         pnpm exec tsc -p ./packages/backend/test-federation
         node ./packages/backend/test-federation/built/daemon.js
