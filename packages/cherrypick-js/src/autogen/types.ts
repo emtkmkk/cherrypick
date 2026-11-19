@@ -4769,8 +4769,14 @@ export type components = {
       createdAt: string;
       /** @enum {string} */
       type: 'groupInvited';
+      user: components['schemas']['UserLite'];
       /** Format: id */
-      invitation: string;
+      userId: string;
+      invitation: {
+        /** Format: id */
+        id: string;
+        group: components['schemas']['UserGroup'];
+      };
     };
     DriveFile: {
       /**
@@ -23755,7 +23761,8 @@ export type operations = {
         content: {
           'application/json': {
             sourceLang: string;
-            text: string;
+            text: string[];
+            translator: string;
           };
         };
       };

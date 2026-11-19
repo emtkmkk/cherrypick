@@ -449,10 +449,21 @@ export const packedNotificationSchema = {
 				optional: false, nullable: false,
 				enum: ['groupInvited'],
 			},
-			invitation: {
-				type: 'string',
+			user: {
+				type: 'object', ref: 'UserLite',
 				optional: false, nullable: false,
-				format: 'id',
+			},
+			userId: {
+				type: 'string', format: 'id',
+				optional: false, nullable: false,
+			},
+			invitation: {
+				type: 'object',
+				optional: false, nullable: false,
+				properties: {
+					id: { type: 'string', format: 'id', optional: false, nullable: false },
+					group: { type: 'object', ref: 'UserGroup', optional: false, nullable: false },
+				},
 			},
 		},
 	}],

@@ -1027,13 +1027,23 @@ describe('Note', () => {
 			assert.strictEqual(res.status, 204);
 		});
 
-		test('サーバーに DeepL 認証キーが登録されていない場合翻訳できない', async () => {
+		test('翻訳サービスが設定されていない場合翻訳できない', async () => {
 			const aliceNote = await post(alice, { text: 'Hello' });
 			const res = await api('notes/translate', { noteId: aliceNote.id, targetLang: 'ja' }, alice);
-
-			// NOTE: デフォルトでは登録されていないので落ちる
 			assert.strictEqual(res.status, 400);
-			assert.strictEqual(castAsError(res.body).error.code, 'UNAVAILABLE');
+			assert.strictEqual(castAsError(res.body).error.code, 'NO_TRANSLATE_SERVICE');
+		});
+
+		test('サーバーに DeepL 認証キーが登録されていない場合翻訳できない', async () => {
+			await api('admin/update-meta', { translatorType: 'deepl' }, root);
+			try {
+				const aliceNote = await post(alice, { text: 'Hello' });
+				const res = await api('notes/translate', { noteId: aliceNote.id, targetLang: 'ja' }, alice);
+				assert.strictEqual(res.status, 400);
+				assert.strictEqual(castAsError(res.body).error.code, 'UNAVAILABLE');
+			} finally {
+				await api('admin/update-meta', { translatorType: null }, root);
+			}
 		});
 	});
 });

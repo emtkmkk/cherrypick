@@ -44,8 +44,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			let emoji = undefined;
-			let custom = /^([\w+-]+)(?:@([\w.-]+))?$/.exec(ps.name);
-			if (custom && custom.length >= 3){
+			const custom = /^([\w+-]+)(?:@([\w.-]+))?$/.exec(ps.name);
+			if (custom && custom.length >= 3) {
 				emoji = await this.emojisRepository.findOneOrFail({
 					where: {
 						name: custom[1],
