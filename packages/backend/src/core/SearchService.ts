@@ -161,6 +161,7 @@ export class SearchService {
 		userId?: MiNote['userId'] | null;
 		channelId?: MiNote['channelId'] | null;
 		host?: string | null;
+		origin?: 'local' | 'remote' | 'combined';
 	}, pagination: {
 		untilId?: MiNote['id'];
 		sinceId?: MiNote['id'];
@@ -175,6 +176,8 @@ export class SearchService {
 			if (pagination.sinceId) filter.qs.push({ op: '>', k: 'createdAt', v: this.idService.parse(pagination.sinceId).date.getTime() });
 			if (opts.userId) filter.qs.push({ op: '=', k: 'userId', v: opts.userId });
 			if (opts.channelId) filter.qs.push({ op: '=', k: 'channelId', v: opts.channelId });
+			if (opts.origin === 'local') filter.qs.push({ op: 'is null', k: 'userHost' });
+			if (opts.origin === 'remote') filter.qs.push({ op: 'is not null', k: 'userHost' });
 			if (opts.host) {
 				if (opts.host === '.') {
 					filter.qs.push({ op: 'is null', k: 'userHost' });
@@ -229,6 +232,8 @@ export class SearchService {
 					query.andWhere('user.host = :host', { host: opts.host });
 				}
 			}
+			if (opts.origin === 'local') query.andWhere('user.host IS NULL');
+			if (opts.origin === 'remote') query.andWhere('user.host IS NOT NULL');
 
 			this.queryService.generateVisibilityQuery(query, me);
 			if (me) this.queryService.generateMutedUserQuery(query, me);

@@ -39,6 +39,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkButton type="submit" large primary rounded style="margin: 0 auto;" data-cy-signin-page-input-continue>{{ i18n.ts.continue }} <i class="ti ti-arrow-right"></i></MkButton>
 		</form>
 
+		<MkButton type="button" rounded style="margin: 0 auto;" :disabled="mkkeySigningIn" @click="signinWithMkkeySso">mkkey.net でログイン</MkButton>
+
 		<!-- パスワードレスログイン -->
 		<div :class="$style.orHr">
 			<p :class="$style.orMsg">{{ i18n.ts.or }}</p>
@@ -60,6 +62,8 @@ import { query, extractDomain } from '@@/js/url.js';
 import { host as configHost } from '@@/js/config.js';
 import type { OpenOnRemoteOptions } from '@/scripts/please-login.js';
 import { i18n } from '@/i18n.js';
+import { login } from '@/account.js';
+import { runMkkeyAuth, mkkeySsoRequest, mkkeyAuthError } from '@/scripts/mkkey-sso.js';
 import * as os from '@/os.js';
 import { defaultStore } from '@/store.js';
 
@@ -139,6 +143,28 @@ async function specifyHostAndOpenRemote(options: OpenOnRemoteOptions): Promise<v
 		return;
 	}
 	openRemote(options, targetHost);
+}
+
+const mkkeySigningIn = ref(false);
+
+async function signinWithMkkeySso(): Promise<void> {
+	if (mkkeySigningIn.value) return;
+	mkkeySigningIn.value = true;
+	try {
+		const oauthToken = await runMkkeyAuth('signin');
+		let response = await mkkeySsoRequest<{ finished: boolean; i?: string; next?: string; }>('signin', { oauthToken });
+		if (!response.finished && response.next === 'totp') {
+			const { canceled, result } = await os.inputText({ title: 'CherryPickの2段階認証コード', autocomplete: 'one-time-code' });
+			if (canceled) return;
+			response = await mkkeySsoRequest('signin', { oauthToken, token: result });
+		}
+		if (!response.finished || !response.i) throw new Error('MKKEY_AUTH_FAILED');
+		await login(response.i);
+	} catch (error) {
+		await os.alert({ type: 'error', text: mkkeyAuthError(error) });
+	} finally {
+		mkkeySigningIn.value = false;
+	}
 }
 //#endregion
 </script>

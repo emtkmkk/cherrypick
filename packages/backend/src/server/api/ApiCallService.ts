@@ -10,6 +10,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
 import { DI } from '@/di-symbols.js';
 import { getIpHash } from '@/misc/get-ip-hash.js';
+import { encodeOAuthErrorDescription } from '@/misc/oauth-error-description.js';
 import type { MiLocalUser, MiUser } from '@/models/User.js';
 import type { MiAccessToken } from '@/models/AccessToken.js';
 import type Logger from '@/logger.js';
@@ -64,6 +65,7 @@ export class ApiCallService implements OnApplicationShutdown {
 
 	#sendApiError(reply: FastifyReply, err: ApiError): void {
 		let statusCode = err.httpStatusCode;
+		const errorDescription = encodeOAuthErrorDescription(err.message);
 		if (err.httpStatusCode === 401) {
 			reply.header('WWW-Authenticate', 'Bearer realm="CherryPick"');
 		} else if (err.code === 'RATE_LIMIT_EXCEEDED') {
@@ -77,12 +79,12 @@ export class ApiCallService implements OnApplicationShutdown {
 				this.logger.warn(`rate limit information has unexpected type ${typeof(err.info?.reset)}`);
 			}
 		} else if (err.kind === 'client') {
-			reply.header('WWW-Authenticate', `Bearer realm="CherryPick", error="invalid_request", error_description="${err.message}"`);
+			reply.header('WWW-Authenticate', `Bearer realm="CherryPick", error="invalid_request", error_description="${errorDescription}"`);
 			statusCode = statusCode ?? 400;
 		} else if (err.kind === 'permission') {
 			// (ROLE_PERMISSION_DENIEDは関係ない)
 			if (err.code === 'PERMISSION_DENIED') {
-				reply.header('WWW-Authenticate', `Bearer realm="CherryPick", error="insufficient_scope", error_description="${err.message}"`);
+				reply.header('WWW-Authenticate', `Bearer realm="CherryPick", error="insufficient_scope", error_description="${errorDescription}"`);
 			}
 			statusCode = statusCode ?? 403;
 		} else if (!statusCode) {

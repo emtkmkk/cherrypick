@@ -769,14 +769,17 @@ export class DropAndFusionGame extends EventEmitter<{
 			} else {
 				const energy = pairs.collision.depth;
 
-				if (bodyA.label === "_overflow_" || bodyB.label === "_overflow_")
+				if (bodyA.label === "_overflow_" || bodyB.label === "_overflow_") {
 					continue;
+				}
 
 				if (bodyA.label !== "_wall_" && bodyB.label !== "_wall_") {
-					if (!this.gameOverReadyBodyIds.includes(bodyA.id))
+					if (!this.gameOverReadyBodyIds.includes(bodyA.id)) {
 						this.gameOverReadyBodyIds.push(bodyA.id);
-					if (!this.gameOverReadyBodyIds.includes(bodyB.id))
+					}
+					if (!this.gameOverReadyBodyIds.includes(bodyB.id)) {
 						this.gameOverReadyBodyIds.push(bodyB.id);
+					}
 				}
 
 				this.emit("collision", energy, bodyA, bodyB);
@@ -857,8 +860,9 @@ export class DropAndFusionGame extends EventEmitter<{
 				b.label === "_wall_" ||
 				b.label === "_overflow_" ||
 				b.id === target.id
-			)
+			) {
 				continue;
+			}
 			const collision = Matter.SAT.collides(b, this.overflowCollider);
 			if ((collision && collision.collided) || b.bounds.min.y < 0) {
 				this.fusionReadyBodyIds = this.fusionReadyBodyIds.filter(

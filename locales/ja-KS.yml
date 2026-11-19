@@ -2479,7 +2479,7 @@ _notification:
   youWereFollowed: "フォローされたで"
   youReceivedFollowRequest: "フォロー許可してほしいみたいやな"
   yourFollowRequestAccepted: "フォローさせてもろたで"
-  youWereInvitedToGroup: "グループに招待されとるで"
+  youWereInvitedToGroup: "{userName}: グループに招待されとるで"
   pollEnded: "アンケートの結果が出たみたいや"
   newNote: "さらの投稿"
   unreadAntennaNote: "アンテナ {name}"

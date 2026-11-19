@@ -131,7 +131,12 @@ export default class Connection {
 			// 個々のチャンネルではなくルートレベルでこれらのメッセージを受け取る理由は、
 			// クライアントの事情を考慮したとき、入力フォームはノートチャンネルやメッセージのメインコンポーネントとは別
 			// なこともあるため、それらのコンポーネントがそれぞれ各チャンネルに接続するようにするのは面倒なため。
-			case 'typingOnMessaging': this.typingOnMessaging(body); break;
+			case 'typingOnMessaging':
+				if (!isJsonObject(body)) break;
+				if (body.partner != null && typeof body.partner !== 'string') break;
+				if (body.group != null && typeof body.group !== 'string') break;
+				this.typingOnMessaging({ partner: body.partner ?? undefined, group: body.group ?? undefined });
+				break;
 		}
 	}
 

@@ -197,7 +197,7 @@ if (window.innerWidth > 1024) {
 
 const reload = () => {
 	location.reload();
-}
+};
 
 const calcBg = () => {
 	const rawBg = 'var(--MI_THEME-panel)';
@@ -250,7 +250,6 @@ onBeforeUnmount(() => {
 onUnmounted(() => {
 	globalEvents.off('themeChanged', calcBg);
 });
-
 
 function openMessage(ev: MouseEvent) {
 	if (mainRouter.currentRoute.value.name === 'messaging' && !(['messaging-room', 'messaging-room-group'].includes(<string>mainRouter.currentRoute.value.name))) globalEvents.emit('openMessage', ev);

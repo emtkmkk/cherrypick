@@ -10,6 +10,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkButton primary @click="change()">{{ i18n.ts.changePassword }}</MkButton>
 	</FormSection>
 
+	<FormSection>
+		<template #label>もこきーでログイン（mkkey.net）</template>
+		<div class="_gaps_s">
+			<p v-if="mkkeyLink?.linked">連携中: @{{ mkkeyLink.username }}@mkkey.net</p>
+			<p v-else-if="mkkeyLink">未連携です。連携すると、同じもこきーアカウントでCherryPickにログインできます。</p>
+			<p v-else>{{ mkkeyStatusError || '連携状態を確認しています…' }}</p>
+			<MkButton v-if="mkkeyStatusError" @click="loadMkkeyLink">再確認</MkButton>
+			<MkButton v-else-if="mkkeyLink?.linked" danger :disabled="mkkeyBusy" @click="unlinkMkkey">連携を解除</MkButton>
+			<MkButton v-else primary :disabled="mkkeyBusy || !mkkeyLink" @click="linkMkkey">もこきーアカウントと連携</MkButton>
+			<p>連携・解除にはCherryPickのパスワードと、有効な場合は2段階認証コードが必要です。</p>
+		</div>
+	</FormSection>
+
 	<X2fa/>
 
 	<FormSection>
@@ -40,8 +53,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import X2fa from './2fa.vue';
+import { $i } from '@/account.js';
+import { runMkkeyAuth, mkkeySsoRequest, mkkeyAuthError } from '@/scripts/mkkey-sso.js';
 import FormSection from '@/components/form/section.vue';
 import FormSlot from '@/components/form/slot.vue';
 import MkButton from '@/components/MkButton.vue';
@@ -50,6 +65,53 @@ import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
+
+const mkkeyLink = ref<{ linked: boolean; username: string | null; } | null>(null);
+const mkkeyBusy = ref(false);
+const mkkeyStatusError = ref('');
+
+async function loadMkkeyLink() {
+	mkkeyStatusError.value = '';
+	try {
+		mkkeyLink.value = await mkkeySsoRequest('status', { i: $i?.token });
+	} catch (error) {
+		mkkeyStatusError.value = mkkeyAuthError(error);
+	}
+}
+
+async function linkMkkey() {
+	if (mkkeyBusy.value || !$i) return;
+	const auth = await os.authenticateDialog();
+	if (auth.canceled) return;
+	mkkeyBusy.value = true;
+	try {
+		const oauthToken = await runMkkeyAuth('link', { i: $i.token, password: auth.result.password, token: auth.result.token ?? undefined });
+		await mkkeySsoRequest('link', { i: $i.token, oauthToken });
+		await loadMkkeyLink();
+		await os.alert({ type: 'success', text: 'もこきーアカウントと連携しました。次回からもこきーでログインできます。' });
+	} catch (error) {
+		await os.alert({ type: 'error', text: mkkeyAuthError(error) });
+	} finally {
+		mkkeyBusy.value = false;
+	}
+}
+
+async function unlinkMkkey() {
+	if (mkkeyBusy.value || !$i) return;
+	const auth = await os.authenticateDialog();
+	if (auth.canceled) return;
+	mkkeyBusy.value = true;
+	try {
+		await mkkeySsoRequest('unlink', { i: $i.token, password: auth.result.password, token: auth.result.token });
+		await loadMkkeyLink();
+	} catch (error) {
+		await os.alert({ type: 'error', text: mkkeyAuthError(error) });
+	} finally {
+		mkkeyBusy.value = false;
+	}
+}
+
+onMounted(loadMkkeyLink);
 
 const pagination = {
 	endpoint: 'i/signin-history' as const,

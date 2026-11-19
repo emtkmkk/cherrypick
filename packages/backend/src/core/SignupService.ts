@@ -15,6 +15,9 @@ import { MiUserProfile } from '@/models/UserProfile.js';
 import { IdService } from '@/core/IdService.js';
 import { MiUserKeypair } from '@/models/UserKeypair.js';
 import { MiUsedUsername } from '@/models/UsedUsername.js';
+import { MiMkkeyAccountLink } from '@/models/MkkeyAccountLink.js';
+import { MiUserPending } from '@/models/UserPending.js';
+import type { MkkeyIdentity } from '@/server/api/MkkeySsoApiService.js';
 import generateUserToken from '@/misc/generate-native-user-token.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { InstanceActorService } from '@/core/InstanceActorService.js';
@@ -54,6 +57,9 @@ export class SignupService {
 		passwordHash?: MiUserProfile['password'] | null;
 		host?: string | null;
 		ignorePreservedUsernames?: boolean;
+		mkkeyIdentity?: MkkeyIdentity | null;
+		verifiedEmail?: string;
+		pendingUserId?: string;
 	}) {
 		const { username, password, passwordHash, host } = opts;
 		let hash = passwordHash;
@@ -143,7 +149,15 @@ export class SignupService {
 				userId: account.id,
 				autoAcceptFollowed: true,
 				password: hash,
+				...(opts.verifiedEmail ? { email: opts.verifiedEmail, emailVerified: true, emailVerifyCode: null } : {}),
 			}));
+
+			if (opts.mkkeyIdentity) {
+				await transactionalEntityManager.insert(MiMkkeyAccountLink, { ...opts.mkkeyIdentity, userId: account.id });
+			}
+			if (opts.pendingUserId) {
+				await transactionalEntityManager.delete(MiUserPending, { id: opts.pendingUserId });
+			}
 
 			await transactionalEntityManager.save(new MiUsedUsername({
 				createdAt: new Date(),

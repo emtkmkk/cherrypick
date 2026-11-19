@@ -217,7 +217,7 @@ if (window.innerWidth > 1024) {
 
 const reload = () => {
 	location.reload();
-}
+};
 
 defaultStore.loaded.then(() => {
 	if (defaultStore.state.widgets.length === 0) {

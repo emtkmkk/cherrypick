@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<MkSpacer :marginMin="20" :marginMax="32">
 		<form class="_gaps_m" autocomplete="new-password" @submit.prevent="onSubmit">
-			<MkInput v-if="instance.disableRegistration" v-model="invitationCode" type="text" :spellcheck="false" required>
+			<MkInput v-if="instance.disableRegistration && !mkkeyOauthToken" v-model="invitationCode" type="text" :spellcheck="false" required>
 				<template #label>{{ i18n.ts.invitationCode }}</template>
 				<template #prefix><i class="ti ti-key"></i></template>
 			</MkInput>
@@ -69,6 +69,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkCaptcha v-if="instance.enableTestcaptcha" ref="testcaptcha" v-model="testcaptchaResponse" :class="$style.captcha" provider="testcaptcha"/>
 			<div class="_buttonsCenter">
 				<MkButton inline rounded @click="goBack"><i class="ti ti-arrow-left"></i> {{ i18n.ts.goBack }}</MkButton>
+				<MkButton inline rounded type="button" :disabled="mkkeyAuthenticating" @click="signupWithMkkeySso">mkkey.net でログイン</MkButton>
 				<MkButton type="submit" :disabled="shouldDisableSubmitting" inline gradate rounded data-cy-signup-submit>
 					<template v-if="submitting">
 						<MkLoading :em="true" :colored="false"/>
@@ -88,6 +89,7 @@ import * as Misskey from 'cherrypick-js';
 import * as config from '@@/js/config.js';
 import MkButton from './MkButton.vue';
 import MkInput from './MkInput.vue';
+import { runMkkeyAuth, mkkeyAuthError } from '@/scripts/mkkey-sso.js';
 import MkCaptcha, { type Captcha } from '@/components/MkCaptcha.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
@@ -119,6 +121,7 @@ const username = ref<string>('');
 const password = ref<string>('');
 const retypedPassword = ref<string>('');
 const invitationCode = ref<string>('');
+const mkkeyOauthToken = ref<string>('');
 const email = ref('');
 const usernameState = ref<null | 'wait' | 'ok' | 'unavailable' | 'error' | 'invalid-format' | 'min-range' | 'max-range'>(null);
 const emailState = ref<null | 'wait' | 'ok' | 'unavailable:used' | 'unavailable:format' | 'unavailable:disposable' | 'unavailable:banned' | 'unavailable:mx' | 'unavailable:smtp' | 'unavailable' | 'error'>(null);
@@ -265,15 +268,31 @@ function goBack() {
 	emit('back');
 }
 
+const mkkeyAuthenticating = ref(false);
+
+async function signupWithMkkeySso(): Promise<void> {
+	if (mkkeyAuthenticating.value) return;
+	mkkeyAuthenticating.value = true;
+	try {
+		mkkeyOauthToken.value = await runMkkeyAuth('signup');
+		await os.alert({ type: 'success', text: 'もこきーでの本人確認ができました。招待コードなしで登録できます。登録後は同じもこきーアカウントでログインできます。' });
+	} catch (error) {
+		await os.alert({ type: 'error', text: mkkeyAuthError(error) });
+	} finally {
+		mkkeyAuthenticating.value = false;
+	}
+}
+
 async function onSubmit(): Promise<void> {
 	if (submitting.value) return;
 	submitting.value = true;
 
-	const signupPayload: Misskey.entities.SignupRequest = {
+	const signupPayload: Misskey.entities.SignupRequest & { mkkeyOauthToken?: string; } = {
 		username: username.value,
 		password: password.value,
 		emailAddress: email.value,
 		invitationCode: invitationCode.value,
+		mkkeyOauthToken: mkkeyOauthToken.value || undefined,
 		'hcaptcha-response': hCaptchaResponse.value,
 		'm-captcha-response': mCaptchaResponse.value,
 		'g-recaptcha-response': reCaptchaResponse.value,

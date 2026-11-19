@@ -31,4 +31,15 @@ export class MiUserPending {
 		length: 128,
 	})
 	public password: string;
+
+	@Index('IDX_user_pending_mkkey_user_id', { unique: true })
+	@Column('varchar', {
+		length: 128, nullable: true,
+	})
+	public mkkeyUserId: string | null;
+
+	@Column('varchar', {
+		length: 128, nullable: true,
+	})
+	public mkkeyUsernameLower: string | null;
 }
