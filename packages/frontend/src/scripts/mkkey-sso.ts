@@ -25,6 +25,7 @@ export function mkkeyAuthError(error: unknown): string {
 		MKKEY_AUTH_EXPIRED: '認証の有効期限が切れました。もう一度もこきーで認証してください。',
 		MKKEY_ACCOUNT_NOT_LINKED: 'このもこきーアカウントは未連携です。新規登録するか、CherryPickに通常ログインして「セキュリティ」設定から連携してください。',
 		MKKEY_ACCOUNT_ALREADY_LINKED: 'どちらかのアカウントが既に連携されています。連携状態をご確認ください。',
+		MKKEY_UNLINK_DISABLED: 'もこきーアカウントとの連携は解除できません。',
 		MKKEY_SIGNUP_PENDING: '確認メールを送信済みです。メール内のリンクから登録を完了してください。',
 		LOCAL_SIGNIN_REQUIRED: '通常の方法でCherryPickにログインしてください。このアカウントの認証設定では、もこきーだけでのログインは利用できません。',
 		LOCAL_TWO_FACTOR_REQUIRED: 'CherryPickの2段階認証コードが必要です。',
