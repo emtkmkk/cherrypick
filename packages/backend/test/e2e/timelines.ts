@@ -28,11 +28,22 @@ function waitForPushToTl() {
 }
 
 let redisForTimelines: Redis;
+const fileFixtures: {
+	user: Awaited<ReturnType<typeof signup>>;
+	file: Awaited<ReturnType<typeof uploadTimelineFile>>;
+}[] = [];
+
+beforeAll(async () => {
+	redisForTimelines = new Redis(loadConfig().redisForTimelines);
+	// Prepare media before concurrent timeline assertions start. Image processing
+	// and user creation are covered by their own suites, not the 10-second filter tests.
+	for (let i = 0; i < 6; i++) {
+		const user = await signup();
+		fileFixtures.push({ user, file: await uploadTimelineFile(user) });
+	}
+}, 120_000);
 
 describe('Timelines', () => {
-	beforeAll(() => {
-		redisForTimelines = new Redis(loadConfig().redisForTimelines);
-	});
 
 	describe('Home TL', () => {
 		test.concurrent('自分の visibility: followers なノートが含まれる', async () => {
@@ -383,14 +394,12 @@ describe('Timelines', () => {
 		});
 
 		test.concurrent('[withFiles: true] フォローしているユーザーのファイル付きノートのみ含まれる', async () => {
-			const [alice, bob, carol] = await Promise.all([signup(), signup(), signup()]);
+			const alice = await signup();
+			const { user: bob, file: bobFile } = fileFixtures[0];
+			const { user: carol, file: carolFile } = fileFixtures[1];
 
 			await api('following/create', { userId: bob.id }, alice);
 			await setTimeout(1000);
-			const [bobFile, carolFile] = await Promise.all([
-				uploadTimelineFile(bob),
-				uploadTimelineFile(carol),
-			]);
 			const bobNote1 = await post(bob, { text: 'hi' });
 			const bobNote2 = await post(bob, { fileIds: [bobFile.id] });
 			const carolNote1 = await post(carol, { text: 'hi' });
@@ -739,9 +748,9 @@ describe('Timelines', () => {
 		});
 
 		test.concurrent('[withFiles: true] ファイル付きノートのみ含まれる', async () => {
-			const [alice, bob] = await Promise.all([signup(), signup()]);
+			const alice = await signup();
+			const { user: bob, file } = fileFixtures[2];
 
-			const file = await uploadTimelineFile(bob);
 			const bobNote1 = await post(bob, { text: 'hi' });
 			const bobNote2 = await post(bob, { fileIds: [file.id] });
 
@@ -950,9 +959,9 @@ describe('Timelines', () => {
 		});
 
 		test.concurrent('[withFiles: true] ファイル付きノートのみ含まれる', async () => {
-			const [alice, bob] = await Promise.all([signup(), signup()]);
+			const alice = await signup();
+			const { user: bob, file } = fileFixtures[3];
 
-			const file = await uploadTimelineFile(bob);
 			const bobNote1 = await post(bob, { text: 'hi' });
 			const bobNote2 = await post(bob, { fileIds: [file.id] });
 
@@ -1161,11 +1170,11 @@ describe('Timelines', () => {
 		});
 
 		test.concurrent('[withFiles: true] リスインしているユーザーのファイル付きノートのみ含まれる', async () => {
-			const [alice, bob] = await Promise.all([signup(), signup()]);
+			const alice = await signup();
+			const { user: bob, file } = fileFixtures[4];
 
 			const list = await api('users/lists/create', { name: 'list' }, alice).then(res => res.body);
 			await api('users/lists/push', { listId: list.id, userId: bob.id }, alice);
-			const file = await uploadTimelineFile(bob);
 			const bobNote1 = await post(bob, { text: 'hi' });
 			const bobNote2 = await post(bob, { fileIds: [file.id] });
 
@@ -1322,9 +1331,9 @@ describe('Timelines', () => {
 		});
 
 		test.concurrent('[withFiles: true] ファイル付きノートのみ含まれる', async () => {
-			const [alice, bob] = await Promise.all([signup(), signup()]);
+			const alice = await signup();
+			const { user: bob, file } = fileFixtures[5];
 
-			const file = await uploadTimelineFile(bob);
 			const bobNote1 = await post(bob, { text: 'hi' });
 			const bobNote2 = await post(bob, { fileIds: [file.id] });
 
