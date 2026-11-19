@@ -187,7 +187,7 @@ describe('mkkey authentication', () => {
 		t.user.id = 'other-local-user';
 		await expect(t.service.link(request as never)).rejects.toThrow('INVALID_MKKEY_TOKEN_PURPOSE');
 		t.user.id = 'local-user';
-		expect(await t.service.link(request as never)).toEqual({ linked: true });
+		expect(await t.service.link(request as never)).toEqual({ linked: true, username: 'mkkeyname' });
 		expect(t.links.insert).toHaveBeenCalledWith({ userId: 'local-user', mkkeyUserId: 'mkkey-stable-id', mkkeyUsernameLower: 'mkkeyname' });
 	});
 
@@ -197,12 +197,11 @@ describe('mkkey authentication', () => {
 		await expect(t.service.unlink(t.request({ i: 'app', password: 'local-password' }) as never)).rejects.toThrow('LOCAL_SIGNIN_REQUIRED');
 	});
 
-	test('unlinking requires reauthentication and removes only the authenticated user link', async () => {
+	test('unlinking is forbidden even with valid native credentials and preserves the link', async () => {
 		const t = setup();
-		await expect(t.service.unlink(t.request({ i: 'native', password: 'wrong' }) as never)).rejects.toThrow('LOCAL_AUTH_FAILED');
+		await expect(t.service.unlink(t.request({ i: 'native', password: 'wrong' }) as never)).rejects.toThrow('MKKEY_UNLINK_DISABLED');
+		await expect(t.service.unlink(t.request({ i: 'native', password: 'local-password' }) as never)).rejects.toThrow('MKKEY_UNLINK_DISABLED');
 		expect(t.links.delete).not.toHaveBeenCalled();
-		expect(await t.service.unlink(t.request({ i: 'native', password: 'local-password' }) as never)).toEqual({ linked: false });
-		expect(t.links.delete).toHaveBeenCalledWith({ userId: 'local-user' });
 	});
 
 	test('rejects denied MiAuth and invalid provider users', async () => {

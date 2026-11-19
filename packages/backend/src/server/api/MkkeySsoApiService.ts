@@ -236,15 +236,13 @@ export class MkkeySsoApiService {
 			if ((error as { code?: string }).code === '23505') throw new FastifyReplyError(409, 'MKKEY_ACCOUNT_ALREADY_LINKED');
 			throw error;
 		}
-		return { linked: true };
+		return { linked: true, username: proof.data.mkkeyUsernameLower };
 	}
 
 	public async unlink(request: FastifyRequest<{ Body: { i?: string; password?: string; token?: string; }; }>) {
 		this.assertOrigin(request);
 		await this.limit(request, 'unlink', 10);
-		const user = await this.nativeUser(request.body.i);
-		await this.reauthenticate(user, request.body.password, request.body.token);
-		await this.links.delete({ userId: user.id });
-		return { linked: false };
+		await this.nativeUser(request.body.i);
+		throw new FastifyReplyError(403, 'MKKEY_UNLINK_DISABLED');
 	}
 }
