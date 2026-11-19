@@ -597,7 +597,7 @@ export class ActivityPubServerService {
 				console.debug(
 					"Responding to request for follower-only note, validating access...",
 				);
-				const remoteUser = await this.inboxProcessorService.getSignatureUser(request);
+				const remoteUser = await this.inboxProcessorService.getSignatureUser(request.raw);
 				console.debug("Local note author user:");
 				console.debug(JSON.stringify(note, null, 2));
 				console.debug("Authenticated remote user:");
@@ -649,7 +649,7 @@ export class ActivityPubServerService {
 				console.debug(
 					"Responding to request for follower-only note, validating access...",
 				);
-				const remoteUser = await this.inboxProcessorService.getSignatureUser(request);
+				const remoteUser = await this.inboxProcessorService.getSignatureUser(request.raw);
 				console.debug("Local note author user:");
 				console.debug(JSON.stringify(note, null, 2));
 				console.debug("Authenticated remote user:");

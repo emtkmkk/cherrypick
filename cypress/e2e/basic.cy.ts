@@ -242,8 +242,8 @@ describe('After user setup', () => {
 	it('note', () => {
 		cy.get('[data-cy-open-post-form]').should('be.visible');
 		cy.get('[data-cy-open-post-form]').click();
-		cy.get('[data-cy-post-form-text]').type('Hello, CherryPick!');
-		cy.get('[data-cy-open-post-form-submit]').click();
+		cy.get('[data-cy-post-form-dialog] [data-cy-post-form-text]').type('Hello, CherryPick!');
+		cy.get('[data-cy-post-form-dialog] [data-cy-open-post-form-submit]').click();
 
 		cy.contains('Hello, CherryPick!');
   });
@@ -254,11 +254,11 @@ describe('After user setup', () => {
 		// Use trigger() to give different `code` to test if hotkeys also work on non-QWERTY keyboards.
 		cy.document().trigger("keydown", { eventConstructor: 'KeyboardEvent', key: "n", code: "KeyL" });
 		// See if the form is opened
-		cy.get('[data-cy-post-form-text]').should('be.visible');
+		cy.get('[data-cy-post-form-dialog] [data-cy-post-form-text]').should('be.visible');
 		// Close it
 		cy.focused().trigger("keydown", { eventConstructor: 'KeyboardEvent', key: "Escape", code: "Escape" });
 		// See if the form is closed
-		cy.get('[data-cy-post-form-text]').should('not.be.visible');
+		cy.get('[data-cy-post-form-dialog]').should('not.exist');
   });
 });
 

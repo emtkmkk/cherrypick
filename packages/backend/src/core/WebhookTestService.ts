@@ -96,6 +96,13 @@ function generateDummyUser(override?: Partial<MiUser>): MiUser {
 function generateDummyNote(override?: Partial<MiNote>): MiNote {
 	return {
 		id: 'dummy-note-1',
+		updatedAt: null,
+		updatedAtHistory: [],
+		noteEditHistory: [],
+		hasEvent: false,
+		localAndFollowers: false,
+		disableRightClick: false,
+		deleteAt: null,
 		replyId: null,
 		reply: null,
 		renoteId: null,

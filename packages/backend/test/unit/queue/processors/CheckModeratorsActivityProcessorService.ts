@@ -336,10 +336,10 @@ describe('CheckModeratorsActivityProcessorService', () => {
 			mockModeratorRole([user1]);
 			await service.notifyInactiveModeratorsWarning({ time: 1, asDays: 0, asHours: 0 });
 
-			expect(systemWebhookService.enqueueSystemWebhook).toHaveBeenCalledTimes(2);
+			expect(systemWebhookService.enqueueSystemWebhook).toHaveBeenCalledTimes(3);
 			expect(systemWebhookService.enqueueSystemWebhook.mock.calls[0][0]).toEqual(systemWebhook1);
 			expect(systemWebhookService.enqueueSystemWebhook.mock.calls[1][0]).toEqual(systemWebhook2);
-			expect(systemWebhookService.enqueueSystemWebhook.mock.calls[1][0]).toEqual(systemWebhook3);
+			expect(systemWebhookService.enqueueSystemWebhook.mock.calls[2][0]).toEqual(systemWebhook3);
 		});
 	});
 
