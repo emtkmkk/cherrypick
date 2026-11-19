@@ -21,6 +21,7 @@ class LocalTimelineChannel extends Channel {
 	private withReplies: boolean;
 	private withFiles: boolean;
 	private withCats: boolean;
+	private bubbleHosts: string[] = [];
 
 	constructor(
 		private metaService: MetaService,
@@ -43,6 +44,7 @@ class LocalTimelineChannel extends Channel {
 		this.withReplies = !!(params.withReplies ?? false);
 		this.withFiles = !!(params.withFiles ?? false);
 		this.withCats = !!(params.withCats ?? false);
+		this.bubbleHosts = (await this.metaService.fetch()).bubbleInstances;
 
 		// Subscribe events
 		this.subscriber.on('notesStream', this.onNote);
@@ -53,16 +55,20 @@ class LocalTimelineChannel extends Channel {
 		if (this.withFiles && (note.fileIds == null || note.fileIds.length === 0)) return;
 		if (this.withCats && (note.user.isCat == null || note.user.isCat === false)) return;
 
-		if (note.user.host !== null) return;
+		if (note.user.host != null && !this.bubbleHosts.includes(note.user.host)) return;
 		if (note.visibility !== 'public') return;
 		if (note.channelId != null) return;
+		if (this.bubbleHosts.length > 0 && note.reply?.user.host != null && !this.bubbleHosts.includes(note.reply.user.host)) return;
 
 		// 関係ない返信は除外
-		if (note.reply && this.user && !this.following[note.userId]?.withReplies && !this.withReplies) {
+		if (note.reply && !this.withReplies) {
 			const reply = note.reply;
 			// 「チャンネル接続主への返信」でもなければ、「チャンネル接続主が行った返信」でもなければ、「投稿者の投稿者自身への返信」でもない場合
-			if (reply.userId !== this.user.id && note.userId !== this.user.id && reply.userId !== note.userId) return;
+			if (reply.userId !== note.userId && (!this.user || (reply.userId !== this.user.id && note.userId !== this.user.id && !this.following[note.userId]?.withReplies))) return;
 		}
+
+		if (this.user && !this.following[note.userId] && note.userId !== this.user.id &&
+			!(await this.roleService.getUserPolicies(note.userId)).canPublicNote) return;
 
 		if (isRenotePacked(note) && !isQuotePacked(note) && !this.withRenotes) return;
 

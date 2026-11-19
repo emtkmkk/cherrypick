@@ -81,6 +81,11 @@ const { widgetProps, configure, save } = useWidgetPropsManager(name,
 	emit,
 );
 
+if (widgetProps.src === 'bubble') {
+	widgetProps.src = 'local';
+	save();
+}
+
 const menuOpened = ref(false);
 
 const setSrc = (src) => {

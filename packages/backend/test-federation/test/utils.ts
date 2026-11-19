@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import * as Misskey from 'cherrypick-js';
 import { WebSocket } from 'ws';
+import { observeStreamEvent } from './stream-event.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -231,30 +232,10 @@ export async function isFired<C extends keyof Misskey.Channels, T extends keyof 
 	cond: (msg: Parameters<Misskey.Channels[C]['events'][T]>[0]) => boolean,
 	params?: Misskey.Channels[C]['params'],
 ): Promise<boolean> {
-	return new Promise<boolean>(async (resolve, reject) => {
-		const stream = new Misskey.Stream(`wss://${host}`, { token: user.i }, { WebSocket });
-		const connection = stream.useChannel(channel, params);
-		connection.on(type as any, ((msg: any) => {
-			if (cond(msg)) {
-				stream.close();
-				clearTimeout(timer);
-				resolve(true);
-			}
-		}) as any);
-
-		let timer: NodeJS.Timeout | undefined;
-
-		await trigger().then(() => {
-			timer = setTimeout(() => {
-				stream.close();
-				resolve(false);
-			}, 500);
-		}).catch(err => {
-			stream.close();
-			clearTimeout(timer);
-			reject(err);
-		});
-	});
+	const id = crypto.randomUUID();
+	const socket = new WebSocket(`wss://${host}/streaming?i=${encodeURIComponent(user.i)}`);
+	return observeStreamEvent(socket, [{ type: 'connect', body: { id, channel, params, pong: true } }], id, trigger,
+		message => message.type === 'channel' && message.body?.id === id && message.body.type === type && cond(message.body.body));
 };
 
 export async function isNoteUpdatedEventFired(
@@ -264,30 +245,13 @@ export async function isNoteUpdatedEventFired(
 	trigger: () => Promise<unknown>,
 	cond: (msg: Parameters<Misskey.StreamEvents['noteUpdated']>[0]) => boolean,
 ): Promise<boolean> {
-	return new Promise<boolean>(async (resolve, reject) => {
-		const stream = new Misskey.Stream(`wss://${host}`, { token: user.i }, { WebSocket });
-		stream.send('s', { id: noteId });
-		stream.on('noteUpdated', msg => {
-			if (cond(msg)) {
-				stream.close();
-				clearTimeout(timer);
-				resolve(true);
-			}
-		});
-
-		let timer: NodeJS.Timeout | undefined;
-
-		await trigger().then(() => {
-			timer = setTimeout(() => {
-				stream.close();
-				resolve(false);
-			}, 500);
-		}).catch(err => {
-			stream.close();
-			clearTimeout(timer);
-			reject(err);
-		});
-	});
+	const id = crypto.randomUUID();
+	const socket = new WebSocket(`wss://${host}/streaming?i=${encodeURIComponent(user.i)}`);
+	return observeStreamEvent(socket, [
+		{ type: 's', body: { id: noteId } },
+		// Messages are ordered: this acknowledgement also fences the note subscription.
+		{ type: 'connect', body: { id, channel: 'homeTimeline', pong: true } },
+	], id, trigger, message => message.type === 'noteUpdated' && cond(message.body));
 };
 
 export async function assertNotificationReceived(

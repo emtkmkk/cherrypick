@@ -16,6 +16,11 @@ export const basicTimelineTypes = [
 ] as const;
 
 export type BasicTimelineType = typeof basicTimelineTypes[number];
+export const visibleBasicTimelineTypes = basicTimelineTypes.filter(timeline => timeline !== 'bubble');
+
+export function normalizeTimelineSource<T extends string>(timeline: T): T | 'local' {
+	return timeline === 'bubble' ? 'local' : timeline;
+}
 
 export function isBasicTimeline(timeline: string): timeline is BasicTimelineType {
 	return basicTimelineTypes.includes(timeline as BasicTimelineType);
@@ -26,13 +31,12 @@ export function basicTimelineIconClass(timeline: BasicTimelineType): string {
 		case 'home':
 			return 'ti ti-home';
 		case 'local':
+		case 'bubble':
 			return 'ti ti-planet';
 		case 'social':
 			return 'ti ti-universe';
 		case 'global':
 			return 'ti ti-world';
-		case 'bubble':
-			return 'ti ti-droplet';
 	}
 }
 
@@ -41,22 +45,21 @@ export function isAvailableBasicTimeline(timeline: BasicTimelineType | undefined
 		case 'home':
 			return $i != null && defaultStore.state.enableHomeTimeline;
 		case 'local':
+		case 'bubble':
 			return ($i == null && instance.policies.ltlAvailable) || ($i != null && $i.policies.ltlAvailable && defaultStore.state.enableLocalTimeline);
 		case 'social':
 			return $i != null && $i.policies.ltlAvailable && defaultStore.state.enableSocialTimeline;
 		case 'global':
 			return ($i == null && instance.policies.gtlAvailable) || ($i != null && $i.policies.gtlAvailable && defaultStore.state.enableGlobalTimeline);
-		case 'bubble':
-			return ($i == null && instance.policies.btlAvailable) || ($i != null && $i.policies.btlAvailable && defaultStore.state.enableBubbleTimeline);
 		default:
 			return false;
 	}
 }
 
 export function availableBasicTimelines(): BasicTimelineType[] {
-	return basicTimelineTypes.filter(isAvailableBasicTimeline);
+	return visibleBasicTimelineTypes.filter(isAvailableBasicTimeline);
 }
 
 export function hasWithReplies(timeline: BasicTimelineType | undefined | null): boolean {
-	return timeline === 'local' || timeline === 'social';
+	return timeline === 'local' || timeline === 'bubble' || timeline === 'social';
 }

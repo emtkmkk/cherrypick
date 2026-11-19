@@ -95,6 +95,12 @@ watch(soundSetting, v => {
 });
 
 onMounted(() => {
+	if (props.column.tl === 'bubble') {
+		updateColumn(props.column.id, {
+			tl: 'local',
+			...(props.column.name === i18n.ts._timelines.bubble ? { name: i18n.ts._timelines.local } : {}),
+		});
+	}
 	if (props.column.tl == null) {
 		setType();
 	}
@@ -111,8 +117,6 @@ async function setType() {
 			value: 'social' as const, text: i18n.ts._timelines.social,
 		}, {
 			value: 'global' as const, text: i18n.ts._timelines.global,
-		}, {
-			value: 'bubble' as const, text: i18n.ts._timelines.bubble,
 		}],
 	});
 	if (canceled) {

@@ -13,6 +13,7 @@ import { DI } from '@/di-symbols.js';
 import { RoleService } from '@/core/RoleService.js';
 import { IdService } from '@/core/IdService.js';
 import { QueryService } from '@/core/QueryService.js';
+import { CacheService } from '@/core/CacheService.js';
 import { MiLocalUser } from '@/models/User.js';
 import { FanoutTimelineEndpointService } from '@/core/FanoutTimelineEndpointService.js';
 import { ApiError } from '../../error.js';
@@ -77,6 +78,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private idService: IdService,
 		private fanoutTimelineEndpointService: FanoutTimelineEndpointService,
 		private queryService: QueryService,
+		private cacheService: CacheService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const untilId = ps.untilId ?? (ps.untilDate ? this.idService.gen(ps.untilDate!) : null);
@@ -89,13 +91,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.withReplies && ps.withFiles) throw new ApiError(meta.errors.bothWithRepliesAndWithFiles);
 
-			if (!this.serverSettings.enableFanoutTimeline) {
+			// The local Redis lists contain only local authors. Query the configured
+			// bubble directly so remote and pre-existing notes are never omitted.
+			if (!this.serverSettings.enableFanoutTimeline || this.serverSettings.bubbleInstances.length > 0) {
 				const timeline = await this.getFromDb({
 					untilId,
 					sinceId,
 					limit: ps.limit,
 					withFiles: ps.withFiles,
 					withReplies: ps.withReplies,
+					withRenotes: ps.withRenotes,
 					withCats: ps.withCats,
 				}, me);
 
@@ -129,6 +134,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					limit,
 					withFiles: ps.withFiles,
 					withReplies: ps.withReplies,
+					withRenotes: ps.withRenotes,
 					withCats: ps.withCats,
 				}, me),
 			});
@@ -149,23 +155,29 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		limit: number,
 		withFiles: boolean,
 		withReplies: boolean,
+		withRenotes: boolean,
 		withCats: boolean,
 	}, me: MiLocalUser | null) {
+		const followings = me ? await this.cacheService.userFollowingsCache.fetch(me.id) : undefined;
 		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'),
 			ps.sinceId, ps.untilId)
-			.andWhere('(note.visibility = \'public\') AND (note.userHost IS NULL) AND (note.channelId IS NULL)')
+			.andWhere('(note.visibility = \'public\') AND (note.channelId IS NULL)')
+			.andWhere('(note.userHost IS NULL OR note.userHost = ANY(:bubbleHosts))', { bubbleHosts: this.serverSettings.bubbleInstances })
 			.innerJoinAndSelect('note.user', 'user')
 			.leftJoinAndSelect('note.reply', 'reply')
 			.leftJoinAndSelect('note.renote', 'renote')
 			.leftJoinAndSelect('reply.user', 'replyUser')
 			.leftJoinAndSelect('renote.user', 'renoteUser');
+		if (this.serverSettings.bubbleInstances.length > 0) {
+			query.andWhere('(note.replyId IS NULL OR reply.userHost IS NULL OR reply.userHost = ANY(:bubbleHosts))');
+		}
 
 		this.queryService.generateVisibilityQuery(query, me);
 		if (me) this.queryService.generateMutedUserQuery(query, me);
 		if (me) this.queryService.generateBlockedUserQuery(query, me);
 		if (me) this.queryService.generateMutedUserRenotesQueryForNotes(query, me);
 
-		if (me == null) query.andWhere('note.localAndFollowersOnly = false');
+		if (me == null) query.andWhere('note.localAndFollowers = false');
 
 		if (ps.withFiles) {
 			query.andWhere('note.fileIds != \'{}\'');
@@ -180,13 +192,28 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 							.where('note.replyId IS NOT NULL')
 							.andWhere('note.replyUserId = note.userId');
 					}));
+				if (me) {
+					qb.orWhere('note.userId = :localTimelineMeId OR note.replyUserId = :localTimelineMeId', { localTimelineMeId: me.id });
+					const withReplyUserIds = Object.keys(followings ?? {}).filter(id => followings?.[id]?.withReplies);
+					if (withReplyUserIds.length > 0) qb.orWhere('note.userId IN (:...withReplyUserIds)', { withReplyUserIds });
+				}
 			}));
+		}
+
+		if (!ps.withRenotes) {
+			query.andWhere('(note.renoteId IS NULL OR note.text IS NOT NULL OR note.fileIds != \'{}\')');
 		}
 
 		if (ps.withCats) {
 			query.andWhere('(select "isCat" from "user" where id = note."userId")');
 		}
 
-		return await query.limit(ps.limit).getMany();
+		let timeline = await query.limit(ps.limit).getMany();
+		if (me && followings) {
+			const visible = await Promise.all(timeline.map(async note =>
+				note.userId === me.id || !!followings[note.userId] || (await this.roleService.getUserPolicies(note.userId)).canPublicNote));
+			timeline = timeline.filter((_, index) => visible[index]);
+		}
+		return timeline;
 	}
 }

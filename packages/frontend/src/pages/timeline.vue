@@ -86,7 +86,7 @@ import { globalEvents } from '@/events.js';
 import { deviceKind } from '@/scripts/device-kind.js';
 import { deepMerge } from '@/scripts/merge.js';
 import { miLocalStorage } from '@/local-storage.js';
-import { availableBasicTimelines, hasWithReplies, isAvailableBasicTimeline, isBasicTimeline, basicTimelineIconClass } from '@/timelines.js';
+import { availableBasicTimelines, hasWithReplies, isAvailableBasicTimeline, isBasicTimeline, basicTimelineIconClass, normalizeTimelineSource } from '@/timelines.js';
 import { reloadAsk } from '@/scripts/reload-ask.js';
 
 const showEl = ref(false);
@@ -112,7 +112,7 @@ type TimelinePageSrc = BasicTimelineType | `list:${string}`;
 const queue = ref(0);
 const srcWhenNotSignin = ref<'local' | 'global'>(isAvailableBasicTimeline('local') ? 'local' : 'global');
 const src = computed<TimelinePageSrc>({
-	get: () => ($i ? defaultStore.reactiveState.tl.value.src : srcWhenNotSignin.value),
+	get: () => normalizeTimelineSource($i ? defaultStore.reactiveState.tl.value.src : srcWhenNotSignin.value),
 	set: (x) => saveSrc(x),
 });
 const withRenotes = computed<boolean>({
@@ -175,7 +175,6 @@ const enableHomeTimeline = ref(defaultStore.state.enableHomeTimeline);
 const enableLocalTimeline = ref(defaultStore.state.enableLocalTimeline);
 const enableSocialTimeline = ref(defaultStore.state.enableSocialTimeline);
 const enableGlobalTimeline = ref(defaultStore.state.enableGlobalTimeline);
-const enableBubbleTimeline = ref(defaultStore.state.enableBubbleTimeline);
 const enableListTimeline = ref(defaultStore.state.enableListTimeline);
 const enableAntennaTimeline = ref(defaultStore.state.enableAntennaTimeline);
 const enableChannelTimeline = ref(defaultStore.state.enableChannelTimeline);
@@ -218,11 +217,6 @@ watch(enableSocialTimeline, (x) => {
 
 watch(enableGlobalTimeline, (x) => {
 	defaultStore.set('enableGlobalTimeline', x);
-	reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
-});
-
-watch(enableBubbleTimeline, (x) => {
-	defaultStore.set('enableBubbleTimeline', x);
 	reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
 });
 
@@ -474,11 +468,6 @@ const headerActions = computed(() => {
 							text: i18n.ts._timelines.global,
 							icon: 'ti ti-world',
 							ref: enableGlobalTimeline,
-						}, {
-							type: 'switch',
-							text: i18n.ts._timelines.bubble,
-							icon: 'ti ti-droplet',
-							ref: enableBubbleTimeline,
 						}, { type: 'divider' }, {
 							type: 'switch',
 							text: i18n.ts.lists,

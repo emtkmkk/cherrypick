@@ -26,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script setup lang="ts">
 import { i18n } from '@/i18n.js';
-import { basicTimelineIconClass, basicTimelineTypes } from '@/timelines.js';
+import { basicTimelineIconClass, visibleBasicTimelineTypes as basicTimelineTypes } from '@/timelines.js';
 </script>
 
 <style lang="scss" module>

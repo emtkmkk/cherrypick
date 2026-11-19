@@ -115,7 +115,7 @@ function connectChannel() {
 			withCats: props.onlyCats,
 		});
 		connection2 = stream.useChannel('main');
-	} else if (props.src === 'local') {
+	} else if (props.src === 'local' || props.src === 'bubble') {
 		connection = stream.useChannel('localTimeline', {
 			withRenotes: props.withRenotes,
 			withReplies: props.withReplies,
@@ -131,12 +131,6 @@ function connectChannel() {
 		});
 	} else if (props.src === 'global') {
 		connection = stream.useChannel('globalTimeline', {
-			withRenotes: props.withRenotes,
-			withFiles: props.onlyFiles ? true : undefined,
-			withCats: props.onlyCats,
-		});
-	} else if (props.src === 'bubble') {
-		connection = stream.useChannel('bubbleTimeline', {
 			withRenotes: props.withRenotes,
 			withFiles: props.onlyFiles ? true : undefined,
 			withCats: props.onlyCats,
@@ -195,7 +189,7 @@ function updatePaginationQuery() {
 			withFiles: props.onlyFiles ? true : undefined,
 			withCats: props.onlyCats,
 		};
-	} else if (props.src === 'local') {
+	} else if (props.src === 'local' || props.src === 'bubble') {
 		endpoint = 'notes/local-timeline';
 		query = {
 			withRenotes: props.withRenotes,
@@ -213,13 +207,6 @@ function updatePaginationQuery() {
 		};
 	} else if (props.src === 'global') {
 		endpoint = 'notes/global-timeline';
-		query = {
-			withRenotes: props.withRenotes,
-			withFiles: props.onlyFiles ? true : undefined,
-			withCats: props.onlyCats,
-		};
-	} else if (props.src === 'bubble') {
-		endpoint = 'notes/bubble-timeline';
 		query = {
 			withRenotes: props.withRenotes,
 			withFiles: props.onlyFiles ? true : undefined,
