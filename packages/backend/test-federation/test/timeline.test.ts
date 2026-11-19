@@ -23,7 +23,12 @@ describe('Timeline', () => {
 		// Follow delivery is asynchronous; the sender must know the remote follower
 		// before the very first test note is posted.
 		const deadline = Date.now() + 10_000;
-		while (!(await alice.client.request('users/relation', { userId: bobInA.id })).isFollowed) {
+		while (true) {
+			const response = await alice.client.request('users/relation', { userId: bobInA.id });
+			// This fork returns an array even for a single userId; the SDK also
+			// permits a single relation object, so accept both response shapes.
+			const relations = Array.isArray(response) ? response : [response];
+			if (relations.some(relation => relation.id === bobInA.id && relation.isFollowed)) break;
 			if (Date.now() >= deadline) throw new Error('Remote follow was not established before timeline tests');
 			await sleep(100);
 		}
