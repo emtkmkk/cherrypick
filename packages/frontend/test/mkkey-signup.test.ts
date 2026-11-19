@@ -9,7 +9,7 @@ import { inputText } from '@/os.js';
 
 vi.mock('@/scripts/mkkey-sso.js', () => ({ mkkeySsoRequest: vi.fn() }));
 vi.mock('@/os.js', () => ({ inputText: vi.fn() }));
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => { vi.resetAllMocks(); });
 
 test('returns an unlinked identity to registration', async () => {
 	vi.mocked(mkkeySsoRequest).mockResolvedValue({ finished: false, next: 'signup' });
