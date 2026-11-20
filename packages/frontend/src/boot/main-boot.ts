@@ -67,6 +67,45 @@ export async function mainBoot() {
 		return createApp(rootComponent);
 	});
 
+	// Register shortcuts before optional startup requests can delay or fail.
+	let safemodeRequestCount = 0;
+	let safemodeRequestTimer: number | null = null;
+	const keymap = {
+		'p|n': () => {
+			if ($i == null) return;
+			post();
+		},
+		'd': () => {
+			store.set('darkMode', !store.s.darkMode);
+		},
+		's': () => {
+			mainRouter.push('/search');
+		},
+		'g': {
+			callback: () => {
+				// mを5回押すとセーフモードに入る
+				safemodeRequestCount++;
+				if (safemodeRequestCount >= 5) {
+					miLocalStorage.setItem('isSafeMode', 'true');
+					unisonReload();
+				} else {
+					if (safemodeRequestTimer != null) {
+						window.clearTimeout(safemodeRequestTimer);
+					}
+					safemodeRequestTimer = window.setTimeout(() => {
+						safemodeRequestCount = 0;
+					}, 300);
+				}
+			},
+			allowRepeat: true,
+		},
+		// 環境によるかもしれないが?では反応しないため、shift+/にする必要がある
+		'shift+/': () => {
+			os.popup(defineAsyncComponent(() => import('@/components/MkKeyboardShortcut.vue')), {}, {});
+		},
+	} as const satisfies Keymap;
+	window.document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
+
 	reactionPicker.init();
 	emojiPicker.init();
 
@@ -407,45 +446,6 @@ export async function mainBoot() {
 			});
 		}
 	}
-
-	// shortcut
-	let safemodeRequestCount = 0;
-	let safemodeRequestTimer: number | null = null;
-	const keymap = {
-		'p|n': () => {
-			if ($i == null) return;
-			post();
-		},
-		'd': () => {
-			store.set('darkMode', !store.s.darkMode);
-		},
-		's': () => {
-			mainRouter.push('/search');
-		},
-		'g': {
-			callback: () => {
-				// mを5回押すとセーフモードに入る
-				safemodeRequestCount++;
-				if (safemodeRequestCount >= 5) {
-					miLocalStorage.setItem('isSafeMode', 'true');
-					unisonReload();
-				} else {
-					if (safemodeRequestTimer != null) {
-						window.clearTimeout(safemodeRequestTimer);
-					}
-					safemodeRequestTimer = window.setTimeout(() => {
-						safemodeRequestCount = 0;
-					}, 300);
-				}
-			},
-			allowRepeat: true,
-		},
-		// 環境によるかもしれないが?では反応しないため、shift+/にする必要がある
-		'shift+/': () => {
-			os.popup(defineAsyncComponent(() => import('@/components/MkKeyboardShortcut.vue')), {}, {});
-		},
-	} as const satisfies Keymap;
-	window.document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
 
 	initializeSw();
 }

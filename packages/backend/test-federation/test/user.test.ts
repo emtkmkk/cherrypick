@@ -492,17 +492,25 @@ describe('User', () => {
 				);
 			});
 
-			test('Alice gets unsuspended, Bob succeeds in following Alice', async () => {
+			test('Alice gets unsuspended and can be resolved again after her old remote ID was deleted', async () => {
 				await aAdmin.client.request('admin/unsuspend-user', { userId: alice.id });
 				await sleep();
 
 				const followers = await alice.client.request('users/followers', { userId: alice.id });
 				strictEqual(followers.length, 1); // FIXME: followers are not deleted??
-				
-				await bob.client.request('following/create', { userId: aliceInB.id });
+
+				// Suspension deleted the cached remote user; the old local ID stays invalid.
+				await rejects(
+					async () => await bob.client.request('following/create', { userId: aliceInB.id }),
+					(err: any) => {
+						strictEqual(err.code, 'NO_SUCH_USER');
+						return true;
+					},
+				);
 
 				const resolvedAlice = await resolveRemoteUser('a.test', alice.id, bob);
 				strictEqual(resolvedAlice.username, alice.username);
+				assert(resolvedAlice.id !== aliceInB.id);
 			});
 
 			/**
