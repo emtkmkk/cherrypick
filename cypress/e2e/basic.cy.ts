@@ -267,7 +267,7 @@ describe('After user setup', () => {
 		// See if the form is opened
 		cy.get('[data-cy-post-form-dialog] [data-cy-post-form-text]').should('be.visible');
 		// Close it
-		cy.focused().trigger("keydown", { eventConstructor: 'KeyboardEvent', key: "Escape", code: "Escape" });
+		cy.get('[data-cy-post-form-dialog] [data-cy-post-form-text]').type('{esc}');
 		// See if the form is closed
 		cy.get('[data-cy-post-form-dialog]').should('not.exist');
   });
