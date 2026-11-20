@@ -252,7 +252,9 @@ describe('After user setup', () => {
 	it('note', () => {
 		cy.get('[data-cy-open-post-form]').should('be.visible');
 		cy.get('[data-cy-open-post-form]').click();
+		cy.get('[data-cy-post-form-dialog]').should('have.length', 1);
 		cy.get('[data-cy-post-form-dialog] [data-cy-post-form-text]').type('Hello, CherryPick!');
+		cy.get('[data-cy-post-form-dialog]').should('have.length', 1);
 		cy.get('[data-cy-post-form-dialog] [data-cy-open-post-form-submit]').click();
 
 		cy.contains('Hello, CherryPick!', { timeout: 15000 });
