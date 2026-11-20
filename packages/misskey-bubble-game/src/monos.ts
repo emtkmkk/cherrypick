@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Mono } from './game.js';
+import type { Mono } from './game.js';
 
-const NORMAL_BASE_SIZE = 32;
+const NORMAL_BASE_SIZE = 30;
 export const NORAML_MONOS: Mono[] = [{
 	id: '9377076d-c980-4d83-bdaf-175bc58275b7',
 	level: 10,
@@ -172,7 +172,7 @@ export const YEN_MONOS: Mono[] = [{
 	dropCandidate: true,
 }];
 
-const SQUARE_BASE_SIZE = 28;
+const SQUARE_BASE_SIZE = 26;
 export const SQUARE_MONOS: Mono[] = [{
 	id: 'f75fd0ba-d3d4-40a4-9712-b470e45b0525',
 	level: 10,
