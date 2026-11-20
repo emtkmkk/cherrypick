@@ -6,14 +6,19 @@
 // https://vitejs.dev/config/build-options.html#build-modulepreload
 import 'vite/modulepreload-polyfill';
 
-import '@tabler/icons-webfont/dist/tabler-icons.scss';
+if (import.meta.env.DEV) {
+	await import('@tabler/icons-webfont/dist/tabler-icons.scss');
+} else {
+	await import('icons-subsetter/built/tabler-icons-frontendEmbed.css');
+}
 
 import '@/style.scss';
 import { createApp, defineAsyncComponent } from 'vue';
 import defaultLightTheme from '@@/themes/l-light.json5';
 import defaultDarkTheme from '@@/themes/d-dark.json5';
 import { MediaProxy } from '@@/js/media-proxy.js';
-import { url } from '@@/js/config.js';
+import { storeBootloaderErrors } from '@@/js/store-boot-errors';
+import { url, version, basedMisskeyVersion, lang } from '@@/js/config.js';
 import { parseEmbedParams } from '@@/js/embed-page.js';
 import type { Theme } from '@/theme.js';
 import { applyTheme, assertIsTheme } from '@/theme.js';
@@ -27,7 +32,7 @@ import { i18n } from '@/i18n.js';
 console.log('CherryPick Embed');
 
 //#region Embedパラメータの取得・パース
-const params = new URLSearchParams(location.search);
+const params = new URLSearchParams(window.location.search);
 const embedParams = parseEmbedParams(params);
 if (_DEV_) console.log(embedParams);
 //#endregion
@@ -70,12 +75,16 @@ if (embedParams.colorMode === 'dark') {
 }
 //#endregion
 
+//#region Detect language & fetch translations
+storeBootloaderErrors({ ...i18n.ts._bootErrors, reload: i18n.ts.reload });
+//#endregion
+
 // サイズの制限
-document.documentElement.style.maxWidth = '500px';
+window.document.documentElement.style.maxWidth = '500px';
 
 // iframeIdの設定
 function setIframeIdHandler(event: MessageEvent) {
-	if (event.data?.type === 'misskey:embedParent:registerIframeId' && event.data.payload?.iframeId != null) {
+	if (event.data?.type === 'cherrypick:embedParent:registerIframeId' && event.data.payload?.iframeId != null) {
 		setIframeId(event.data.payload.iframeId);
 		window.removeEventListener('message', setIframeIdHandler);
 	}
@@ -104,20 +113,20 @@ app.provide(DI.embedParams, embedParams);
 const rootEl = ((): HTMLElement => {
 	const CHERRYPICK_MOUNT_DIV_ID = 'cherrypick_app';
 
-	const currentRoot = document.getElementById(CHERRYPICK_MOUNT_DIV_ID);
+	const currentRoot = window.document.getElementById(CHERRYPICK_MOUNT_DIV_ID);
 
 	if (currentRoot) {
 		console.warn('multiple import detected');
 		return currentRoot;
 	}
 
-	const root = document.createElement('div');
+	const root = window.document.createElement('div');
 	root.id = CHERRYPICK_MOUNT_DIV_ID;
-	document.body.appendChild(root);
+	window.document.body.appendChild(root);
 	return root;
 })();
 
-postMessageToParentWindow('misskey:embed:ready');
+postMessageToParentWindow('cherrypick:embed:ready');
 
 app.mount(rootEl);
 
@@ -145,11 +154,15 @@ console.log(
 	'font-size: 16px;',
 	'font-size: 20px; font-weight: 700; color: #f00;',
 );
-console.log(i18n.tsx._selfXssPrevention.description3({ link: 'https://misskey-hub.net/docs/for-users/resources/self-xss/' }));
+console.log(
+	`%c${i18n.tsx._selfXssPrevention.description3({ link: 'https://github.com/kokonect-link/cherrypick' })}`,
+	'font-size: 14px;',
+);
+console.log(i18n.tsx._selfXssPrevention.description4({ link: 'https://misskey-hub.net/docs/for-users/resources/self-xss/' }));
 //#endregion
 
 function removeSplash() {
-	const splash = document.getElementById('splash');
+	const splash = window.document.getElementById('splash');
 	if (splash) {
 		splash.style.opacity = '0';
 		splash.style.pointerEvents = 'none';

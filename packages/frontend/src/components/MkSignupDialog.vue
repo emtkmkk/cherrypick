@@ -41,16 +41,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { shallowRef, ref } from 'vue';
+import { useTemplateRef, ref } from 'vue';
 import * as Misskey from 'cherrypick-js';
 import XSignup from '@/components/MkSignupDialog.form.vue';
 import XServerRules from '@/components/MkSignupDialog.rules.vue';
 import MkModalWindow from '@/components/MkModalWindow.vue';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
-import { login } from '@/account.js';
-import { runMkkeyAuth, mkkeyAuthError } from '@/scripts/mkkey-sso.js';
-import { signinOrContinueMkkeySignup } from '@/scripts/mkkey-signup.js';
+import { login } from '@/accounts.js';
+import { runMkkeyAuth, mkkeyAuthError } from '@/utility/mkkey-sso.js';
+import { signinOrContinueMkkeySignup } from '@/utility/mkkey-signup.js';
 import * as os from '@/os.js';
 
 const props = withDefaults(defineProps<{
@@ -68,7 +68,7 @@ const emit = defineEmits<{
 	(ev: 'closed'): void;
 }>();
 
-const dialog = shallowRef<InstanceType<typeof MkModalWindow>>();
+const dialog = useTemplateRef('dialog');
 
 const isAcceptedServerRule = ref(false);
 // The caller chooses the initial route; the account creation menu can choose it here.

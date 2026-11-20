@@ -4,29 +4,30 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkStickyContainer>
-	<template #header>
-		<XHeader :actions="headerActions" :tabs="headerTabs"/>
-	</template>
-
-	<MkSpacer :contentMax="900">
-		<div class="_gaps_m">
-			<div class="_gaps">
-				<XItem v-for="item in webhooks" :key="item.id" :entity="item" @edit="onEditButtonClicked" @delete="onDeleteButtonClicked"/>
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 900px;">
+		<SearchMarker path="/admin/system-webhook" label="SystemWebhook" :keywords="['webhook']" icon="ti ti-webhook">
+			<div class="_gaps_m">
+				<FormSection>
+					<div class="_gaps">
+						<XItem v-for="item in webhooks" :key="item.id" :entity="item" @edit="onEditButtonClicked" @delete="onDeleteButtonClicked"/>
+					</div>
+				</FormSection>
 			</div>
-		</div>
-	</MkSpacer>
-</MkStickyContainer>
+		</SearchMarker>
+	</div>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue';
 import { entities } from 'cherrypick-js';
 import XItem from './system-webhook.item.vue';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import FormSection from '@/components/form/section.vue';
+import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
-import XHeader from '@/pages/admin/_header_.vue';
-import { misskeyApi } from '@/scripts/misskey-api.js';
+import MkButton from '@/components/MkButton.vue';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { showSystemWebhookEditorDialog } from '@/components/MkSystemWebhookEditor.impl.js';
 import * as os from '@/os.js';
 
@@ -80,12 +81,12 @@ onMounted(async () => {
 	await fetchWebhooks();
 });
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: 'SystemWebhook',
 	icon: 'ti ti-webhook',
 }));
 </script>
 
-<style module lang="scss">
+<style lang="scss" module>
 
 </style>

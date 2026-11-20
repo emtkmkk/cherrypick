@@ -16,11 +16,11 @@ import { url } from '@@/js/config.js';
 import { useInterval } from '@@/js/use-interval.js';
 import GameSetting from './game.setting.vue';
 import GameBoard from './game.board.vue';
-import { misskeyApi } from '@/scripts/misskey-api.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import { definePage } from '@/page.js';
 import { useStream } from '@/stream.js';
-import { $i } from '@/account.js';
-import { useRouter } from '@/router/supplier.js';
+import { $i } from '@/i.js';
+import { useRouter } from '@/router.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 
@@ -31,7 +31,7 @@ const props = defineProps<{
 }>();
 
 const game = shallowRef<Misskey.entities.ReversiGameDetailed | null>(null);
-const connection = shallowRef<Misskey.ChannelConnection | null>(null);
+const connection = shallowRef<Misskey.IChannelConnection<Misskey.Channels['reversiGame']> | null>(null);
 const shareWhenStart = ref(false);
 
 watch(() => props.gameId, () => {
@@ -112,7 +112,7 @@ onUnmounted(() => {
 	}
 });
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: 'Reversi',
 	icon: 'ti ti-device-gamepad',
 }));

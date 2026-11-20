@@ -6,15 +6,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div>
 	<Transition
-		:enterActiveClass="defaultStore.state.animation ? $style.transition_toast_enterActive : ''"
-		:leaveActiveClass="defaultStore.state.animation ? $style.transition_toast_leaveActive : ''"
-		:enterFromClass="defaultStore.state.animation ? $style.transition_toast_enterFrom : ''"
-		:leaveToClass="defaultStore.state.animation ? $style.transition_toast_leaveTo : ''"
+		:enterActiveClass="prefer.s.animation ? $style.transition_toast_enterActive : ''"
+		:leaveActiveClass="prefer.s.animation ? $style.transition_toast_leaveActive : ''"
+		:enterFromClass="prefer.s.animation ? $style.transition_toast_enterFrom : ''"
+		:leaveToClass="prefer.s.animation ? $style.transition_toast_leaveTo : ''"
 		appear @afterLeave="emit('closed')"
 	>
-		<div v-if="showing" class="_acrylic" :class="[$style.root, { [$style.reduceBlurEffect]: !defaultStore.state.useBlurEffect }]" :style="{ zIndex }">
-			<div style="padding: 16px 24px;">
-				<i v-if="icon" :class="icon === 'posted' ? 'ti-check' : icon === 'reply' ? 'ti-arrow-back-up' : icon === 'renote' ? 'ti-repeat' : icon === 'quote' ? 'ti-quote' : icon === 'edited' ? 'ti ti-pencil' : icon === 'copied' ? 'ti-copy' : 'ti-check'" class="ti"></i>
+		<div v-if="showing" class="_acrylic" :class="[$style.root, { [$style.reduceBlurEffect]: !prefer.s.useBlurEffect }]" :style="{ zIndex }">
+			<div v-if="welcome && $i">
+				<MkAvatar :class="$style.avatar" :user="$i" forceOpacity isToastAvatar/>
+				<Mfm style="display: inherit; margin: 10px;" :text="message" :plain="true"></Mfm>
+			</div>
+			<div v-else style="padding: 16px 24px;">
+				<i
+					v-if="icon"
+					:class="
+						icon === 'posted' ? 'ti-check' :
+						icon === 'reply' ? 'ti-arrow-back-up' :
+						icon === 'renote' ? 'ti-repeat' :
+						icon === 'quote' ? 'ti-quote' :
+						icon === 'edited' ? 'ti ti-pencil' :
+						icon === 'drafted' ? 'ti ti-pencil-minus' :
+						icon === 'scheduled' ? 'ti ti-calendar-time' :
+						icon === 'copied' ? 'ti-copy' :
+						'ti-check'"
+					class="ti"
+				></i>
 				{{ message }}
 			</div>
 		</div>
@@ -25,11 +42,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 import * as os from '@/os.js';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
+import { $i } from '@/i.js';
 
 defineProps<{
 	message: string;
 	icon?: string;
+	welcome?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -80,5 +99,14 @@ onMounted(() => {
 		width: 100%;
 		top: 0;
 	}
+}
+
+.avatar {
+	position: relative;
+	vertical-align: bottom;
+	border-radius: 100%;
+	width: 48px;
+	height: 48px;
+	margin-top: 16px;
 }
 </style>

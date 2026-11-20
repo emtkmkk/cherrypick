@@ -103,10 +103,13 @@ export const meta = {
 					quote: { optional: true, ...notificationRecieveConfig },
 					reaction: { optional: true, ...notificationRecieveConfig },
 					pollEnded: { optional: true, ...notificationRecieveConfig },
+					scheduledNotePosted: { optional: true, ...notificationRecieveConfig },
+					scheduledNotePostFailed: { optional: true, ...notificationRecieveConfig },
 					receiveFollowRequest: { optional: true, ...notificationRecieveConfig },
 					followRequestAccepted: { optional: true, ...notificationRecieveConfig },
 					groupInvited: { optional: true, ...notificationRecieveConfig },
 					roleAssigned: { optional: true, ...notificationRecieveConfig },
+					chatRoomInvitationReceived: { optional: true, ...notificationRecieveConfig },
 					achievementEarned: { optional: true, ...notificationRecieveConfig },
 					app: { optional: true, ...notificationRecieveConfig },
 					test: { optional: true, ...notificationRecieveConfig },
@@ -176,6 +179,14 @@ export const meta = {
 						},
 					},
 				},
+			},
+			setFederationAvatarShape: {
+				type: 'boolean',
+				optional: false, nullable: true,
+			},
+			isSquareAvatars: {
+				type: 'boolean',
+				optional: false, nullable: true,
 			},
 		},
 	},
@@ -257,6 +268,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					expiresAt: a.expiresAt ? a.expiresAt.toISOString() : null,
 					roleId: a.roleId,
 				})),
+				setFederationAvatarShape: user.setFederationAvatarShape,
+				isSquareAvatars: user.isSquareAvatars,
 			};
 		});
 	}

@@ -1,62 +1,67 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/vue';
-import MkTimeline from '@/components/MkTimeline.vue';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { cleanup, render } from '@testing-library/vue';
+import Timeline from '@/components/MkStreamingNotesTimeline.vue';
 import { useStream } from '@/stream.js';
-import { defaultStore } from '@/store.js';
+import { store } from '@/store.js';
 
-vi.mock('@/account.js', () => ({ $i: null }));
+const state = vi.hoisted(() => ({ paginators: [] as { endpoint: string; params: Record<string, unknown> }[] }));
+vi.mock('@/i18n.js', () => ({ i18n: { ts: { noNotes: 'no notes' } } }));
+vi.mock('@/i.js', () => ({ $i: null }));
 vi.mock('@/instance.js', () => ({ instance: { notesPerOneAd: 0 } }));
-vi.mock('@/store.js', () => ({ defaultStore: { state: { disableStreamingTimeline: false, showGapBetweenNotesInTimeline: true } } }));
+vi.mock('@/store.js', () => ({ store: { s: { realtimeMode: true } } }));
+vi.mock('@/preferences.js', () => ({ prefer: { s: { showGapBetweenNotesInTimeline: true } } }));
 vi.mock('@/stream.js', () => ({ useStream: vi.fn() }));
-vi.mock('@/scripts/sound.js', () => ({ playMisskeySfx: vi.fn() }));
-vi.mock('@/scripts/vibrate.js', () => ({ vibrate: vi.fn() }));
-vi.mock('@/events.js', () => ({ globalEvents: { on: vi.fn() } }));
-vi.mock('@/components/MkPullToRefresh.vue', () => ({ default: { template: '<div><slot/></div>' } }));
-vi.mock('@/components/MkNotes.vue', () => ({ default: {
-	props: ['pagination', 'noGap'], template: '<div data-testid="pagination">{{ JSON.stringify(pagination) }}</div>',
-} }));
-
+vi.mock('@/utility/sound.js', () => ({ playMisskeySfx: vi.fn() }));
+vi.mock('@/utility/haptic.js', () => ({ haptic: vi.fn(), hapticConfirm: vi.fn() }));
+vi.mock('@/utility/is-friendly.js', () => ({ isFriendly: () => ({ value: false }) }));
+vi.mock('@/utility/scroll-to-visibility.js', () => ({ scrollToVisibility: () => ({ showEl: { value: false } }) }));
+vi.mock('@/events.js', () => ({ globalEvents: { on: vi.fn(), off: vi.fn(), emit: vi.fn() }, useGlobalEvent: vi.fn() }));
+vi.mock('@@/js/use-interval.js', () => ({ useInterval: vi.fn() }));
+vi.mock('@@/js/use-document-visibility.js', async () => { const { ref } = await import('vue'); return { useDocumentVisibility: () => ref('visible') }; });
+vi.mock('@/components/MkNote.vue', () => ({ default: { template: '<div/>' } }));
+vi.mock('@/components/MkNoteMediaGrid.vue', () => ({ default: { template: '<div/>' } }));
+vi.mock('@/utility/paginator.js', async () => {
+	const { ref } = await import('vue');
+	return { Paginator: class {
+		fetching = ref(false);
+		error = ref(null);
+		items = ref([]);
+		queuedAheadItemsCount = ref(0);
+		init = vi.fn();
+		dispose = vi.fn();
+		constructor(endpoint: string, options: { computedParams: { value: Record<string, unknown> } }) {
+			state.paginators.push({ endpoint, params: options.computedParams.value });
+		}
+	} };
+});
 const dispose = vi.fn();
 const useChannel = vi.fn(() => ({ on: vi.fn(), dispose }));
 beforeEach(() => {
 	vi.clearAllMocks();
-	defaultStore.state.disableStreamingTimeline = false;
+	state.paginators = [];
+	store.s.realtimeMode = true;
 	vi.mocked(useStream).mockReturnValue({ useChannel } as never);
 });
 afterEach(cleanup);
-
-describe('local timeline uses the bubble feed', () => {
-	test.each(['local', 'bubble'] as const)('%s uses matching local pagination and streaming with filters', src => {
-		const view = render(MkTimeline, { props: { src, withRenotes: false, onlyFiles: true, onlyCats: true, withReplies: false } });
-		const pagination = JSON.parse(screen.getByTestId('pagination').textContent!);
-		expect(pagination.endpoint).toBe('notes/local-timeline');
-		expect(pagination.params).toEqual({ withRenotes: false, withFiles: true, withCats: true, withReplies: false });
-		expect(useChannel).toHaveBeenCalledWith('localTimeline', pagination.params);
-		expect(useChannel).not.toHaveBeenCalledWith('bubbleTimeline', expect.anything());
-		view.unmount();
-		expect(dispose).toHaveBeenCalled();
-	});
-
-	test('still uses local pagination when streaming is disabled', () => {
-		defaultStore.state.disableStreamingTimeline = true;
-		render(MkTimeline, { props: { src: 'local' } });
-		expect(JSON.parse(screen.getByTestId('pagination').textContent!).endpoint).toBe('notes/local-timeline');
-		expect(useChannel).not.toHaveBeenCalled();
-	});
-
-	test('passes the enabled reply filter to both pagination and streaming', () => {
-		render(MkTimeline, { props: { src: 'local', withReplies: true } });
-		expect(JSON.parse(screen.getByTestId('pagination').textContent!).params.withReplies).toBe(true);
-		expect(useChannel).toHaveBeenCalledWith('localTimeline', expect.objectContaining({ withReplies: true }));
-	});
-
-	test('keeps the home feed and its streaming channel unchanged', () => {
-		render(MkTimeline, { props: { src: 'home' } });
-		expect(JSON.parse(screen.getByTestId('pagination').textContent!).endpoint).toBe('notes/timeline');
-		expect(useChannel).toHaveBeenCalledWith('homeTimeline', expect.anything());
-	});
+test.each(['local', 'bubble'] as const)('%s uses local pagination and streaming with matching reply filters', src => {
+	const view = render(Timeline, { props: { src, withRenotes: false, onlyFiles: true, onlyCats: true, withReplies: true } });
+	expect(state.paginators[0]).toEqual({ endpoint: 'notes/local-timeline', params: { withRenotes: false, withFiles: true, withCats: true, withReplies: true } });
+	expect(useChannel).toHaveBeenCalledWith('localTimeline', state.paginators[0].params);
+	expect(useChannel).not.toHaveBeenCalledWith('bubbleTimeline', expect.anything());
+	view.unmount();
+	expect(dispose).toHaveBeenCalled();
+});
+test('polling mode retains local pagination', () => {
+	store.s.realtimeMode = false;
+	render(Timeline, { props: { src: 'local' } });
+	expect(state.paginators[0].endpoint).toBe('notes/local-timeline');
+	expect(useChannel).not.toHaveBeenCalled();
+});
+test('home pagination and streaming retain their own endpoint', () => {
+	render(Timeline, { props: { src: 'home' } });
+	expect(state.paginators[0].endpoint).toBe('notes/timeline');
+	expect(useChannel).toHaveBeenCalledWith('homeTimeline', expect.anything());
 });

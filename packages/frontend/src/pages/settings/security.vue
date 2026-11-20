@@ -4,87 +4,97 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps_m">
-	<FormSection first>
-		<template #label>{{ i18n.ts.password }}</template>
-		<MkButton primary @click="change()">{{ i18n.ts.changePassword }}</MkButton>
-	</FormSection>
+<SearchMarker path="/settings/security" :label="i18n.ts.security" :keywords="['security']" icon="ti ti-lock" :inlining="['2fa']">
+	<div class="_gaps_m">
+		<MkFeatureBanner icon="/client-assets/locked_with_key_3d.png" color="#ffbf00">
+			<SearchText>{{ i18n.ts._settings.securityBanner }}</SearchText>
+		</MkFeatureBanner>
 
-	<FormSection v-if="!mkkeyLink?.linked">
-		<template #label>もこきーでログイン（mkkey.net）</template>
-		<div class="_gaps_s">
-			<p v-if="mkkeyLink">未連携です。連携すると、同じもこきーアカウントでCherryPickにログインできます。</p>
-			<p v-else>{{ mkkeyStatusError || '連携状態を確認しています…' }}</p>
-			<MkButton v-if="mkkeyStatusError" @click="loadMkkeyLink">再確認</MkButton>
-			<MkButton v-else-if="mkkeyLink" primary :disabled="mkkeyLinkBusy" @click="linkMkkeyAccount">もこきーアカウントと連携</MkButton>
-		</div>
-	</FormSection>
+		<SearchMarker :keywords="['password']">
+			<FormSection first>
+				<template #label><SearchLabel>{{ i18n.ts.password }}</SearchLabel></template>
 
-	<X2fa/>
+				<SearchMarker>
+					<MkButton primary @click="change()">
+						<SearchLabel>{{ i18n.ts.changePassword }}</SearchLabel>
+					</MkButton>
+				</SearchMarker>
+			</FormSection>
+		</SearchMarker>
 
-	<FormSection>
-		<template #label>{{ i18n.ts.signinHistory }}</template>
-		<MkPagination :pagination="pagination" disableAutoLoad>
-			<template #default="{items}">
-				<div>
-					<div v-for="item in items" :key="item.id" v-panel class="timnmucd">
-						<header>
-							<i v-if="item.success" class="ti ti-check icon succ"></i>
-							<i v-else class="ti ti-circle-x icon fail"></i>
-							<code class="ip _monospace">{{ item.ip }}</code>
-							<MkTime :time="item.createdAt" class="time"/>
-						</header>
-					</div>
-				</div>
-			</template>
-		</MkPagination>
-	</FormSection>
+		<FormSection v-if="!mkkeyLink?.linked">
+			<template #label>もこきーでログイン（mkkey.net）</template>
+			<div class="_gaps_s">
+				<p v-if="mkkeyLink">未連携です。連携すると、同じもこきーアカウントでCherryPickにログインできます。</p>
+				<p v-else>{{ mkkeyStatusError || '連携状態を確認しています…' }}</p>
+				<MkButton v-if="mkkeyStatusError" @click="loadMkkeyLink">再確認</MkButton>
+				<MkButton v-else-if="mkkeyLink" primary :disabled="mkkeyLinkBusy" @click="linkMkkeyAccount">もこきーアカウントと連携</MkButton>
+			</div>
+		</FormSection>
+		<X2fa/>
 
-	<FormSection>
-		<FormSlot>
-			<MkButton danger @click="regenerateToken"><i class="ti ti-refresh"></i> {{ i18n.ts.regenerateLoginToken }}</MkButton>
-			<template #caption>{{ i18n.ts.regenerateLoginTokenDescription }}</template>
-		</FormSlot>
-	</FormSection>
+		<SearchMarker :keywords="['signin', 'login', 'history', 'log']">
+			<FormSection>
+				<template #label><SearchLabel>{{ i18n.ts.signinHistory }}</SearchLabel></template>
+				<MkPagination :paginator="paginator" withControl>
+					<template #default="{items}">
+						<div>
+							<div v-for="item in items" :key="item.id" v-panel class="timnmucd">
+								<header>
+									<i v-if="item.success" class="ti ti-check icon succ"></i>
+									<i v-else class="ti ti-circle-x icon fail"></i>
+									<code class="ip _monospace">{{ item.ip }}</code>
+									<MkTime :time="item.createdAt" class="time"/>
+								</header>
+							</div>
+						</div>
+					</template>
+				</MkPagination>
+			</FormSection>
+		</SearchMarker>
 
-	<FormSection v-if="mkkeyLink?.linked">
-		<template #label>連携済みのもこきーアカウント</template>
-		<p v-if="mkkeyLink.username">@{{ mkkeyLink.username }}@mkkey.net</p>
-	</FormSection>
-</div>
+		<SearchMarker :keywords="['regenerate', 'refresh', 'reset', 'token']">
+			<FormSection>
+				<FormSlot>
+					<MkButton danger @click="regenerateToken"><i class="ti ti-refresh"></i> <SearchLabel>{{ i18n.ts.regenerateLoginToken }}</SearchLabel></MkButton>
+					<template #caption>{{ i18n.ts.regenerateLoginTokenDescription }}</template>
+				</FormSlot>
+			</FormSection>
+		</SearchMarker>
+		<FormSection v-if="mkkeyLink?.linked">
+			<template #label>連携済みのもこきーアカウント</template>
+			<p v-if="mkkeyLink.username">@{{ mkkeyLink.username }}@mkkey.net</p>
+		</FormSection>
+	</div>
+</SearchMarker>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, onMounted } from 'vue';
+import { computed, markRaw, ref, onMounted } from 'vue';
+import { mkkeyAuthError } from '@/utility/mkkey-sso.js';
+import { mkkeyLink, mkkeyLinkBusy, loadMkkeyLink as refreshMkkeyLink, linkMkkeyAccount } from '@/utility/mkkey-link.js';
 import X2fa from './2fa.vue';
-import { mkkeyAuthError } from '@/scripts/mkkey-sso.js';
-import { mkkeyLink, mkkeyLinkBusy, loadMkkeyLink as refreshMkkeyLink, linkMkkeyAccount } from '@/scripts/mkkey-link.js';
 import FormSection from '@/components/form/section.vue';
 import FormSlot from '@/components/form/slot.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import * as os from '@/os.js';
-import { misskeyApi } from '@/scripts/misskey-api.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { definePage } from '@/page.js';
+import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
+import { Paginator } from '@/utility/paginator.js';
+
+const paginator = markRaw(new Paginator('i/signin-history', {
+	limit: 5,
+}));
 
 const mkkeyStatusError = ref('');
-
 async function loadMkkeyLink() {
 	mkkeyStatusError.value = '';
-	try {
-		await refreshMkkeyLink();
-	} catch (error) {
-		mkkeyStatusError.value = mkkeyAuthError(error);
-	}
+	try { await refreshMkkeyLink(); } catch (error) { mkkeyStatusError.value = mkkeyAuthError(error); }
 }
-
 onMounted(loadMkkeyLink);
-
-const pagination = {
-	endpoint: 'i/signin-history' as const,
-	limit: 5,
-};
 
 async function change() {
 	const { canceled: canceled2, result: newPassword } = await os.inputText({
@@ -92,14 +102,14 @@ async function change() {
 		type: 'password',
 		autocomplete: 'new-password',
 	});
-	if (canceled2) return;
+	if (canceled2 || newPassword == null) return;
 
 	const { canceled: canceled3, result: newPassword2 } = await os.inputText({
 		title: i18n.ts.newPasswordRetype,
 		type: 'password',
 		autocomplete: 'new-password',
 	});
-	if (canceled3) return;
+	if (canceled3 || newPassword2 == null) return;
 
 	if (newPassword !== newPassword2) {
 		os.alert({
@@ -133,7 +143,7 @@ const headerActions = computed(() => []);
 
 const headerTabs = computed(() => []);
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: i18n.ts.security,
 	icon: 'ti ti-lock',
 }));

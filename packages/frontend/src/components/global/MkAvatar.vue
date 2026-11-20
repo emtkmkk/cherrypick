@@ -4,20 +4,33 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<component :is="link ? MkA : 'span'" v-if="noteClick" v-user-preview="preview ? user.id : undefined" v-bind="bound" class="_noSelect" :class="[$style.root, { [$style.animation]: animation, [$style.cat]: user.isCat, [$style.square]: squareAvatars }]" :style="{ color }" :title="acct(user)" @click.stop="onClick">
+<component :is="link ? MkA : 'span'" v-user-preview="preview ? user.id : undefined" v-bind="bound" class="_noSelect" :class="[$style.root, { [$style.animation]: animation && (!isToastAvatar && !isFloatingBtn), [$style.cat]: user.isCat && (!isToastAvatar && !isFloatingBtn), [$style.square]: squareAvatars && !isFloatingBtn, [$style.isFloatingBtn]: isFloatingBtn }]" :style="{ color }" :title="acct(user)" @click="onClick">
 	<MkImgWithBlurhash
-		:class="$style.inner"
+		v-if="prefer.s.enableHighQualityImagePlaceholders"
+		:class="[$style.inner, { [$style.reduceBlurEffect]: !prefer.s.useBlurEffect, [$style.reduceAnimation]: !prefer.s.animation, [$style.scrollToTransparent]: showEl && !forceOpacity, [$style.isFloatingBtn]: isFloatingBtn }]"
 		:src="url"
 		:hash="user.avatarBlurhash"
 		:cover="true"
 		:onlyAvgColor="true"
-		@mouseover="defaultStore.state.showingAnimatedImages === 'interaction' ? playAnimation = true : ''"
-		@mouseout="defaultStore.state.showingAnimatedImages === 'interaction' ? playAnimation = false : ''"
-		@touchstart="defaultStore.state.showingAnimatedImages === 'interaction' ? playAnimation = true : ''"
-		@touchend="defaultStore.state.showingAnimatedImages === 'interaction' ? playAnimation = false : ''"
+		@mouseover="prefer.s.showingAnimatedImages === 'interaction' ? playAnimation = true : ''"
+		@mouseout="prefer.s.showingAnimatedImages === 'interaction' ? playAnimation = false : ''"
+		@touchstart="prefer.s.showingAnimatedImages === 'interaction' ? playAnimation = true : ''"
+		@touchend="prefer.s.showingAnimatedImages === 'interaction' ? playAnimation = false : ''"
 	/>
-	<MkUserOnlineIndicator v-if="indicator" :class="$style.indicator" :user="user"/>
-	<div v-if="user.isCat" :class="[$style.ears]">
+	<img
+		v-else
+		:class="[$style.inner, { [$style.reduceBlurEffect]: !prefer.s.useBlurEffect, [$style.reduceAnimation]: !prefer.s.animation, [$style.scrollToTransparent]: showEl && !forceOpacity, [$style.isFloatingBtn]: isFloatingBtn }]"
+		:src="url"
+		alt=""
+		decoding="async"
+		style="pointer-events: none;"
+		@mouseover="prefer.s.showingAnimatedImages === 'interaction' ? playAnimation = true : ''"
+		@mouseout="prefer.s.showingAnimatedImages === 'interaction' ? playAnimation = false : ''"
+		@touchstart="prefer.s.showingAnimatedImages === 'interaction' ? playAnimation = true : ''"
+		@touchend="prefer.s.showingAnimatedImages === 'interaction' ? playAnimation = false : ''"
+	/>
+	<MkUserOnlineIndicator v-if="indicator && !isToastAvatar" :class="$style.indicator" :user="user"/>
+	<div v-if="user.isCat && !isToastAvatar" :class="[$style.ears]">
 		<div :class="$style.earLeft">
 			<div v-if="false" :class="$style.layer">
 				<div :class="$style.plot" :style="{ backgroundImage: `url(${JSON.stringify(url)})` }"/>
@@ -33,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 		</div>
 	</div>
-	<template v-if="showDecoration">
+	<template v-if="showDecoration || showDecorationWithFloatingBtn">
 		<img
 			v-for="decoration in decorations ?? user.avatarDecorations"
 			:class="[$style.decoration, { [$style.decorationBlink]: decoration.blink }]"
@@ -46,51 +59,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				opacity: getDecorationOpacity(decoration),
 			}"
 			alt=""
-		>
-	</template>
-</component>
-<component :is="link ? MkA : 'span'" v-else v-user-preview="preview ? user.id : undefined" v-bind="bound" class="_noSelect" :class="[$style.root, { [$style.animation]: animation, [$style.cat]: user.isCat, [$style.square]: squareAvatars }]" :style="{ color }" :title="acct(user)" @click="onClick">
-	<MkImgWithBlurhash
-		:class="$style.inner"
-		:src="url"
-		:hash="user.avatarBlurhash"
-		:cover="true"
-		:onlyAvgColor="true"
-		@mouseover="defaultStore.state.showingAnimatedImages === 'interaction' ? playAnimation = true : ''"
-		@mouseout="defaultStore.state.showingAnimatedImages === 'interaction' ? playAnimation = false : ''"
-		@touchstart="defaultStore.state.showingAnimatedImages === 'interaction' ? playAnimation = true : ''"
-		@touchend="defaultStore.state.showingAnimatedImages === 'interaction' ? playAnimation = false : ''"
-	/>
-	<MkUserOnlineIndicator v-if="indicator" :class="$style.indicator" :user="user"/>
-	<div v-if="user.isCat" :class="[$style.ears]">
-		<div :class="$style.earLeft">
-			<div v-if="false" :class="$style.layer">
-				<div :class="$style.plot" :style="{ backgroundImage: `url(${JSON.stringify(url)})` }"/>
-				<div :class="$style.plot" :style="{ backgroundImage: `url(${JSON.stringify(url)})` }"/>
-				<div :class="$style.plot" :style="{ backgroundImage: `url(${JSON.stringify(url)})` }"/>
-			</div>
-		</div>
-		<div :class="$style.earRight">
-			<div v-if="false" :class="$style.layer">
-				<div :class="$style.plot" :style="{ backgroundImage: `url(${JSON.stringify(url)})` }"/>
-				<div :class="$style.plot" :style="{ backgroundImage: `url(${JSON.stringify(url)})` }"/>
-				<div :class="$style.plot" :style="{ backgroundImage: `url(${JSON.stringify(url)})` }"/>
-			</div>
-		</div>
-	</div>
-	<template v-if="showDecoration">
-		<img
-			v-for="decoration in decorations ?? user.avatarDecorations"
-			:class="[$style.decoration]"
-			:src="getDecorationUrl(decoration)"
-			:style="{
-				rotate: getDecorationAngle(decoration),
-				scale: getDecorationScale(decoration),
-				translate: getDecorationOffset(decoration),
-				transform: getDecorationTransform(decoration),
-				opacity: getDecorationOpacity(decoration),
-			}"
-			alt=""
+			draggable="false"
+			style="-webkit-user-drag: none;"
 		>
 	</template>
 </component>
@@ -102,13 +72,15 @@ import * as Misskey from 'cherrypick-js';
 import { extractAvgColorFromBlurhash } from '@@/js/extract-avg-color-from-blurhash.js';
 import MkImgWithBlurhash from '../MkImgWithBlurhash.vue';
 import MkA from './MkA.vue';
-import { getStaticImageUrl } from '@/scripts/media-proxy.js';
+import { getStaticImageUrl } from '@/utility/media-proxy.js';
 import { acct, userPage } from '@/filters/user.js';
 import MkUserOnlineIndicator from '@/components/MkUserOnlineIndicator.vue';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
+import { scrollToVisibility } from '@/utility/scroll-to-visibility.js';
 
-const animation = ref(defaultStore.state.animation);
-const squareAvatars = ref(defaultStore.state.squareAvatars);
+const { showEl } = scrollToVisibility();
+
+const animation = ref(prefer.s.animation);
 
 const props = withDefaults(defineProps<{
 	user: Misskey.entities.User;
@@ -119,6 +91,9 @@ const props = withDefaults(defineProps<{
 	decorations?: (Omit<Misskey.entities.UserDetailed['avatarDecorations'][number], 'id'> & { blink?: boolean; })[];
 	forceShowDecoration?: boolean;
 	noteClick?: boolean;
+	forceOpacity?: boolean;
+	isToastAvatar?: boolean;
+	isFloatingBtn?: boolean;
 }>(), {
 	target: null,
 	link: false,
@@ -127,34 +102,39 @@ const props = withDefaults(defineProps<{
 	decorations: undefined,
 	forceShowDecoration: false,
 	noteClick: false,
+	forceOpacity: true,
+	isToastAvatar: false,
+	isFloatingBtn: false,
 });
 
 const emit = defineEmits<{
 	(ev: 'click', v: MouseEvent): void;
 }>();
 
-const showDecoration = props.forceShowDecoration || defaultStore.state.showAvatarDecorations;
+const squareAvatars = ref((!prefer.s.setFederationAvatarShape && prefer.s.squareAvatars) || (prefer.s.setFederationAvatarShape && !props.user.setFederationAvatarShape && prefer.s.squareAvatars) || (prefer.s.setFederationAvatarShape && props.user.setFederationAvatarShape && props.user.isSquareAvatars));
+const showDecoration = (props.forceShowDecoration || prefer.s.showAvatarDecorations) && !props.isFloatingBtn;
+const showDecorationWithFloatingBtn = props.isFloatingBtn && prefer.s.showAvatarDecorations && prefer.s.friendlyUiShowAvatarDecorationsInNavBtn;
 
 const bound = computed(() => props.link
 	? { to: userPage(props.user), target: props.target }
 	: {});
 
 const playAnimation = ref(true);
-if (defaultStore.state.showingAnimatedImages === 'interaction') playAnimation.value = false;
-let playAnimationTimer = setTimeout(() => playAnimation.value = false, 5000);
+if (prefer.s.showingAnimatedImages === 'interaction') playAnimation.value = false;
+let playAnimationTimer = window.setTimeout(() => playAnimation.value = false, 5000);
 const url = computed(() => {
-	if (props.user.avatarUrl == null) return null;
-	if (defaultStore.state.disableShowingAnimatedImages || defaultStore.state.dataSaver.avatar || (['interaction', 'inactive'].includes(<string>defaultStore.state.showingAnimatedImages) && !playAnimation.value)) return getStaticImageUrl(props.user.avatarUrl);
+	if (prefer.s.disableShowingAnimatedImages || prefer.s.dataSaver.avatar || (['interaction', 'inactive'].includes(<string>prefer.s.showingAnimatedImages) && !playAnimation.value)) return getStaticImageUrl(props.user.avatarUrl);
 	return props.user.avatarUrl;
 });
 
 function onClick(ev: MouseEvent): void {
+	if (props.noteClick) ev.stopPropagation();
 	if (props.link) return;
 	emit('click', ev);
 }
 
 function getDecorationUrl(decoration: Omit<Misskey.entities.UserDetailed['avatarDecorations'][number], 'id'>) {
-	if (defaultStore.state.disableShowingAnimatedImages || defaultStore.state.dataSaver.avatar || (['interaction', 'inactive'].includes(<string>defaultStore.state.showingAnimatedImages) && !playAnimation.value)) return getStaticImageUrl(decoration.url);
+	if (prefer.s.disableShowingAnimatedImages || prefer.s.dataSaver.avatar || (['interaction', 'inactive'].includes(<string>prefer.s.showingAnimatedImages) && !playAnimation.value)) return getStaticImageUrl(decoration.url);
 	return decoration.url;
 }
 
@@ -186,8 +166,8 @@ function getDecorationOpacity(decoration: Omit<Misskey.entities.UserDetailed['av
 
 function resetTimer() {
 	playAnimation.value = true;
-	clearTimeout(playAnimationTimer);
-	playAnimationTimer = setTimeout(() => playAnimation.value = false, 5000);
+	window.clearTimeout(playAnimationTimer);
+	playAnimationTimer = window.setTimeout(() => playAnimation.value = false, 5000);
 }
 
 const color = ref<string | undefined>();
@@ -200,7 +180,7 @@ watch(() => props.user.avatarBlurhash, () => {
 });
 
 onMounted(() => {
-	if (defaultStore.state.showingAnimatedImages === 'inactive') {
+	if (prefer.s.showingAnimatedImages === 'inactive') {
 		window.addEventListener('mousemove', resetTimer);
 		window.addEventListener('touchstart', resetTimer);
 		window.addEventListener('touchend', resetTimer);
@@ -208,7 +188,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-	if (defaultStore.state.showingAnimatedImages === 'inactive') {
+	if (prefer.s.showingAnimatedImages === 'inactive') {
 		window.removeEventListener('mousemove', resetTimer);
 		window.removeEventListener('touchstart', resetTimer);
 		window.removeEventListener('touchend', resetTimer);
@@ -252,6 +232,10 @@ onUnmounted(() => {
 	flex-shrink: 0;
 	border-radius: 100%;
 	line-height: 16px;
+
+	&.isFloatingBtn {
+		border-radius: initial;
+	}
 }
 
 .inner {
@@ -266,6 +250,24 @@ onUnmounted(() => {
 	object-fit: cover;
 	width: 100%;
 	height: 100%;
+
+	&.isFloatingBtn {
+		border-radius: 28px;
+		opacity: .7;
+		transition: opacity 0.5s;
+	}
+
+	&.reduceBlurEffect {
+		opacity: 1;
+	}
+
+	&.reduceAnimation {
+		transition: opacity 0s;
+	}
+
+	&.scrollToTransparent {
+		opacity: .7;
+	}
 }
 
 .indicator {

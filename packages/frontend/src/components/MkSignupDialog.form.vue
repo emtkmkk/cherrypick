@@ -8,9 +8,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div :class="$style.banner">
 		<i class="ti ti-user-edit"></i>
 	</div>
-	<MkSpacer :marginMin="20" :marginMax="32">
+	<div class="_spacer" style="--MI_SPACER-min: 20px; --MI_SPACER-max: 32px;">
 		<form class="_gaps_m" autocomplete="new-password" @submit.prevent="onSubmit">
-			<MkInput v-if="instance.disableRegistration && !mkkeyOauthToken" v-model="invitationCode" type="text" :spellcheck="false" required>
+			<MkInput v-if="instance.disableRegistration && !mkkeyOauthToken" v-model="invitationCode" type="text" :spellcheck="false" required data-cy-signup-invitation-code>
 				<template #label>{{ i18n.ts.invitationCode }}</template>
 				<template #prefix><i class="ti ti-key"></i></template>
 			</MkInput>
@@ -45,18 +45,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-else-if="emailState === 'error'" style="color: var(--MI_THEME-error)"><i class="ti ti-alert-triangle ti-fw"></i> {{ i18n.ts.error }}</span>
 				</template>
 			</MkInput>
-			<MkInput v-model="password" type="password" autocomplete="new-password" required data-cy-signup-password @update:modelValue="onChangePassword">
+			<MkInput v-model="password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required data-cy-signup-password @update:modelValue="onChangePassword" @keydown="checkCapsLock" @focus="checkCapsLock" @click="checkCapsLock">
 				<template #label>{{ i18n.ts.password }}</template>
 				<template #prefix><i class="ti ti-lock"></i></template>
+				<template #suffix>
+					<div v-if="isCapsLock" :class="$style.isCapslock"><i class="ti ti-arrow-big-up-line"></i></div>
+					<button v-if="password" type="button" :class="$style.passwordToggleBtn" @click="togglePassword"><i :class="showPassword ? 'ti ti-eye-off' : 'ti ti-eye'"></i></button>
+				</template>
 				<template #caption>
 					<span v-if="passwordStrength == 'low'" style="color: var(--MI_THEME-error)"><i class="ti ti-alert-triangle ti-fw"></i> {{ i18n.ts.weakPassword }}</span>
 					<span v-if="passwordStrength == 'medium'" style="color: var(--MI_THEME-warn)"><i class="ti ti-check ti-fw"></i> {{ i18n.ts.normalPassword }}</span>
 					<span v-if="passwordStrength == 'high'" style="color: var(--MI_THEME-success)"><i class="ti ti-check ti-fw"></i> {{ i18n.ts.strongPassword }}</span>
 				</template>
 			</MkInput>
-			<MkInput v-model="retypedPassword" type="password" autocomplete="new-password" required data-cy-signup-password-retype @update:modelValue="onChangePasswordRetype">
+			<MkInput v-model="retypedPassword" :type="showPassword2 ? 'text' : 'password'" autocomplete="new-password" required data-cy-signup-password-retype @update:modelValue="onChangePasswordRetype" @keydown="checkCapsLock" @focus="checkCapsLock" @click="checkCapsLock">
 				<template #label>{{ i18n.ts.password }} ({{ i18n.ts.retype }})</template>
 				<template #prefix><i class="ti ti-lock"></i></template>
+				<template #suffix>
+					<div v-if="isCapsLock" :class="$style.isCapslock"><i class="ti ti-arrow-big-up-line"></i></div>
+					<button v-if="retypedPassword" type="button" :class="$style.passwordToggleBtn" @click="togglePassword2"><i :class="showPassword2 ? 'ti ti-eye-off' : 'ti ti-eye'"></i></button>
+				</template>
 				<template #caption>
 					<span v-if="passwordRetypeState == 'match'" style="color: var(--MI_THEME-success)"><i class="ti ti-check ti-fw"></i> {{ i18n.ts.passwordMatched }}</span>
 					<span v-if="passwordRetypeState == 'not-match'" style="color: var(--MI_THEME-error)"><i class="ti ti-alert-triangle ti-fw"></i> {{ i18n.ts.passwordNotMatched }}</span>
@@ -66,10 +74,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkCaptcha v-if="instance.enableMcaptcha" ref="mcaptcha" v-model="mCaptchaResponse" :class="$style.captcha" provider="mcaptcha" :sitekey="instance.mcaptchaSiteKey" :instanceUrl="instance.mcaptchaInstanceUrl"/>
 			<MkCaptcha v-if="instance.enableRecaptcha" ref="recaptcha" v-model="reCaptchaResponse" :class="$style.captcha" provider="recaptcha" :sitekey="instance.recaptchaSiteKey"/>
 			<MkCaptcha v-if="instance.enableTurnstile" ref="turnstile" v-model="turnstileResponse" :class="$style.captcha" provider="turnstile" :sitekey="instance.turnstileSiteKey"/>
-			<MkCaptcha v-if="instance.enableTestcaptcha" ref="testcaptcha" v-model="testcaptchaResponse" :class="$style.captcha" provider="testcaptcha"/>
+			<MkCaptcha v-if="instance.enableTestcaptcha" ref="testcaptcha" v-model="testcaptchaResponse" :class="$style.captcha" provider="testcaptcha" :sitekey="null"/>
 			<div class="_buttonsCenter">
 				<MkButton inline rounded @click="goBack"><i class="ti ti-arrow-left"></i> {{ i18n.ts.goBack }}</MkButton>
-				<MkButton type="submit" :disabled="shouldDisableSubmitting" inline gradate rounded data-cy-signup-submit>
+				<MkButton type="submit" :disabled="shouldDisableSubmitting" inline gradate rounded data-cy-signup-submit style="margin: 0 auto;">
 					<template v-if="submitting">
 						<MkLoading :em="true" :colored="false"/>
 					</template>
@@ -77,23 +85,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkButton>
 			</div>
 		</form>
-	</MkSpacer>
+	</div>
 </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
-import { toUnicode } from 'punycode/';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { toUnicode } from 'punycode.js';
 import * as Misskey from 'cherrypick-js';
 import * as config from '@@/js/config.js';
 import MkButton from './MkButton.vue';
 import MkInput from './MkInput.vue';
-import MkCaptcha, { type Captcha } from '@/components/MkCaptcha.vue';
+import type { Captcha } from '@/components/MkCaptcha.vue';
+import MkCaptcha from '@/components/MkCaptcha.vue';
 import * as os from '@/os.js';
-import { misskeyApi } from '@/scripts/misskey-api.js';
-import { login } from '@/account.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
+import { login } from '@/accounts.js';
 
 const props = withDefaults(defineProps<{
 	autoSet?: boolean;
@@ -143,9 +152,14 @@ const shouldDisableSubmitting = computed((): boolean => {
 		instance.enableTurnstile && !turnstileResponse.value ||
 		instance.enableTestcaptcha && !testcaptchaResponse.value ||
 		instance.emailRequiredForSignup && emailState.value !== 'ok' ||
+		instance.disableRegistration && invitationCode.value === '' ||
 		usernameState.value !== 'ok' ||
 		passwordRetypeState.value !== 'match';
 });
+
+const isCapsLock = ref(false);
+const showPassword = ref(false);
+const showPassword2 = ref(false);
 
 function getPasswordStrength(source: string): number {
 	let strength = 0;
@@ -284,7 +298,7 @@ async function onSubmit(): Promise<void> {
 		'testcaptcha-response': testcaptchaResponse.value,
 	};
 
-	const res = await fetch(`${config.apiUrl}/signup`, {
+	const res = await window.fetch(`${config.apiUrl}/signup`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
@@ -333,6 +347,28 @@ function onSignupApiError() {
 		text: i18n.ts.somethingHappened,
 	});
 }
+
+function checkCapsLock(ev: KeyboardEvent) {
+	isCapsLock.value = ev.getModifierState('CapsLock');
+}
+
+function togglePassword() {
+	showPassword.value = !showPassword.value;
+}
+
+function togglePassword2() {
+	showPassword2.value = !showPassword2.value;
+}
+
+onMounted(() => {
+	window.addEventListener('keydown', checkCapsLock);
+	window.addEventListener('keyup', checkCapsLock);
+});
+
+onUnmounted(() => {
+	window.removeEventListener('keydown', checkCapsLock);
+	window.removeEventListener('keyup', checkCapsLock);
+});
 </script>
 
 <style lang="scss" module>
@@ -346,5 +382,26 @@ function onSignupApiError() {
 
 .captcha {
 	margin: 16px 0;
+}
+
+.isCapslock {
+	display: inline-block;
+	padding: 2px;
+	border-radius: 6px;
+	margin-right: 4px;
+	background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.05));
+}
+
+.passwordToggleBtn {
+	position: relative;
+	z-index: 2;
+	margin: 0 auto;
+	border: none;
+	background: none;
+	color: var(--MI_THEME-fg);
+	font-size: 0.8em;
+	cursor: pointer;
+	pointer-events: auto;
+	-webkit-tap-highlight-color: transparent;
 }
 </style>

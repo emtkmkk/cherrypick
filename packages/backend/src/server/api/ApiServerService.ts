@@ -6,7 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
-import fastifyCookie from '@fastify/cookie';
+import cookie from '@fastify/cookie';
 import { ModuleRef } from '@nestjs/core';
 import { AuthenticationResponseJSON } from '@simplewebauthn/types';
 import type { Config } from '@/config.js';
@@ -49,6 +49,7 @@ export class ApiServerService {
 
 	@bindThis
 	public createServer(fastify: FastifyInstance, options: FastifyPluginOptions, done: (err?: Error) => void) {
+		fastify.register(cookie);
 		fastify.register(cors, {
 			origin: '*',
 		});
@@ -59,8 +60,6 @@ export class ApiServerService {
 				files: 1,
 			},
 		});
-
-		fastify.register(fastifyCookie, {});
 
 		// Prevent cache
 		fastify.addHook('onRequest', (request, reply, done) => {
@@ -189,6 +188,17 @@ export class ApiServerService {
 				return {
 					ok: false,
 				};
+			}
+		});
+
+		fastify.all('/clear-browser-cache', (request, reply) => {
+			if (['GET', 'POST'].includes(request.method)) {
+				reply.header('Clear-Site-Data', '"cache", "prefetchCache", "prerenderCache", "executionContexts"');
+				reply.code(204);
+				reply.send();
+			} else {
+				reply.code(405);
+				reply.send();
 			}
 		});
 

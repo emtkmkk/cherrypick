@@ -12,7 +12,7 @@ services:
       retries: 20
 
   cherrypick:
-    image: node:22.11.0-bookworm
+    image: node:${NODE_VERSION}
     env_file:
       - ./.config/docker.env
     environment:
@@ -73,6 +73,10 @@ services:
       - type: bind
         source: ../../../pnpm-workspace.yaml
         target: /cherrypick/pnpm-workspace.yaml
+        read_only: true
+      - type: bind
+        source: ../../../patches
+        target: /misskey/patches
         read_only: true
       - type: bind
         source: ./certificates/rootCA.crt

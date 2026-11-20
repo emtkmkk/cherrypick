@@ -6,11 +6,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render as renderComponent, screen } from '@testing-library/vue';
 import { nextTick } from 'vue';
 import Announcements from '@/ui/_common_/announcements.vue';
-import { mkkeyLink, linkMkkeyAccount } from '@/scripts/mkkey-link.js';
+import { mkkeyLink, linkMkkeyAccount } from '@/utility/mkkey-link.js';
 
-vi.mock('@/account.js', () => ({ $i: { id: 'local-user', unreadAnnouncements: [] } }));
+vi.mock('@/i.js', () => ({ $i: { id: 'local-user', unreadAnnouncements: [] } }));
 vi.mock('@/i18n.js', () => ({ i18n: { ts: { close: '閉じる' } } }));
-vi.mock('@/scripts/mkkey-link.js', async () => {
+vi.mock('@/utility/mkkey-link.js', async () => {
 	const { ref } = await import('vue');
 	return {
 		mkkeyLink: ref(null),

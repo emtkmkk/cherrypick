@@ -16,18 +16,31 @@ import { bindThis } from '@/decorators.js';
 import { FilterUnionByProperty, groupedNotificationTypes } from '@/types.js';
 import { CacheService } from '@/core/CacheService.js';
 import { RoleEntityService } from './RoleEntityService.js';
+import { ChatEntityService } from './ChatEntityService.js';
 import type { OnModuleInit } from '@nestjs/common';
 import type { UserEntityService } from './UserEntityService.js';
 import type { NoteEntityService } from './NoteEntityService.js';
 import type { UserGroupInvitationEntityService } from './UserGroupInvitationEntityService.js';
 
-const NOTE_REQUIRED_NOTIFICATION_TYPES = new Set(['note', 'mention', 'reply', 'renote', 'renote:grouped', 'quote', 'reaction', 'reaction:grouped', 'pollEnded'] as (typeof groupedNotificationTypes[number])[]);
+const NOTE_REQUIRED_NOTIFICATION_TYPES = new Set([
+	'note',
+	'mention',
+	'reply',
+	'renote',
+	'renote:grouped',
+	'quote',
+	'reaction',
+	'reaction:grouped',
+	'pollEnded',
+	'scheduledNotePosted',
+] as (typeof groupedNotificationTypes[number])[]);
 
 @Injectable()
 export class NotificationEntityService implements OnModuleInit {
 	private userEntityService: UserEntityService;
 	private noteEntityService: NoteEntityService;
 	private roleEntityService: RoleEntityService;
+	private chatEntityService: ChatEntityService;
 	private userGroupInvitationEntityService: UserGroupInvitationEntityService;
 
 	constructor(
@@ -46,10 +59,6 @@ export class NotificationEntityService implements OnModuleInit {
 		private userGroupInvitationsRepository: UserGroupInvitationsRepository,
 
 		private cacheService: CacheService,
-
-		//private userEntityService: UserEntityService,
-		//private noteEntityService: NoteEntityService,
-		//private userGroupInvitationEntityService: UserGroupInvitationEntityService,
 	) {
 	}
 
@@ -57,6 +66,7 @@ export class NotificationEntityService implements OnModuleInit {
 		this.userEntityService = this.moduleRef.get('UserEntityService');
 		this.noteEntityService = this.moduleRef.get('NoteEntityService');
 		this.roleEntityService = this.moduleRef.get('RoleEntityService');
+		this.chatEntityService = this.moduleRef.get('ChatEntityService');
 		this.userGroupInvitationEntityService = this.moduleRef.get('UserGroupInvitationEntityService');
 	}
 
@@ -98,7 +108,7 @@ export class NotificationEntityService implements OnModuleInit {
 		// if the user has been deleted, don't show this notification
 		if (needsUser && !userIfNeed) return null;
 
-		// #region Grouped notifications
+		//#region Grouped notifications
 		if (notification.type === 'reaction:grouped') {
 			const reactions = (await Promise.all(notification.reactions.map(async reaction => {
 				const user = hint?.packedUsers != null
@@ -164,12 +174,19 @@ export class NotificationEntityService implements OnModuleInit {
 				users,
 			});
 		}
-		// #endregion
+		//#endregion
 
 		const needsRole = notification.type === 'roleAssigned';
 		const role = needsRole ? await this.roleEntityService.pack(notification.roleId) : undefined;
 		// if the role has been deleted, don't show this notification
 		if (needsRole && !role) {
+			return null;
+		}
+
+		const needsChatRoomInvitation = notification.type === 'chatRoomInvitationReceived';
+		const chatRoomInvitation = needsChatRoomInvitation ? await this.chatEntityService.packRoomInvitation(notification.invitationId, { id: meId }).catch(() => null) : undefined;
+		// if the invitation has been deleted, don't show this notification
+		if (needsChatRoomInvitation && !chatRoomInvitation) {
 			return null;
 		}
 
@@ -189,6 +206,9 @@ export class NotificationEntityService implements OnModuleInit {
 			...(notification.type === 'roleAssigned' ? {
 				role: role,
 			} : {}),
+			...(notification.type === 'chatRoomInvitationReceived' ? {
+				invitation: chatRoomInvitation,
+			} : {}),
 			...(notification.type === 'followRequestAccepted' ? {
 				message: notification.message,
 			} : {}),
@@ -201,9 +221,6 @@ export class NotificationEntityService implements OnModuleInit {
 			} : {}),
 			...(notification.type === 'login' ? {
 				ip: notification.userIp,
-			} : {}),
-			...(notification.type === 'scheduleNote' ? {
-				errorType: notification.errorType,
 			} : {}),
 			...(notification.type === 'app' ? {
 				body: notification.customBody,
@@ -273,6 +290,7 @@ export class NotificationEntityService implements OnModuleInit {
 	public async pack(
 		src: MiNotification | MiGroupedNotification,
 		meId: MiUser['id'],
+
 		options: {
 			checkValidNotifier?: boolean;
 		},

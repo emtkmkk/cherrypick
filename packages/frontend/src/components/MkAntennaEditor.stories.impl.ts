@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { action } from '@storybook/addon-actions';
-import { StoryObj } from '@storybook/vue3';
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+import { action } from 'storybook/actions';
 import { HttpResponse, http } from 'msw';
 import { commonHandlers } from '../../.storybook/mocks.js';
 import MkAntennaEditor from './MkAntennaEditor.vue';
+import type { StoryObj } from '@storybook/vue3';
 export const Default = {
 	render(args) {
 		return {

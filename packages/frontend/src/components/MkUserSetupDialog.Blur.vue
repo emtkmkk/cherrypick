@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: syuilo and misskey-project
+SPDX-FileCopyrightText: syuilo and misskey-project & noridev and cherrypick-project
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
@@ -35,10 +35,10 @@ import { i18n } from '@/i18n.js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkFolder from '@/components/MkFolder.vue';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 
-const useBlurEffect = computed(defaultStore.makeGetterSetter('useBlurEffect'));
-const useBlurEffectForModal = computed(defaultStore.makeGetterSetter('useBlurEffectForModal'));
+const useBlurEffect = prefer.model('useBlurEffect');
+const useBlurEffectForModal = prefer.model('useBlurEffectForModal');
 </script>
 
 <style lang="scss" module>

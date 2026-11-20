@@ -4,7 +4,9 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { MetricsTime, type JobType } from 'bullmq';
+import { parse as parseRedisInfo } from 'redis-info';
 import type { IActivity } from '@/core/activitypub/type.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { MiAbuseUserReport } from '@/models/AbuseUserReport.js';
@@ -16,6 +18,7 @@ import { bindThis } from '@/decorators.js';
 import type { Antenna } from '@/server/api/endpoints/i/import-antennas.js';
 import { ApRequestCreator } from '@/core/activitypub/ApRequestService.js';
 import { type SystemWebhookPayload } from '@/core/SystemWebhookService.js';
+import type { Packed } from '@/misc/json-schema.js';
 import { type UserWebhookPayload } from './UserWebhookService.js';
 import type {
 	DbJobData,
@@ -29,6 +32,7 @@ import type {
 	DbQueue,
 	DeliverQueue,
 	EndedPollNotificationQueue,
+	PostScheduledNoteQueue,
 	InboxQueue,
 	ObjectStorageQueue,
 	RelationshipQueue,
@@ -36,19 +40,67 @@ import type {
 	SystemWebhookDeliverQueue,
 	UserWebhookDeliverQueue,
 	ScheduledNoteDeleteQueue,
-	ScheduleNotePostQueue,
 } from './QueueModule.js';
 import type httpSignature from '@peertube/http-signature';
 import type * as Bull from 'bullmq';
 
+export const QUEUE_TYPES = [
+	'system',
+	'endedPollNotification',
+	'postScheduledNote',
+	'deliver',
+	'inbox',
+	'db',
+	'relationship',
+	'objectStorage',
+	'userWebhookDeliver',
+	'systemWebhookDeliver',
+] as const;
+
+const REPEATABLE_SYSTEM_JOB_DEF = [{
+	name: 'tickCharts',
+	pattern: '55 * * * *',
+}, {
+	name: 'resyncCharts',
+	pattern: '0 0 * * *',
+}, {
+	name: 'cleanCharts',
+	pattern: '0 0 * * *',
+}, {
+	name: 'aggregateRetention',
+	pattern: '0 0 * * *',
+}, {
+	name: 'clean',
+	pattern: '0 0 * * *',
+}, {
+	name: 'checkExpiredMutings',
+	pattern: '*/5 * * * *',
+}, {
+	name: 'bakeBufferedReactions',
+	pattern: '0 0 * * *',
+}, {
+	name: 'checkModeratorsActivity',
+	// 毎時30分に起動
+	pattern: '30 * * * *',
+}, {
+	name: 'cleanRemoteNotes',
+	// 毎日午前4時に起動(最も人の少ない時間帯)
+	pattern: '0 4 * * *',
+}, {
+	name: 'autoDeleteNotes',
+	// 매일 오전 3시에 실행
+	pattern: '0 3 * * *',
+}];
+
 @Injectable()
-export class QueueService {
+export class QueueService implements OnModuleInit {
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
 
 		@Inject('queue:system') public systemQueue: SystemQueue,
 		@Inject('queue:endedPollNotification') public endedPollNotificationQueue: EndedPollNotificationQueue,
+		@Inject('queue:postScheduledNote') public postScheduledNoteQueue: PostScheduledNoteQueue,
 		@Inject('queue:deliver') public deliverQueue: DeliverQueue,
 		@Inject('queue:inbox') public inboxQueue: InboxQueue,
 		@Inject('queue:db') public dbQueue: DbQueue,
@@ -57,56 +109,44 @@ export class QueueService {
 		@Inject('queue:userWebhookDeliver') public userWebhookDeliverQueue: UserWebhookDeliverQueue,
 		@Inject('queue:systemWebhookDeliver') public systemWebhookDeliverQueue: SystemWebhookDeliverQueue,
 		@Inject('queue:scheduledNoteDelete') public scheduledNoteDeleteQueue: ScheduledNoteDeleteQueue,
-		@Inject('queue:scheduleNotePost') public ScheduleNotePostQueue: ScheduleNotePostQueue,
-	) {
-		this.systemQueue.add('tickCharts', {
-		}, {
-			repeat: { pattern: '55 * * * *' },
-			removeOnComplete: true,
-		});
+	) { }
 
-		this.systemQueue.add('resyncCharts', {
-		}, {
-			repeat: { pattern: '0 0 * * *' },
-			removeOnComplete: true,
-		});
+	async onModuleInit() {
+		console.log('[QueueService] onModuleInit: Setting up', REPEATABLE_SYSTEM_JOB_DEF.length, 'repeatable jobs');
+		try {
+			for (const def of REPEATABLE_SYSTEM_JOB_DEF) {
+				console.log('[QueueService] Setting up repeatable job:', def.name, 'pattern:', def.pattern);
+				const result = await this.systemQueue.upsertJobScheduler(def.name, {
+					pattern: def.pattern,
+					immediately: false,
+				}, {
+					name: def.name,
+					opts: {
+						// 期限ではなくcountで設定したいが、ジョブごとではなくキュー全体でカウントされるため、高頻度で実行されるジョブによって低頻度で実行されるジョブのログが消えることになる
+						removeOnComplete: {
+							age: 3600 * 24 * 7, // keep up to 7 days
+						},
+						removeOnFail: {
+							age: 3600 * 24 * 7, // keep up to 7 days
+						},
+					},
+				});
+				console.log('[QueueService] Result:', def.name, result);
+			}
 
-		this.systemQueue.add('cleanCharts', {
-		}, {
-			repeat: { pattern: '0 0 * * *' },
-			removeOnComplete: true,
-		});
-
-		this.systemQueue.add('aggregateRetention', {
-		}, {
-			repeat: { pattern: '0 0 * * *' },
-			removeOnComplete: true,
-		});
-
-		this.systemQueue.add('clean', {
-		}, {
-			repeat: { pattern: '0 0 * * *' },
-			removeOnComplete: true,
-		});
-
-		this.systemQueue.add('checkExpiredMutings', {
-		}, {
-			repeat: { pattern: '*/5 * * * *' },
-			removeOnComplete: true,
-		});
-
-		this.systemQueue.add('bakeBufferedReactions', {
-		}, {
-			repeat: { pattern: '0 0 * * *' },
-			removeOnComplete: true,
-		});
-
-		this.systemQueue.add('checkModeratorsActivity', {
-		}, {
-			// 毎時30分に起動
-			repeat: { pattern: '30 * * * *' },
-			removeOnComplete: true,
-		});
+			// 古いバージョンで作成され現在使われなくなったrepeatableジョブをクリーンアップ
+			const schedulers = await this.systemQueue.getJobSchedulers();
+			console.log('[QueueService] Found', schedulers.length, 'existing schedulers');
+			for (const scheduler of schedulers) {
+				if (!REPEATABLE_SYSTEM_JOB_DEF.some(def => def.name === scheduler.key)) {
+					await this.systemQueue.removeJobScheduler(scheduler.key);
+				}
+			}
+			console.log('[QueueService] onModuleInit: All repeatable jobs set up successfully');
+		} catch (error) {
+			console.error('[QueueService] ERROR in onModuleInit:', error);
+			throw error;
+		}
 	}
 
 	@bindThis
@@ -127,13 +167,21 @@ export class QueueService {
 			isSharedInbox,
 		};
 
-		return this.deliverQueue.add(to, data, {
+		const label = to.replace('https://', '').replace('/inbox', '');
+
+		return this.deliverQueue.add(label, data, {
 			attempts: this.config.deliverJobMaxAttempts ?? 12,
 			backoff: {
 				type: 'custom',
 			},
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -155,12 +203,18 @@ export class QueueService {
 			backoff: {
 				type: 'custom',
 			},
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		};
 
 		await this.deliverQueue.addBulk(Array.from(inboxes.entries(), d => ({
-			name: d[0],
+			name: d[0].replace('https://', '').replace('/inbox', ''),
 			data: {
 				user,
 				content: contentBody,
@@ -181,13 +235,21 @@ export class QueueService {
 			signature,
 		};
 
-		return this.inboxQueue.add('', data, {
+		const label = (activity.id ?? '').replace('https://', '').replace('/activity', '');
+
+		return this.inboxQueue.add(label, data, {
 			attempts: this.config.inboxJobMaxAttempts ?? 8,
 			backoff: {
 				type: 'custom',
 			},
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -196,8 +258,14 @@ export class QueueService {
 		return this.dbQueue.add('deleteDriveFiles', {
 			user: { id: user.id },
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -206,8 +274,14 @@ export class QueueService {
 		return this.dbQueue.add('exportCustomEmojis', {
 			user: { id: user.id },
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -216,8 +290,14 @@ export class QueueService {
 		return this.dbQueue.add('exportNotes', {
 			user: { id: user.id },
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -226,8 +306,14 @@ export class QueueService {
 		return this.dbQueue.add('exportClips', {
 			user: { id: user.id },
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -236,8 +322,14 @@ export class QueueService {
 		return this.dbQueue.add('exportFavorites', {
 			user: { id: user.id },
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -248,8 +340,14 @@ export class QueueService {
 			excludeMuting,
 			excludeInactive,
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -258,8 +356,14 @@ export class QueueService {
 		return this.dbQueue.add('exportMuting', {
 			user: { id: user.id },
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -268,8 +372,14 @@ export class QueueService {
 		return this.dbQueue.add('exportBlocking', {
 			user: { id: user.id },
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -278,8 +388,14 @@ export class QueueService {
 		return this.dbQueue.add('exportUserLists', {
 			user: { id: user.id },
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -288,8 +404,14 @@ export class QueueService {
 		return this.dbQueue.add('exportAntennas', {
 			user: { id: user.id },
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -300,8 +422,14 @@ export class QueueService {
 			fileId: fileId,
 			withReplies,
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -317,8 +445,14 @@ export class QueueService {
 			user: { id: user.id },
 			fileId: fileId,
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -328,8 +462,14 @@ export class QueueService {
 			user: { id: user.id },
 			fileId: fileId,
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -349,8 +489,14 @@ export class QueueService {
 			name,
 			data,
 			opts: {
-				removeOnComplete: true,
-				removeOnFail: true,
+				removeOnComplete: {
+					age: 3600 * 24 * 7, // keep up to 7 days
+					count: 30,
+				},
+				removeOnFail: {
+					age: 3600 * 24 * 7, // keep up to 7 days
+					count: 100,
+				},
 			},
 		};
 	}
@@ -361,8 +507,14 @@ export class QueueService {
 			user: { id: user.id },
 			fileId: fileId,
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -372,8 +524,14 @@ export class QueueService {
 			user: { id: user.id },
 			fileId: fileId,
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -383,8 +541,14 @@ export class QueueService {
 			user: { id: user.id },
 			antenna,
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -393,6 +557,22 @@ export class QueueService {
 		return this.dbQueue.add('deleteAccount', {
 			user: { id: user.id },
 			soft: opts.soft,
+		}, {
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
+		});
+	}
+
+	@bindThis
+	public createTruncateAccountJob(user: ThinUser) {
+		return this.dbQueue.add('truncateAccount', {
+			user: { id: user.id },
 		}, {
 			removeOnComplete: true,
 			removeOnFail: true,
@@ -450,8 +630,14 @@ export class QueueService {
 				withReplies: data.withReplies,
 			},
 			opts: {
-				removeOnComplete: true,
-				removeOnFail: true,
+				removeOnComplete: {
+					age: 3600 * 24 * 7, // keep up to 7 days
+					count: 30,
+				},
+				removeOnFail: {
+					age: 3600 * 24 * 7, // keep up to 7 days
+					count: 100,
+				},
 				...opts,
 			},
 		};
@@ -462,16 +648,28 @@ export class QueueService {
 		return this.objectStorageQueue.add('deleteFile', {
 			key: key,
 		}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
 	@bindThis
 	public createCleanRemoteFilesJob() {
 		return this.objectStorageQueue.add('cleanRemoteFiles', {}, {
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -502,8 +700,14 @@ export class QueueService {
 			backoff: {
 				type: 'custom',
 			},
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
@@ -533,21 +737,209 @@ export class QueueService {
 			backoff: {
 				type: 'custom',
 			},
-			removeOnComplete: true,
-			removeOnFail: true,
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
 		});
 	}
 
 	@bindThis
-	public destroy() {
-		this.deliverQueue.once('cleaned', (jobs, status) => {
-			//deliverLogger.succ(`Cleaned ${jobs.length} ${status} jobs`);
-		});
-		this.deliverQueue.clean(0, 0, 'delayed');
+	private getQueue(type: typeof QUEUE_TYPES[number]): Bull.Queue {
+		switch (type) {
+			case 'system': return this.systemQueue;
+			case 'endedPollNotification': return this.endedPollNotificationQueue;
+			case 'postScheduledNote': return this.postScheduledNoteQueue;
+			case 'deliver': return this.deliverQueue;
+			case 'inbox': return this.inboxQueue;
+			case 'db': return this.dbQueue;
+			case 'relationship': return this.relationshipQueue;
+			case 'objectStorage': return this.objectStorageQueue;
+			case 'userWebhookDeliver': return this.userWebhookDeliverQueue;
+			case 'systemWebhookDeliver': return this.systemWebhookDeliverQueue;
+			default: throw new Error(`Unrecognized queue type: ${type}`);
+		}
+	}
 
-		this.inboxQueue.once('cleaned', (jobs, status) => {
-			//inboxLogger.succ(`Cleaned ${jobs.length} ${status} jobs`);
+	@bindThis
+	public async queueClear(queueType: typeof QUEUE_TYPES[number], state: '*' | 'completed' | 'wait' | 'active' | 'paused' | 'prioritized' | 'delayed' | 'failed') {
+		const queue = this.getQueue(queueType);
+
+		if (state === '*') {
+			await Promise.all([
+				queue.clean(0, 0, 'completed'),
+				queue.clean(0, 0, 'wait'),
+				queue.clean(0, 0, 'active'),
+				queue.clean(0, 0, 'paused'),
+				queue.clean(0, 0, 'prioritized'),
+				queue.clean(0, 0, 'delayed'),
+				queue.clean(0, 0, 'failed'),
+			]);
+		} else {
+			await queue.clean(0, 0, state);
+		}
+	}
+
+	@bindThis
+	public async queuePromoteJobs(queueType: typeof QUEUE_TYPES[number]) {
+		const queue = this.getQueue(queueType);
+		await queue.promoteJobs();
+	}
+
+	@bindThis
+	public async queueRetryJob(queueType: typeof QUEUE_TYPES[number], jobId: string) {
+		const queue = this.getQueue(queueType);
+		const job = await queue.getJob(jobId);
+		if (job != null) {
+			if (job.finishedOn != null) {
+				await job.retry();
+			} else {
+				await job.promote();
+			}
+		}
+	}
+
+	@bindThis
+	public async queueRemoveJob(queueType: typeof QUEUE_TYPES[number], jobId: string) {
+		const queue = this.getQueue(queueType);
+		const job = await queue.getJob(jobId);
+		if (job != null) {
+			await job.remove();
+		}
+	}
+
+	@bindThis
+	private packJobData(job: Bull.Job): Packed<'QueueJob'> {
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+		const stacktrace = job.stacktrace ? job.stacktrace.filter(Boolean) : [];
+		stacktrace.reverse();
+
+		return {
+			id: job.id!,
+			name: job.name,
+			data: job.data,
+			opts: job.opts,
+			timestamp: job.timestamp,
+			processedOn: job.processedOn,
+			processedBy: job.processedBy,
+			finishedOn: job.finishedOn,
+			progress: job.progress,
+			attempts: job.attemptsMade,
+			delay: job.delay,
+			failedReason: job.failedReason,
+			stacktrace: stacktrace,
+			returnValue: job.returnvalue,
+			isFailed: !!job.failedReason || (Array.isArray(stacktrace) && stacktrace.length > 0),
+		};
+	}
+
+	@bindThis
+	public async queueGetJob(queueType: typeof QUEUE_TYPES[number], jobId: string) {
+		const queue = this.getQueue(queueType);
+		const job = await queue.getJob(jobId);
+		if (job != null) {
+			return this.packJobData(job);
+		} else {
+			throw new Error(`Job not found: ${jobId}`);
+		}
+	}
+
+	@bindThis
+	public async queueGetJobLogs(queueType: typeof QUEUE_TYPES[number], jobId: string) {
+		const queue = this.getQueue(queueType);
+		const result = await queue.getJobLogs(jobId);
+		return result.logs;
+	}
+
+	@bindThis
+	public async queueGetJobs(queueType: typeof QUEUE_TYPES[number], jobTypes: JobType[], search?: string) {
+		const RETURN_LIMIT = 100;
+		const queue = this.getQueue(queueType);
+		let jobs: Bull.Job[];
+
+		if (search) {
+			jobs = await queue.getJobs(jobTypes, 0, 1000);
+
+			jobs = jobs.filter(job => {
+				const jobString = JSON.stringify(job).toLowerCase();
+				return search.toLowerCase().split(' ').every(term => {
+					return jobString.includes(term);
+				});
+			});
+
+			jobs = jobs.slice(0, RETURN_LIMIT);
+		} else {
+			jobs = await queue.getJobs(jobTypes, 0, RETURN_LIMIT);
+		}
+
+		return jobs.map(job => this.packJobData(job));
+	}
+
+	@bindThis
+	public async queueGetQueues() {
+		const fetchings = QUEUE_TYPES.map(async type => {
+			const queue = this.getQueue(type);
+
+			const counts = await queue.getJobCounts();
+			const isPaused = await queue.isPaused();
+			const metrics_completed = await queue.getMetrics('completed', 0, MetricsTime.ONE_WEEK);
+			const metrics_failed = await queue.getMetrics('failed', 0, MetricsTime.ONE_WEEK);
+
+			return {
+				name: type,
+				counts: counts,
+				isPaused,
+				metrics: {
+					completed: metrics_completed,
+					failed: metrics_failed,
+				},
+			};
 		});
-		this.inboxQueue.clean(0, 0, 'delayed');
+
+		return await Promise.all(fetchings);
+	}
+
+	@bindThis
+	public async queueGetQueue(queueType: typeof QUEUE_TYPES[number]) {
+		const queue = this.getQueue(queueType);
+		const counts = await queue.getJobCounts();
+		const isPaused = await queue.isPaused();
+		const metrics_completed = await queue.getMetrics('completed', 0, MetricsTime.ONE_WEEK);
+		const metrics_failed = await queue.getMetrics('failed', 0, MetricsTime.ONE_WEEK);
+		const db = parseRedisInfo(await (await queue.client).info());
+
+		return {
+			name: queueType,
+			qualifiedName: queue.qualifiedName,
+			counts: counts,
+			isPaused,
+			metrics: {
+				completed: metrics_completed,
+				failed: metrics_failed,
+			},
+			db: {
+				version: db.redis_version,
+				mode: db.redis_mode,
+				runId: db.run_id,
+				processId: db.process_id,
+				port: parseInt(db.tcp_port),
+				os: db.os,
+				uptime: parseInt(db.uptime_in_seconds),
+				memory: {
+					total: parseInt(db.total_system_memory) || parseInt(db.maxmemory),
+					used: parseInt(db.used_memory),
+					fragmentationRatio: parseInt(db.mem_fragmentation_ratio),
+					peak: parseInt(db.used_memory_peak),
+				},
+				clients: {
+					connected: parseInt(db.connected_clients),
+					blocked: parseInt(db.blocked_clients),
+				},
+			},
+		};
 	}
 }

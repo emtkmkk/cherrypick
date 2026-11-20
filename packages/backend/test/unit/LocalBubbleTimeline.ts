@@ -51,7 +51,7 @@ function setupEndpoint(hosts = ['mkkey.net']) {
 		{ packMany: jest.fn(async (notes: unknown) => notes) } as never,
 		{ getUserPolicies: async () => ({ ltlAvailable: true, canPublicNote: true }) } as never,
 		{ read() {} } as never, { gen: () => 'id' } as never, fanout as never,
-		{ makePaginationQuery: () => query, generateVisibilityQuery() {}, generateMutedUserQuery() {}, generateBlockedUserQuery() {}, generateMutedUserRenotesQueryForNotes() {} } as never,
+		{ makePaginationQuery: () => query, generateVisibilityQuery() {}, generateBaseNoteFilteringQuery() {}, generateMutedUserQuery() {}, generateBlockedUserQuery() {}, generateMutedUserRenotesQueryForNotes() {} } as never,
 		{ userFollowingsCache: { fetch: async () => ({ 'followed-author': { withReplies: true } }) } } as never,
 	);
 	const params = { withFiles: false, withReplies: false, withRenotes: true, withCats: false, limit: 10 };

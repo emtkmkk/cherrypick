@@ -15,6 +15,7 @@ import { CheckModeratorsActivityProcessorService } from '@/queue/processors/Chec
 import { UserWebhookDeliverProcessorService } from './processors/UserWebhookDeliverProcessorService.js';
 import { SystemWebhookDeliverProcessorService } from './processors/SystemWebhookDeliverProcessorService.js';
 import { EndedPollNotificationProcessorService } from './processors/EndedPollNotificationProcessorService.js';
+import { PostScheduledNoteProcessorService } from './processors/PostScheduledNoteProcessorService.js';
 import { DeliverProcessorService } from './processors/DeliverProcessorService.js';
 import { InboxProcessorService } from './processors/InboxProcessorService.js';
 import { DeleteDriveFilesProcessorService } from './processors/DeleteDriveFilesProcessorService.js';
@@ -33,6 +34,7 @@ import { ImportUserListsProcessorService } from './processors/ImportUserListsPro
 import { ImportCustomEmojisProcessorService } from './processors/ImportCustomEmojisProcessorService.js';
 import { ImportAntennasProcessorService } from './processors/ImportAntennasProcessorService.js';
 import { DeleteAccountProcessorService } from './processors/DeleteAccountProcessorService.js';
+import { TruncateAccountProcessorService } from './processors/TruncateAccountProcessorService.js';
 import { ExportFavoritesProcessorService } from './processors/ExportFavoritesProcessorService.js';
 import { CleanRemoteFilesProcessorService } from './processors/CleanRemoteFilesProcessorService.js';
 import { DeleteFileProcessorService } from './processors/DeleteFileProcessorService.js';
@@ -45,10 +47,11 @@ import { CheckExpiredMutingsProcessorService } from './processors/CheckExpiredMu
 import { BakeBufferedReactionsProcessorService } from './processors/BakeBufferedReactionsProcessorService.js';
 import { CleanProcessorService } from './processors/CleanProcessorService.js';
 import { AggregateRetentionProcessorService } from './processors/AggregateRetentionProcessorService.js';
+import { CleanRemoteNotesProcessorService } from './processors/CleanRemoteNotesProcessorService.js';
 import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteDeleteProcessorService.js';
-import { ScheduleNotePostProcessorService } from './processors/ScheduleNotePostProcessorService.js';
 import { QueueLoggerService } from './QueueLoggerService.js';
-import { QUEUE, baseQueueOptions } from './const.js';
+import { AutoDeleteNotesProcessorService } from './processors/AutoDeleteNotesProcessorService.js';
+import { QUEUE, baseWorkerOptions } from './const.js';
 
 // ref. https://github.com/misskey-dev/misskey/pull/7635#issue-971097019
 function httpRelatedBackoff(attemptsMade: number) {
@@ -88,8 +91,8 @@ export class QueueProcessorService implements OnApplicationShutdown {
 	private relationshipQueueWorker: Bull.Worker;
 	private objectStorageQueueWorker: Bull.Worker;
 	private endedPollNotificationQueueWorker: Bull.Worker;
+	private postScheduledNoteQueueWorker: Bull.Worker;
 	private scheduledNoteDeleteQueueWorker: Bull.Worker;
-	private schedulerNotePostQueueWorker: Bull.Worker;
 
 	constructor(
 		@Inject(DI.config)
@@ -102,6 +105,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private userWebhookDeliverProcessorService: UserWebhookDeliverProcessorService,
 		private systemWebhookDeliverProcessorService: SystemWebhookDeliverProcessorService,
 		private endedPollNotificationProcessorService: EndedPollNotificationProcessorService,
+		private postScheduledNoteProcessorService: PostScheduledNoteProcessorService,
 		private deliverProcessorService: DeliverProcessorService,
 		private inboxProcessorService: InboxProcessorService,
 		private deleteDriveFilesProcessorService: DeleteDriveFilesProcessorService,
@@ -121,6 +125,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private importCustomEmojisProcessorService: ImportCustomEmojisProcessorService,
 		private importAntennasProcessorService: ImportAntennasProcessorService,
 		private deleteAccountProcessorService: DeleteAccountProcessorService,
+		private truncateAccountProcessorService: TruncateAccountProcessorService,
 		private deleteFileProcessorService: DeleteFileProcessorService,
 		private cleanRemoteFilesProcessorService: CleanRemoteFilesProcessorService,
 		private relationshipProcessorService: RelationshipProcessorService,
@@ -133,8 +138,9 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private bakeBufferedReactionsProcessorService: BakeBufferedReactionsProcessorService,
 		private checkModeratorsActivityProcessorService: CheckModeratorsActivityProcessorService,
 		private cleanProcessorService: CleanProcessorService,
+		private autoDeleteNotesProcessorService: AutoDeleteNotesProcessorService,
+		private cleanRemoteNotesProcessorService: CleanRemoteNotesProcessorService,
 		private scheduledNoteDeleteProcessorService: ScheduledNoteDeleteProcessorService,
-		private scheduleNotePostProcessorService: ScheduleNotePostProcessorService,
 	) {
 		this.logger = this.queueLoggerService.logger;
 
@@ -176,6 +182,8 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'bakeBufferedReactions': return this.bakeBufferedReactionsProcessorService.process();
 					case 'checkModeratorsActivity': return this.checkModeratorsActivityProcessorService.process();
 					case 'clean': return this.cleanProcessorService.process();
+					case 'cleanRemoteNotes': return this.cleanRemoteNotesProcessorService.process(job);
+					case 'autoDeleteNotes': return this.autoDeleteNotesProcessorService.process(job);
 					default: throw new Error(`unrecognized job type ${job.name} for system`);
 				}
 			};
@@ -187,7 +195,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					return processer(job);
 				}
 			}, {
-				...baseQueueOptions(this.config, QUEUE.SYSTEM, this.redisForJobQueue),
+				...baseWorkerOptions(this.config, QUEUE.SYSTEM, this.redisForJobQueue),
 				autorun: false,
 			});
 
@@ -233,6 +241,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'importCustomEmojis': return this.importCustomEmojisProcessorService.process(job);
 					case 'importAntennas': return this.importAntennasProcessorService.process(job);
 					case 'deleteAccount': return this.deleteAccountProcessorService.process(job);
+					case 'truncateAccount': return this.truncateAccountProcessorService.process(job);
 					case 'reportAbuse': return this.reportAbuseProcessorService.process(job);
 					default: throw new Error(`unrecognized job type ${job.name} for db`);
 				}
@@ -245,7 +254,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					return processer(job);
 				}
 			}, {
-				...baseQueueOptions(this.config, QUEUE.DB, this.redisForJobQueue),
+				...baseWorkerOptions(this.config, QUEUE.DB, this.redisForJobQueue),
 				autorun: false,
 			});
 
@@ -277,7 +286,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					return this.deliverProcessorService.process(job);
 				}
 			}, {
-				...baseQueueOptions(this.config, QUEUE.DELIVER, this.redisForJobQueue),
+				...baseWorkerOptions(this.config, QUEUE.DELIVER, this.redisForJobQueue),
 				autorun: false,
 				concurrency: this.config.deliverJobConcurrency ?? 128,
 				limiter: {
@@ -317,7 +326,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					return this.inboxProcessorService.process(job);
 				}
 			}, {
-				...baseQueueOptions(this.config, QUEUE.INBOX, this.redisForJobQueue),
+				...baseWorkerOptions(this.config, QUEUE.INBOX, this.redisForJobQueue),
 				autorun: false,
 				concurrency: this.config.inboxJobConcurrency ?? 16,
 				limiter: {
@@ -357,7 +366,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					return this.userWebhookDeliverProcessorService.process(job);
 				}
 			}, {
-				...baseQueueOptions(this.config, QUEUE.USER_WEBHOOK_DELIVER, this.redisForJobQueue),
+				...baseWorkerOptions(this.config, QUEUE.USER_WEBHOOK_DELIVER, this.redisForJobQueue),
 				autorun: false,
 				concurrency: 64,
 				limiter: {
@@ -397,7 +406,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					return this.systemWebhookDeliverProcessorService.process(job);
 				}
 			}, {
-				...baseQueueOptions(this.config, QUEUE.SYSTEM_WEBHOOK_DELIVER, this.redisForJobQueue),
+				...baseWorkerOptions(this.config, QUEUE.SYSTEM_WEBHOOK_DELIVER, this.redisForJobQueue),
 				autorun: false,
 				concurrency: 16,
 				limiter: {
@@ -447,7 +456,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					return processer(job);
 				}
 			}, {
-				...baseQueueOptions(this.config, QUEUE.RELATIONSHIP, this.redisForJobQueue),
+				...baseWorkerOptions(this.config, QUEUE.RELATIONSHIP, this.redisForJobQueue),
 				autorun: false,
 				concurrency: this.config.relationshipJobConcurrency ?? 16,
 				limiter: {
@@ -481,6 +490,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 				switch (job.name) {
 					case 'deleteFile': return this.deleteFileProcessorService.process(job);
 					case 'cleanRemoteFiles': return this.cleanRemoteFilesProcessorService.process(job);
+					case 'autoDeleteNotes': return this.autoDeleteNotesProcessorService.process(job);
 					default: throw new Error(`unrecognized job type ${job.name} for objectStorage`);
 				}
 			};
@@ -492,7 +502,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					return processer(job);
 				}
 			}, {
-				...baseQueueOptions(this.config, QUEUE.OBJECT_STORAGE, this.redisForJobQueue),
+				...baseWorkerOptions(this.config, QUEUE.OBJECT_STORAGE, this.redisForJobQueue),
 				autorun: false,
 				concurrency: 16,
 			});
@@ -525,7 +535,22 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					return this.endedPollNotificationProcessorService.process(job);
 				}
 			}, {
-				...baseQueueOptions(this.config, QUEUE.ENDED_POLL_NOTIFICATION, this.redisForJobQueue),
+				...baseWorkerOptions(this.config, QUEUE.ENDED_POLL_NOTIFICATION, this.redisForJobQueue),
+				autorun: false,
+			});
+		}
+		//#endregion
+
+		//#region post scheduled note
+		{
+			this.postScheduledNoteQueueWorker = new Bull.Worker(QUEUE.POST_SCHEDULED_NOTE, async (job) => {
+				if (this.config.sentryForBackend) {
+					return Sentry.startSpan({ name: 'Queue: PostScheduledNote' }, () => this.postScheduledNoteProcessorService.process(job));
+				} else {
+					return this.postScheduledNoteProcessorService.process(job);
+				}
+			}, {
+				...baseWorkerOptions(this.config, QUEUE.POST_SCHEDULED_NOTE, this.redisForJobQueue),
 				autorun: false,
 			});
 		}
@@ -540,16 +565,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					return this.scheduledNoteDeleteProcessorService.process(job);
 				}
 			}, {
-				...baseQueueOptions(this.config, QUEUE.SCHEDULED_NOTE_DELETE, this.redisForJobQueue),
-				autorun: false,
-			});
-		}
-		//#endregion
-
-		//#region schedule note post
-		{
-			this.schedulerNotePostQueueWorker = new Bull.Worker(QUEUE.SCHEDULE_NOTE_POST, (job) => this.scheduleNotePostProcessorService.process(job), {
-				...baseQueueOptions(this.config, QUEUE.SCHEDULE_NOTE_POST, this.redisForJobQueue),
+				...baseWorkerOptions(this.config, QUEUE.SCHEDULED_NOTE_DELETE, this.redisForJobQueue),
 				autorun: false,
 			});
 		}
@@ -568,8 +584,8 @@ export class QueueProcessorService implements OnApplicationShutdown {
 			this.relationshipQueueWorker.run(),
 			this.objectStorageQueueWorker.run(),
 			this.endedPollNotificationQueueWorker.run(),
+			this.postScheduledNoteQueueWorker.run(),
 			this.scheduledNoteDeleteQueueWorker.run(),
-			this.schedulerNotePostQueueWorker.run(),
 		]);
 	}
 
@@ -585,8 +601,8 @@ export class QueueProcessorService implements OnApplicationShutdown {
 			this.relationshipQueueWorker.close(),
 			this.objectStorageQueueWorker.close(),
 			this.endedPollNotificationQueueWorker.close(),
+			this.postScheduledNoteQueueWorker.close(),
 			this.scheduledNoteDeleteQueueWorker.close(),
-			this.schedulerNotePostQueueWorker.close(),
 		]);
 	}
 

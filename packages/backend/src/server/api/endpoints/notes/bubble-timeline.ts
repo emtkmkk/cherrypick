@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: noridev and cherrypick-project
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
@@ -92,11 +93,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.leftJoinAndSelect('reply.user', 'replyUser')
 				.leftJoinAndSelect('renote.user', 'renoteUser');
 
-			if (me) {
-				this.queryService.generateMutedUserQuery(query, me);
-				this.queryService.generateBlockedUserQuery(query, me);
-				this.queryService.generateMutedUserRenotesQueryForNotes(query, me);
-			}
+			this.queryService.generateBaseNoteFilteringQuery(query, me);
+			if (me) this.queryService.generateMutedUserRenotesQueryForNotes(query, me);
 
 			if (ps.withFiles) {
 				query.andWhere('note.fileIds != \'{}\'');
@@ -128,6 +126,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					note.userId === me.id || !!followings[note.userId] || (await this.roleService.getUserPolicies(note.userId)).canPublicNote));
 				timeline = timeline.filter((_, index) => visible[index]);
 			}
+			timeline = timeline.filter(note => {
+				return !(note.user?.isSuspended && me && followings && note.userId !== me.id && !followings[note.userId]);
+			});
 
 			process.nextTick(() => {
 				if (me) {

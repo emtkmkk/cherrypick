@@ -1,4 +1,5 @@
 <!--
+SPDX-FileCopyrightText: noridev and cherrypick-project
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
@@ -28,11 +29,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { Ref, ref } from 'vue';
+import { ref } from 'vue';
 import { DiceRoll } from '@dice-roller/rpg-dice-roller';
+import type { Ref } from 'vue';
 import MkInput from '@/components/MkInput.vue';
 import MkButton from '@/components/MkButton.vue';
-import { i18n } from '@/i18n';
+import { i18n } from '@/i18n.js';
 
 const props = withDefaults(defineProps<{
 	showMinTotal?: boolean;
@@ -44,16 +46,19 @@ const props = withDefaults(defineProps<{
 	showAverageTotal: false,
 });
 
-const diceCount = ref(1);
-const diceFaces = ref(6);
+const diceCount = ref('1');
+const diceFaces = ref('6');
 const diceResult: Ref<number | null> = ref(null);
 const diceMinTotal: Ref<number | null> = ref(null);
 const diceMaxTotal: Ref<number | null> = ref(null);
 const diceAverageTotal: Ref<number | null> = ref(null);
 
 const rollDice = () => {
-	let roll = new DiceRoll(`${diceCount.value}d${diceFaces.value}`);
-	if (diceCount.value > 999) {
+	const count = Number(diceCount.value);
+	const faces = Number(diceFaces.value);
+
+	let roll = new DiceRoll(`${count}d${faces}`);
+	if (count > 999) {
 		return;
 	}
 

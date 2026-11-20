@@ -63,8 +63,8 @@ class ReversiGameChannel extends Channel {
 				break;
 			case 'claimTimeIsUp': this.claimTimeIsUp(); break;
 			case 'reaction':
-				if (typeof body === 'string') this.sendReaction(body);
-				break;
+				if (typeof body !== 'string') return;
+				this.sendReaction(body); break;
 		}
 	}
 

@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div :class="$style.wrapper" data-cy-signin-page-input>
 	<div :class="$style.root">
-		<div :class="[$style.avatar, { [$style.square]: defaultStore.state.squareAvatars }]">
+		<div :class="[$style.avatar, { [$style.square]: prefer.s.squareAvatars }]">
 			<i class="ti ti-user"></i>
 		</div>
 
@@ -57,16 +57,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { toUnicode } from 'punycode/';
+import { toUnicode } from 'punycode.js';
 
 import { query, extractDomain } from '@@/js/url.js';
 import { host as configHost } from '@@/js/config.js';
-import type { OpenOnRemoteOptions } from '@/scripts/please-login.js';
+import type { OpenOnRemoteOptions } from '@/utility/please-login.js';
 import { i18n } from '@/i18n.js';
-import { login } from '@/account.js';
-import { runMkkeyAuth, mkkeySsoRequest, mkkeyAuthError } from '@/scripts/mkkey-sso.js';
+
+import { runMkkeyAuth, mkkeySsoRequest, mkkeyAuthError } from '@/utility/mkkey-sso.js';
 import * as os from '@/os.js';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 
 import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';
@@ -75,19 +75,22 @@ import MkInfo from '@/components/MkInfo.vue';
 const props = withDefaults(defineProps<{
 	message?: string,
 	openOnRemote?: OpenOnRemoteOptions,
+	initialUsername?: string;
 }>(), {
 	message: '',
 	openOnRemote: undefined,
+	initialUsername: undefined,
 });
 
 const emit = defineEmits<{
 	(ev: 'usernameSubmitted', v: string): void;
 	(ev: 'passkeyClick', v: MouseEvent): void;
+	(ev: 'mkkeyLogin', v: { finished: true; id: string; i: string }): void;
 }>();
 
 const host = toUnicode(configHost);
 
-const username = ref('');
+const username = ref(props.initialUsername ?? '');
 
 //#region Open on remote
 function openRemote(options: OpenOnRemoteOptions, targetHost?: string): void {
@@ -153,14 +156,14 @@ async function signinWithMkkeySso(): Promise<void> {
 	mkkeySigningIn.value = true;
 	try {
 		const oauthToken = await runMkkeyAuth('signin');
-		let response = await mkkeySsoRequest<{ finished: boolean; i?: string; next?: string; }>('signin', { oauthToken });
+		let response = await mkkeySsoRequest<{ finished: boolean; id?: string; i?: string; next?: string; }>('signin', { oauthToken });
 		if (!response.finished && response.next === 'totp') {
 			const { canceled, result } = await os.inputText({ title: 'CherryPickの2段階認証コード', autocomplete: 'one-time-code' });
 			if (canceled) return;
 			response = await mkkeySsoRequest('signin', { oauthToken, token: result });
 		}
-		if (!response.finished || !response.i) throw new Error('MKKEY_AUTH_FAILED');
-		await login(response.i);
+		if (!response.finished || !response.id || !response.i) throw new Error('MKKEY_AUTH_FAILED');
+		emit('mkkeyLogin', { finished: true, id: response.id, i: response.i });
 	} catch (error) {
 		await os.alert({ type: 'error', text: mkkeyAuthError(error) });
 	} finally {

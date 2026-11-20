@@ -18,7 +18,7 @@ export const meta = {
 	tags: ['notes'],
 
 	requireCredential: true,
-	requireRolePolicy: 'canEditNote',
+	requiredRolePolicy: 'canEditNote',
 
 	kind: 'write:notes',
 
@@ -138,7 +138,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 	) {
 		super({
 			...meta,
-			requireRolePolicy: 'canEditNote', // 修正された部分
+			requiredRolePolicy: 'canEditNote', // 修正された部分
 		}, paramDef, async (ps, me) => {
 			const note = await this.getterService.getNote(ps.noteId).catch(err => {
 				if (err.id === '9725d0ce-ba28-4dde-95a7-2cbb2c15de24') throw new ApiError(meta.errors.noSuchNote);
@@ -195,20 +195,20 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			}
 
 			const data = {
-				text: ps.text,
 				files: files,
-				cw: ps.cw,
 				poll: ps.poll ? {
 					choices: ps.poll.choices,
 					multiple: ps.poll.multiple ?? false,
-					expiresAt: ps.poll.expiresAt ? new Date(ps.poll.expiresAt) : null,
-				} : undefined,
+					expiresAt: ps.poll.expiredAfter ? new Date(Date.now() + ps.poll.expiredAfter) : ps.poll.expiresAt ? new Date(ps.poll.expiresAt) : null,
+				} : null,
 				event: ps.event ? {
 					start: new Date(ps.event.start!),
 					end: ps.event.end ? new Date(ps.event.end) : null,
 					title: ps.event.title!,
 					metadata: ps.event.metadata ?? {},
-				} : undefined,
+				} : null,
+				text: ps.text ?? null,
+				cw: ps.cw ?? null,
 				disableRightClick: ps.disableRightClick,
 				deleteAt: ps.scheduledDelete?.deleteAt ? new Date(ps.scheduledDelete.deleteAt) : ps.scheduledDelete?.deleteAfter ? new Date(Date.now() + ps.scheduledDelete.deleteAfter) : null,
 			};

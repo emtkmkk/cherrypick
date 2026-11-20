@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkModal v-if="!showChangelog" ref="modal" :zPriority="'middle'" @closed="$emit('closed')">
+<MkModal v-if="!showChangelog" ref="modal" preferType="dialog" :zPriority="'middle'" @click="modal?.close()" @closed="$emit('closed')">
 	<div :class="$style.root">
 		<div style="display: grid;">
 			<Mfm text="$[tada 🎉]"/>
@@ -17,6 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div>✨{{ version }}🚀</div>
 			<div style="font-size: 0.8em;">{{ basedMisskeyVersion }}</div>
 		</div>
+		<div v-if="isBeta" :class="$style.beta">{{ i18n.ts.thankYouForTestingBeta }}</div>
 		<MkButton rounded full @click="whatIsNewCherryPick">{{ i18n.ts.whatIsNew }}</MkButton>
 		<MkButton :class="$style.gotIt" primary rounded full @click="close">{{ i18n.ts.gotIt }}</MkButton>
 	</div>
@@ -34,29 +35,33 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, shallowRef } from 'vue';
+import { onMounted, ref, useTemplateRef } from 'vue';
 import { version, basedMisskeyVersion } from '@@/js/config.js';
 import MkModal from '@/components/MkModal.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkSparkle from '@/components/MkSparkle.vue';
 import { i18n } from '@/i18n.js';
-import { confetti } from '@/scripts/confetti.js';
+import { confetti } from '@/utility/confetti.js';
+import { clearCache } from '@/utility/clear-cache.js';
 import * as os from '@/os.js';
-import { clearCache } from '@/scripts/clear-cache.js';
 
 const showChangelog = ref(false);
 
-const modal = shallowRef<InstanceType<typeof MkModal>>();
+const modal = useTemplateRef('modal');
 
-const whatIsNewMisskey = () => {
-	// modal.value?.close();
-	window.open(`https://misskey-hub.net/docs/releases/#_${basedMisskeyVersion.replace(/\./g, '')}`, '_blank');
-};
+const isBeta = version.includes('-beta') || version.includes('-alpha') || version.includes('-rc');
 
-const whatIsNewCherryPick = () => {
+/**
+ * function whatIsNewMisskey() {
+ * 	// modal.value?.close();
+ * 	window.open(`https://misskey-hub.net/docs/releases/#_${basedMisskeyVersion.replace(/\./g, '')}`, '_blank');
+ * }
+ */
+
+function whatIsNewCherryPick() {
 	// modal.value?.close();
 	window.open(`https://github.com/kokonect-link/cherrypick/blob/develop/CHANGELOG_CHERRYPICK.md#${version.replace(/\./g, '')}`, '_blank');
-};
+}
 
 const close = async () => {
 	modal.value?.close();
@@ -101,6 +106,12 @@ onMounted(() => {
 
 .version {
 	margin: 1em 0;
+}
+
+.beta {
+	margin: 1em 0;
+	font-size: 11px;
+	opacity: 0.7;
 }
 
 .gotIt {

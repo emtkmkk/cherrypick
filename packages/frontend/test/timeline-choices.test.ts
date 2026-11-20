@@ -4,23 +4,23 @@
 
 import { beforeEach, expect, test, vi } from 'vitest';
 import { availableBasicTimelines, visibleBasicTimelineTypes, isAvailableBasicTimeline, normalizeTimelineSource, hasWithReplies } from '@/timelines.js';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import { instance } from '@/instance.js';
 
 const state = vi.hoisted(() => ({ user: null as null | { policies: { btlAvailable: boolean; ltlAvailable: boolean; gtlAvailable: boolean; }; } }));
-vi.mock('@/account.js', () => ({ get $i() { return state.user; } }));
+vi.mock('@/i.js', () => ({ get $i() { return state.user; } }));
 vi.mock('@/instance.js', () => ({ instance: { policies: { btlAvailable: false, ltlAvailable: true, gtlAvailable: true } } }));
-vi.mock('@/store.js', () => ({ defaultStore: { state: { enableLocalTimeline: true, enableHomeTimeline: true, enableSocialTimeline: true, enableGlobalTimeline: true, enableBubbleTimeline: false } } }));
+vi.mock('@/preferences.js', () => ({ prefer: { s: { enableLocalTimeline: true, enableHomeTimeline: true, enableSocialTimeline: true, enableGlobalTimeline: true, enableBubbleTimeline: false } } }));
 
 beforeEach(() => {
 	state.user = null;
 	instance.policies.ltlAvailable = true;
-	defaultStore.state.enableLocalTimeline = true;
+	prefer.s.enableLocalTimeline = true;
 });
 
 test('only offers one local entry and respects guest local permissions', () => {
 	expect(visibleBasicTimelineTypes).not.toContain('bubble');
-	expect(availableBasicTimelines()).toEqual(['local', 'global']);
+	expect(availableBasicTimelines()).toEqual(['local', 'global', 'media']);
 	instance.policies.ltlAvailable = false;
 	expect(availableBasicTimelines()).toEqual(['global']);
 });
@@ -31,7 +31,7 @@ test('uses the signed-in local policy and local display setting', () => {
 	state.user.policies.ltlAvailable = false;
 	expect(isAvailableBasicTimeline('local')).toBe(false);
 	state.user.policies.ltlAvailable = true;
-	defaultStore.state.enableLocalTimeline = false;
+	prefer.s.enableLocalTimeline = false;
 	expect(isAvailableBasicTimeline('local')).toBe(false);
 });
 

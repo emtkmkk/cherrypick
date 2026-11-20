@@ -3,15 +3,16 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 import { instance } from '@/instance.js';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 
 export const basicTimelineTypes = [
 	'home',
 	'local',
 	'social',
 	'global',
+	'media',
 	'bubble',
 ] as const;
 
@@ -37,20 +38,24 @@ export function basicTimelineIconClass(timeline: BasicTimelineType): string {
 			return 'ti ti-universe';
 		case 'global':
 			return 'ti ti-world';
+		case 'media':
+			return 'ti ti-photo';
 	}
 }
 
 export function isAvailableBasicTimeline(timeline: BasicTimelineType | undefined | null): boolean {
 	switch (timeline) {
 		case 'home':
-			return $i != null && defaultStore.state.enableHomeTimeline;
+			return $i != null && prefer.s.enableHomeTimeline;
 		case 'local':
 		case 'bubble':
-			return ($i == null && instance.policies.ltlAvailable) || ($i != null && $i.policies.ltlAvailable && defaultStore.state.enableLocalTimeline);
+			return ($i == null && instance.policies.ltlAvailable) || ($i != null && $i.policies.ltlAvailable && prefer.s.enableLocalTimeline);
 		case 'social':
-			return $i != null && $i.policies.ltlAvailable && defaultStore.state.enableSocialTimeline;
+			return $i != null && $i.policies.ltlAvailable && prefer.s.enableSocialTimeline;
 		case 'global':
-			return ($i == null && instance.policies.gtlAvailable) || ($i != null && $i.policies.gtlAvailable && defaultStore.state.enableGlobalTimeline);
+			return ($i == null && instance.policies.gtlAvailable) || ($i != null && $i.policies.gtlAvailable && prefer.s.enableGlobalTimeline);
+		case 'media':
+			return ($i == null && instance.policies.ltlAvailable) || ($i != null && $i.policies.ltlAvailable && prefer.s.enableMediaTimeline);
 		default:
 			return false;
 	}

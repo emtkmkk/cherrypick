@@ -10,19 +10,31 @@ on:
       # for permissions
       - packages/cherrypick-js/**
       - .github/workflows/test-backend.yml
+      - .github/cherrypick/test.yml
   pull_request:
     paths:
       - packages/backend/**
       # for permissions
       - packages/cherrypick-js/**
       - .github/workflows/test-backend.yml
+      - .github/cherrypick/test.yml
+  workflow_dispatch:
+    inputs:
+      force_ffmpeg_cache_update:
+        description: 'Force update ffmpeg cache'
+        required: false
+        default: false
+        type: boolean
+
 jobs:
   unit:
+    name: Unit tests (backend)
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        node-version: [22.11.0]
+        node-version-file:
+          - .node-version
+          - .github/min.node-version
 
     services:
       postgres:
@@ -38,19 +50,19 @@ jobs:
           - 56312:6379
 
     steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v4.3.0
       with:
         submodules: true
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4.2.0
     - name: Install FFmpeg
       run: |
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends ffmpeg
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4.0.4
+    - name: Use Node.js
+      uses: actions/setup-node@v4.4.0
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version-file: ${{ matrix.node-version-file }}
         cache: 'pnpm'
     - run: pnpm i --frozen-lockfile
     - name: Check pnpm-lock.yaml
@@ -68,11 +80,14 @@ jobs:
         files: ./packages/backend/coverage/coverage-final.json
 
   e2e:
+    name: E2E tests (backend)
     runs-on: ubuntu-latest
-
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [22.11.0]
+        node-version-file:
+          - .node-version
+          - .github/min.node-version
 
     services:
       postgres:
@@ -88,15 +103,15 @@ jobs:
           - 56312:6379
 
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.3.0
         with:
           submodules: true
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4.0.4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+      - name: Use Node.js
+        uses: actions/setup-node@v4.4.0
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version-file: ${{ matrix.node-version-file }}
           cache: 'pnpm'
       - run: pnpm i --frozen-lockfile
       - name: Check pnpm-lock.yaml
@@ -112,3 +127,48 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/backend/coverage/coverage-final.json
+
+  migration:
+    name: Migration tests (backend)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version-file:
+          - .node-version
+          #- .github/min.node-version
+
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 54312:5432
+        env:
+          POSTGRES_DB: test-cherrypick
+          POSTGRES_HOST_AUTH_METHOD: trust
+
+    steps:
+      - uses: actions/checkout@v4.3.0
+        with:
+          submodules: true
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Use Node.js
+        uses: actions/setup-node@v4.4.0
+        with:
+          node-version-file: ${{ matrix.node-version-file }}
+          cache: 'pnpm'
+      - run: pnpm i --frozen-lockfile
+      - name: Check pnpm-lock.yaml
+        run: git diff --exit-code pnpm-lock.yaml
+      - name: Copy Configure
+        run: cp .github/cherrypick/test.yml .config
+      - name: Build
+        run: pnpm build
+      - name: Run migrations
+        run: CHERRYPICK_CONFIG_YML=test.yml pnpm --filter backend migrate
+      - name: Check no migrations are remaining
+        run: CHERRYPICK_CONFIG_YML=test.yml pnpm --filter backend check-migrations

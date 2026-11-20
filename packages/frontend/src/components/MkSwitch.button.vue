@@ -5,7 +5,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <span
-	v-vibrate="defaultStore.state.vibrateSystem ? 5 : []"
 	v-tooltip="checked ? i18n.ts.itsOn : i18n.ts.itsOff"
 	:class="{
 		[$style.button]: true,
@@ -20,9 +19,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { toRefs, Ref } from 'vue';
+import { toRefs } from 'vue';
+import type { Ref } from 'vue';
 import { i18n } from '@/i18n.js';
-import { defaultStore } from '@/store.js';
+import { haptic } from '@/utility/haptic.js';
 
 const props = withDefaults(defineProps<{
 	checked: boolean | Ref<boolean>;
@@ -37,6 +37,8 @@ const emit = defineEmits<{
 
 const checked = toRefs(props).checked;
 const toggle = () => {
+	haptic();
+
 	emit('toggle');
 };
 </script>

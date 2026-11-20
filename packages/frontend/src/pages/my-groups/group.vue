@@ -4,14 +4,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkStickyContainer>
-	<template #header>
-		<MkPageHeader v-if="group && $i.id === group.ownerId" :actions="headerActions" :tabs="headerTabs"/>
-		<MkPageHeader v-else :tabs="headerTabs"/>
-	</template>
-	<MkSpacer :contentMax="700">
+<PageWithHeader :actions="group && $i && $i.id === group.ownerId ? headerActions : null" :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 700px;">
 		<div>
-			<transition :name="defaultStore.state.animation ? 'zoom' : ''" mode="out-in">
+			<transition :name="prefer.s.animation ? 'zoom' : ''" mode="out-in">
 				<div v-if="group" class="_gaps_s">
 					<div style="margin-top: var(--MI-margin);">{{ i18n.ts.members }}</div>
 					<div :class="$style.content">
@@ -25,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<MkAcct :user="user" :class="$style.acct"/>
 								</div>
 								<div v-if="user.id === group.ownerId" v-tooltip="i18n.ts._group.leader" style="color: var(--MI_THEME-badge);"><i class="ti ti-crown"></i></div>
-								<div v-else-if="group && $i.id === group.ownerId">
+								<div v-else-if="group && $i && $i.id === group.ownerId">
 									<button v-tooltip="i18n.ts._group.banish" class="_button" @click="removeUser(user)"><i class="ti ti-x"></i></button>
 								</div>
 							</div>
@@ -34,27 +30,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</transition>
 		</div>
-	</MkSpacer>
-</MkStickyContainer>
+	</div>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, useTemplateRef, watch } from 'vue';
 import * as os from '@/os.js';
-import { $i } from '@/account.js';
-import { mainRouter } from '@/router/main.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { $i } from '@/i.js';
+import { mainRouter } from '@/router.js';
+import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import { userPage } from '@/filters/user.js';
-import { misskeyApi } from '@/scripts/misskey-api.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 
 const props = defineProps<{
 	groupId: string;
 }>();
 
-const group = ref(null);
-const users = ref([]);
+const group = ref();
+const users = ref();
 
 function fetchGroup() {
 	misskeyApi('users/groups/show', {
@@ -130,7 +126,7 @@ async function deleteGroup() {
 	mainRouter.push('/my/groups');
 }
 
-watch(() => props.listId, fetchGroup, { immediate: true });
+watch(() => props.groupId, fetchGroup, { immediate: true });
 
 const headerActions = computed(() => [{
 	icon: 'ti ti-plus',
@@ -160,10 +156,13 @@ const headerActions = computed(() => [{
 
 const headerTabs = computed(() => []);
 
-definePageMetadata(computed(() => group.value ? {
+definePage(() => group.value ? {
 	title: group.value.name,
 	icon: 'ti ti-briefcase',
-} : null));
+} : {
+	title: '',
+	icon: '',
+});
 
 </script>
 

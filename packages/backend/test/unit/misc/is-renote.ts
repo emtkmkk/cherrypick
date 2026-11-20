@@ -30,6 +30,7 @@ const base: MiNote = {
 	renoteCount: 0,
 	repliesCount: 0,
 	clippedCount: 0,
+	pageCount: 0,
 	reactions: {},
 	visibility: 'public',
 	uri: null,
@@ -50,6 +51,12 @@ const base: MiNote = {
 	replyUserHost: null,
 	renoteUserId: null,
 	renoteUserHost: null,
+	updatedAt: null,
+	updatedAtHistory: null,
+	hasEvent: false,
+	disableRightClick: false,
+	deleteAt: null,
+	deliveryTargets: null,
 };
 
 describe('misc:is-renote', () => {

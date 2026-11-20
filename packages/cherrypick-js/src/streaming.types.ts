@@ -1,5 +1,7 @@
 import {
 	Antenna,
+	ChatMessage,
+	ChatMessageLite,
 	DriveFile,
 	DriveFolder,
 	Note,
@@ -15,7 +17,6 @@ import {
 	AnnouncementCreated,
 	EmojiAdded, EmojiDeleted,
 	EmojiUpdated,
-	MessagingMessage,
 	PageEvent,
 	QueueStats,
 	QueueStatsLog,
@@ -48,16 +49,9 @@ export type Channels = {
 			urlUploadFinished: (payload: { marker: string; file: DriveFile; }) => void;
 			readAllNotifications: () => void;
 			unreadNotification: (payload: Notification) => void;
-			unreadMention: (payload: Note['id']) => void;
-			readAllUnreadMentions: () => void;
 			notificationFlushed: () => void;
-			unreadSpecifiedNote: (payload: Note['id']) => void;
-			readAllUnreadSpecifiedNotes: () => void;
-			readAllMessagingMessages: () => void;
-			messagingMessage: (payload: MessagingMessage) => void;
-			unreadMessagingMessage: (payload: MessagingMessage) => void;
-			readAllAntennas: () => void;
 			unreadAntenna: (payload: Antenna) => void;
+			newChatMessage: (payload: ChatMessage) => void;
 			readAllAnnouncements: () => void;
 			myTokenRegenerated: () => void;
 			signin: (payload: Signin) => void;
@@ -120,22 +114,16 @@ export type Channels = {
 		};
 		receives: null;
 	};
-	messaging: {
+	bubbleTimeline: {
 		params: {
-			otherparty?: User['id'] | null;
-			group?: UserGroup['id'] | null;
+			withRenotes?: boolean;
+			withFiles?: boolean;
+			withCats?: boolean;
 		};
 		events: {
-			message: (payload: MessagingMessage) => void;
-			deleted: (payload: MessagingMessage['id']) => void;
-			read: (payload: MessagingMessage['id'][]) => void;
-			typers: (payload: User[]) => void;
+			note: (payload: Note) => void;
 		};
-		receives: {
-			read: {
-				id: MessagingMessage['id'];
-			};
-		};
+		receives: null;
 	};
 	userList: {
 		params: {
@@ -235,6 +223,14 @@ export type Channels = {
 		};
 		receives: null;
 	};
+	reversi: {
+		params: null;
+		events: {
+			matched: (payload: { game: ReversiGameDetailed }) => void;
+			invited: (payload: { user: User }) => void;
+		};
+		receives: null;
+	};
 	reversiGame: {
 		params: {
 			gameId: string;
@@ -259,7 +255,55 @@ export type Channels = {
 			claimTimeIsUp: null | Record<string, never>;
 			reaction: string;
 		}
-	}
+	};
+	chatUser: {
+		params: {
+			otherId: string;
+		};
+		events: {
+			message: (payload: ChatMessageLite) => void;
+			deleted: (payload: ChatMessageLite['id']) => void;
+			react: (payload: {
+				reaction: string;
+				user?: UserLite;
+				messageId: ChatMessageLite['id'];
+			}) => void;
+			unreact: (payload: {
+				reaction: string;
+				user?: UserLite;
+				messageId: ChatMessageLite['id'];
+			}) => void;
+		};
+		receives: {
+			read: {
+				id: ChatMessageLite['id'];
+			};
+		};
+	};
+	chatRoom: {
+		params: {
+			roomId: string;
+		};
+		events: {
+			message: (payload: ChatMessageLite) => void;
+			deleted: (payload: ChatMessageLite['id']) => void;
+			react: (payload: {
+				reaction: string;
+				user?: UserLite;
+				messageId: ChatMessageLite['id'];
+			}) => void;
+			unreact: (payload: {
+				reaction: string;
+				user?: UserLite;
+				messageId: ChatMessageLite['id'];
+			}) => void;
+		};
+		receives: {
+			read: {
+				id: ChatMessageLite['id'];
+			};
+		};
+	};
 };
 
 export type NoteUpdatedEvent = { id: Note['id'] } & ({

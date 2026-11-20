@@ -4,63 +4,75 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div>
-	<MkStickyContainer>
-		<template #header><XHeader :actions="headerActions"/></template>
-		<MkSpacer :contentMax="900">
-			<div class="_gaps">
-				<div class="inputs" style="display: flex; gap: var(--MI-margin); flex-wrap: wrap;">
-					<MkSelect v-model="origin" style="margin: 0; flex: 1;">
-						<template #label>{{ i18n.ts.instance }}</template>
-						<option value="combined">{{ i18n.ts.all }}</option>
-						<option value="local">{{ i18n.ts.local }}</option>
-						<option value="remote">{{ i18n.ts.remote }}</option>
-					</MkSelect>
-					<MkInput v-model="searchHost" :debounce="true" type="search" style="margin: 0; flex: 1;" :disabled="pagination.params.origin === 'local'">
-						<template #label>{{ i18n.ts.host }}</template>
-					</MkInput>
-				</div>
-				<div class="inputs" style="display: flex; gap: var(--MI-margin); flex-wrap: wrap;">
-					<MkInput v-model="userId" :debounce="true" type="search" style="margin: 0; flex: 1;">
-						<template #label>User ID</template>
-					</MkInput>
-					<MkInput v-model="type" :debounce="true" type="search" style="margin: 0; flex: 1;">
-						<template #label>MIME type</template>
-					</MkInput>
-				</div>
-				<MkFileListForAdmin :pagination="pagination" :viewMode="viewMode"/>
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 900px;">
+		<div class="_gaps">
+			<div class="inputs" style="display: flex; gap: var(--MI-margin); flex-wrap: wrap;">
+				<MkSelect v-model="origin" :items="originDef" style="margin: 0; flex: 1;">
+					<template #label>{{ i18n.ts.instance }}</template>
+				</MkSelect>
+				<MkInput ref="searchHostEl" v-model="searchHost" :debounce="true" type="search" style="margin: 0; flex: 1;" :disabled="paginator.computedParams?.value?.origin === 'local'">
+					<template #label>{{ i18n.ts.host }}</template>
+					<template v-if="searchHost != ''" #suffix><button type="button" :class="$style.deleteBtn" tabindex="-1" @click="searchHost = ''; searchHostEl?.focus();"><i class="ti ti-x"></i></button></template>
+				</MkInput>
 			</div>
-		</MkSpacer>
-	</MkStickyContainer>
-</div>
+			<div class="inputs" style="display: flex; gap: var(--MI-margin); flex-wrap: wrap;">
+				<MkInput ref="userIdEl" v-model="userId" :debounce="true" type="search" style="margin: 0; flex: 1;">
+					<template #label>User ID</template>
+					<template v-if="userId != ''" #suffix><button type="button" :class="$style.deleteBtn" tabindex="-1" @click="userId = ''; userIdEl?.focus();"><i class="ti ti-x"></i></button></template>
+				</MkInput>
+				<MkInput ref="typeEl" v-model="type" :debounce="true" type="search" style="margin: 0; flex: 1;">
+					<template #label>MIME type</template>
+					<template v-if="type != null && type !== ''" #suffix><button type="button" :class="$style.deleteBtn" tabindex="-1" @click="type = null; typeEl?.focus();"><i class="ti ti-x"></i></button></template>
+				</MkInput>
+			</div>
+			<MkFileListForAdmin :paginator="paginator" :viewMode="viewMode"/>
+		</div>
+	</div>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
-import XHeader from './_header_.vue';
+import { computed, markRaw, ref, useTemplateRef } from 'vue';
+import * as Misskey from 'cherrypick-js';
 import MkInput from '@/components/MkInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkFileListForAdmin from '@/components/MkFileListForAdmin.vue';
 import * as os from '@/os.js';
-import { lookupFile } from '@/scripts/admin-lookup.js';
+import { lookupFile } from '@/utility/admin-lookup.js';
 import { i18n } from '@/i18n.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { definePage } from '@/page.js';
+import { useMkSelect } from '@/composables/use-mkselect.js';
+import { Paginator } from '@/utility/paginator.js';
 
-const origin = ref('local');
+const {
+	model: origin,
+	def: originDef,
+} = useMkSelect({
+	items: [
+		{ label: i18n.ts.all, value: 'combined' },
+		{ label: i18n.ts.local, value: 'local' },
+		{ label: i18n.ts.remote, value: 'remote' },
+	],
+	initialValue: 'local',
+});
 const type = ref<string | null>(null);
 const searchHost = ref('');
 const userId = ref('');
-const viewMode = ref('grid');
-const pagination = {
-	endpoint: 'admin/drive/files' as const,
+const viewMode = ref<'grid' | 'list'>('grid');
+const paginator = markRaw(new Paginator('admin/drive/files', {
 	limit: 10,
-	params: computed(() => ({
+	computedParams: computed(() => ({
 		type: (type.value && type.value !== '') ? type.value : null,
 		userId: (userId.value && userId.value !== '') ? userId.value : null,
 		origin: origin.value,
 		hostname: (searchHost.value && searchHost.value !== '') ? searchHost.value : null,
 	})),
-};
+}));
+
+const searchHostEl = useTemplateRef('searchHostEl');
+const userIdEl = useTemplateRef('userIdEl');
+const typeEl = useTemplateRef('typeEl');
 
 function clear() {
 	os.confirm({
@@ -85,8 +97,23 @@ const headerActions = computed(() => [{
 
 const headerTabs = computed(() => []);
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: i18n.ts.files,
 	icon: 'ti ti-cloud',
 }));
 </script>
+
+<style lang="scss" module>
+.deleteBtn {
+	position: relative;
+	z-index: 2;
+	margin: 0 auto;
+	border: none;
+	background: none;
+	color: inherit;
+	font-size: 0.8em;
+	cursor: pointer;
+	pointer-events: auto;
+	-webkit-tap-highlight-color: transparent;
+}
+</style>

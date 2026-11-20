@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { action } from '@storybook/addon-actions';
-import { StoryObj } from '@storybook/vue3';
+import { action } from 'storybook/actions';
 import { http, HttpResponse } from 'msw';
 import * as Misskey from 'cherrypick-js';
 import { file, folder } from '../../.storybook/fakes.js';
 import { commonHandlers } from '../../.storybook/mocks.js';
 import MkDrive from './MkDrive.vue';
+import type { StoryObj } from '@storybook/vue3';
 export const Default = {
 	render(args) {
 		return {

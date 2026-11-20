@@ -5,16 +5,17 @@
 
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
-import type { MessagingMessagesRepository, NotesRepository, UserPublickeysRepository, UsersRepository } from '@/models/_.js';
+import type { NotesRepository, UserPublickeysRepository, UsersRepository } from '@/models/_.js';
 import type { Config } from '@/config.js';
 import { MemoryKVCache } from '@/misc/cache.js';
 import type { MiUserPublickey } from '@/models/UserPublickey.js';
 import { CacheService } from '@/core/CacheService.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import type { MiNote } from '@/models/Note.js';
-import type { MiMessagingMessage } from '@/models/MessagingMessage.js';
 import { bindThis } from '@/decorators.js';
 import { MiLocalUser, MiRemoteUser } from '@/models/User.js';
+import { QueueService } from '@/core/QueueService.js';
+import type { DbQueue } from '@/core/QueueModule.js';
 import { getApId } from './type.js';
 import { ApPersonService } from './models/ApPersonService.js';
 import type { IObject } from './type.js';
@@ -47,15 +48,16 @@ export class ApDbResolverService implements OnApplicationShutdown {
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
 
-		@Inject(DI.messagingMessagesRepository)
-		private messagingMessagesRepository: MessagingMessagesRepository,
-
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
 
 		@Inject(DI.userPublickeysRepository)
 		private userPublickeysRepository: UserPublickeysRepository,
 
+		@Inject('queue:db')
+		public dbQueue: DbQueue,
+
+		private queueService: QueueService,
 		private cacheService: CacheService,
 		private apPersonService: ApPersonService,
 		private utilityService: UtilityService,
@@ -97,23 +99,6 @@ export class ApDbResolverService implements OnApplicationShutdown {
 			});
 		} else {
 			return await this.notesRepository.findOneBy({
-				uri: parsed.uri,
-			});
-		}
-	}
-
-	@bindThis
-	public async getMessageFromApId(value: string | IObject): Promise<MiMessagingMessage | null> {
-		const parsed = this.parseUri(value);
-
-		if (parsed.local) {
-			if (parsed.type !== 'notes') return null;
-
-			return await this.messagingMessagesRepository.findOneBy({
-				id: parsed.id,
-			});
-		} else {
-			return await this.messagingMessagesRepository.findOneBy({
 				uri: parsed.uri,
 			});
 		}
@@ -180,7 +165,21 @@ export class ApDbResolverService implements OnApplicationShutdown {
 		key: MiUserPublickey | null;
 	} | null> {
 		const user = await this.apPersonService.resolvePerson(uri) as MiRemoteUser;
-		if (user.isDeleted) return null;
+		if (user.isDeleted) {
+			const jobs = await this.dbQueue.getJobs(['active', 'delayed', 'paused', 'wait', 'waiting', 'waiting-children']);
+
+			const isUserDeletingNow = jobs.filter(e => e.name === 'deleteAccount').map(e => JSON.parse(e.data)).find(e => e.user.id === user.id);
+
+			if (isUserDeletingNow) {
+				return null;
+			} else {
+				// If user deleted but job not running, job may failed so re-run the job
+				// @FIXME: soft deleted account will be forced to hard deleted, but soft deletion not used at this time
+				await this.queueService.createDeleteAccountJob(user);
+
+				return null;
+			}
+		}
 
 		const key = await this.publicKeyByUserIdCache.fetch(
 			user.id,

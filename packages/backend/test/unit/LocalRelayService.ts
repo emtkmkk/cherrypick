@@ -29,10 +29,24 @@ function setup() {
 }
 
 describe('local relay subscriptions', () => {
+	test('the paired server still receives a note excluded from ordinary remote delivery', async () => {
+		const inbox = 'https://mkkey.net/inbox';
+		const queue = { deliverMany: jest.fn(async (..._args: unknown[]) => {}) };
+		const service = new ApDeliverManagerService(
+			{ find: async () => [] } as never, {} as never, queue as never,
+			{ getLogger: () => ({ createSubLogger: () => ({ info() {}, debug() {} }) }) } as never,
+		);
+		const dm = service.createDeliverManager({ id: 'author', host: null }, { type: 'Create' } as never);
+		dm.addSelectiveFollowersRecipe({ mode: 'exclude', hosts: ['mkkey.net'] });
+		dm.addInboxes(new Map([[inbox, true]]));
+		await dm.execute();
+		expect(queue.deliverMany).toHaveBeenCalledWith({ id: 'author' }, { type: 'Create' }, new Map([[inbox, true]]));
+	});
+
 	test('a normal follower and relay subscription sharing an inbox are delivered once', async () => {
 		const inbox = 'https://mkkey.net/inbox';
 		const queue = { deliverMany: jest.fn(async (..._args: unknown[]) => {}) };
-		const service = new ApDeliverManagerService({ find: async () => [{ followerSharedInbox: inbox, followerInbox: 'https://mkkey.net/users/u/inbox' }] } as never, {} as never, queue as never);
+		const service = new ApDeliverManagerService({ find: async () => [{ followerSharedInbox: inbox, followerInbox: 'https://mkkey.net/users/u/inbox' }] } as never, {} as never, queue as never, { getLogger: () => ({ createSubLogger: () => ({ info: jest.fn(), warn: jest.fn(), debug: jest.fn() }) }) } as never);
 		const dm = service.createDeliverManager({ id: 'author', host: null }, { type: 'Create' } as never);
 		dm.addFollowersRecipe();
 		dm.addInboxes(new Map([[inbox, true]]));
