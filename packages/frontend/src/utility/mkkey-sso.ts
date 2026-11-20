@@ -8,7 +8,7 @@ export type MkkeyAuthMode = 'signin' | 'signup' | 'link';
 export type MkkeyLocalAuth = { i?: string; password?: string; token?: string; };
 
 export async function mkkeySsoRequest<T>(path: string, body: object): Promise<T> {
-	const response = await fetch(`${apiUrl}/mkkey-sso/${path}`, {
+	const response = await window.fetch(`${apiUrl}/mkkey-sso/${path}`, {
 		method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
 	});
 	const result = await response.json();

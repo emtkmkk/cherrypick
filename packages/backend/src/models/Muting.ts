@@ -7,6 +7,9 @@ import { PrimaryColumn, Entity, Index, JoinColumn, Column, ManyToOne } from 'typ
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 
+// Legacy migration created these additional indexes on this table.
+@Index('IDX_renote_muting_muteeId', { synchronize: false })
+@Index('IDX_renote_muting_muterId', { synchronize: false })
 @Entity('muting')
 @Index(['muterId', 'muteeId'], { unique: true })
 export class MiMuting {

@@ -7,7 +7,7 @@ import { MiUserProfile } from '@/models/UserProfile.js';
 import { MiMkkeyAccountLink } from '@/models/MkkeyAccountLink.js';
 import { MiUserPending } from '@/models/UserPending.js';
 
-for (const name of ['UtilityService', 'UserService', 'IdService', 'InstanceActorService']) {
+for (const name of ['UtilityService', 'UserService', 'IdService', 'SystemAccountService', 'MetaService']) {
 	jest.unstable_mockModule(`@/core/${name}.js`, () => ({ [name]: class {} }));
 }
 jest.unstable_mockModule('@/core/entities/UserEntityService.js', () => ({ UserEntityService: class {} }));
@@ -26,10 +26,10 @@ function setup() {
 	const used = { exists: jest.fn(async () => false) };
 	const userService = { notifySystemWebhook: jest.fn() };
 	const chart = { update: jest.fn() };
-	const service = new SignupService(db as never, { preservedUsernames: [] } as never, users as never, used as never,
-		{ toPunyNullable: () => null } as never, userService as never,
+	const service = new SignupService(db as never, { preservedUsernames: [], rootUserId: 'existing-root' } as never, users as never, used as never,
+		{ toPunyNullable: () => null, isKeyWordIncluded: () => false } as never, userService as never,
 		{ validateLocalUsername: () => true, validatePassword: () => true } as never,
-		{ gen: () => 'new-user' } as never, { realLocalUsersPresent: async () => true } as never, chart as never);
+		{ gen: () => 'new-user' } as never, {} as never, {} as never, chart as never);
 	return { service, manager, db, chart, userService };
 }
 

@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { PrimaryColumn, Entity, Index, JoinColumn, Column, OneToOne } from 'typeorm';
+import { Unique, PrimaryColumn, Entity, Index, JoinColumn, Column, OneToOne } from 'typeorm';
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 
+// Keep the unique constraint referenced by existing database foreign keys.
+@Unique('UQ_10c146e4b39b443ede016f6736d', ['userId'])
 @Entity('user_publickey')
 export class MiUserPublickey {
 	@PrimaryColumn(id())

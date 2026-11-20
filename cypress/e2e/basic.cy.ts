@@ -261,6 +261,7 @@ describe('After user setup', () => {
 	it('open note form with hotkey', () => {
 		// Wait until the page loads
 		cy.get('[data-cy-open-post-form]').should('be.visible');
+		cy.document().then(doc => (doc.activeElement as HTMLElement | null)?.blur());
 		// Use trigger() to give different `code` to test if hotkeys also work on non-QWERTY keyboards.
 		cy.document().trigger("keydown", { eventConstructor: 'KeyboardEvent', key: "n", code: "KeyL" });
 		// See if the form is opened

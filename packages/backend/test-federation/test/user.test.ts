@@ -498,28 +498,11 @@ describe('User', () => {
 
 				const followers = await alice.client.request('users/followers', { userId: alice.id });
 				strictEqual(followers.length, 1); // FIXME: followers are not deleted??
+				
+				await bob.client.request('following/create', { userId: aliceInB.id });
 
-				/**
-				 * FIXME: still rejected!
-				 *        seems to can't process Undo Delete activity because it is not implemented
-				 *        related @see https://github.com/misskey-dev/misskey/issues/13273
-				 */
-				await rejects(
-					async () => await bob.client.request('following/create', { userId: aliceInB.id }),
-					(err: any) => {
-						strictEqual(err.code, 'NO_SUCH_USER');
-						return true;
-					},
-				);
-
-				// FIXME: resolving also fails
-				await rejects(
-					async () => await resolveRemoteUser('a.test', alice.id, bob),
-					(err: any) => {
-						strictEqual(err.code, 'INTERNAL_ERROR');
-						return true;
-					},
-				);
+				const resolvedAlice = await resolveRemoteUser('a.test', alice.id, bob);
+				strictEqual(resolvedAlice.username, alice.username);
 			});
 
 			/**
@@ -547,14 +530,8 @@ describe('User', () => {
 				const aliceFollowers = await alice.client.request('users/followers', { userId: alice.id });
 				strictEqual(aliceFollowers.length, 1);
 
-				// FIXME: but resolving still fails ...
-				await rejects(
-					async () => await resolveRemoteUser('a.test', alice.id, bob),
-					(err: any) => {
-						strictEqual(err.code, 'INTERNAL_ERROR');
-						return true;
-					},
-				);
+				const resolvedAlice = await resolveRemoteUser('a.test', alice.id, bob);
+				strictEqual(resolvedAlice.id, renewedaliceInB.id);
 			});
 		});
 	});

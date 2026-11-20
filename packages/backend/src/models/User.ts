@@ -311,6 +311,7 @@ export class MiUser {
 
 	@Column('boolean', {
 		nullable: true,
+		default: true,
 	})
 	public canChat: boolean | null;
 

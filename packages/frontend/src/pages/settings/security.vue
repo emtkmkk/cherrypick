@@ -71,9 +71,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, markRaw, ref, onMounted } from 'vue';
+import X2fa from './2fa.vue';
 import { mkkeyAuthError } from '@/utility/mkkey-sso.js';
 import { mkkeyLink, mkkeyLinkBusy, loadMkkeyLink as refreshMkkeyLink, linkMkkeyAccount } from '@/utility/mkkey-link.js';
-import X2fa from './2fa.vue';
 import FormSection from '@/components/form/section.vue';
 import FormSlot from '@/components/form/slot.vue';
 import MkButton from '@/components/MkButton.vue';
@@ -90,10 +90,12 @@ const paginator = markRaw(new Paginator('i/signin-history', {
 }));
 
 const mkkeyStatusError = ref('');
+
 async function loadMkkeyLink() {
 	mkkeyStatusError.value = '';
 	try { await refreshMkkeyLink(); } catch (error) { mkkeyStatusError.value = mkkeyAuthError(error); }
 }
+
 onMounted(loadMkkeyLink);
 
 async function change() {

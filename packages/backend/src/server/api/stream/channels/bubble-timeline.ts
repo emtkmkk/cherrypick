@@ -79,7 +79,6 @@ class BubbleTimelineChannel extends Channel {
 
 		if (this.user == null && note.localAndFollowers) return;
 
-
 		this.send('note', note);
 	}
 

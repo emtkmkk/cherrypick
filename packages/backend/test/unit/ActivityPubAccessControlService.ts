@@ -4,7 +4,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { describe, test, expect, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import type { FastifyRequest } from 'fastify';
 import { ActivityPubAccessControlService } from '@/core/ActivityPubAccessControlService.js';
 import { DI } from '@/di-symbols.js';

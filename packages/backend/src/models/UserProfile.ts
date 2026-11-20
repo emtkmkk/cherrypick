@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Entity, Column, Index, OneToOne, JoinColumn, PrimaryColumn } from 'typeorm';
+import { Unique, Entity, Column, Index, OneToOne, JoinColumn, PrimaryColumn } from 'typeorm';
 import { obsoleteNotificationTypes, followingVisibilities, followersVisibilities, notificationTypes } from '@/types.js';
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
@@ -12,6 +12,8 @@ import { MiUserList } from './UserList.js';
 
 // TODO: このテーブルで管理している情報すべてレジストリで管理するようにしても良いかも
 //       ただ、「emailVerified が true なユーザーを find する」のようなクエリは書けなくなるからウーン
+// Keep the unique constraint referenced by existing database foreign keys.
+@Unique('UQ_51cb79b5555effaf7d69ba1cff9', ['userId'])
 @Entity('user_profile')
 export class MiUserProfile {
 	@PrimaryColumn(id())

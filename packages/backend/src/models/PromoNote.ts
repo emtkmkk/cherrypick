@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { PrimaryColumn, Entity, Index, JoinColumn, Column, OneToOne } from 'typeorm';
+import { Unique, PrimaryColumn, Entity, Index, JoinColumn, Column, OneToOne } from 'typeorm';
 import { id } from './util/id.js';
 import { MiNote } from './Note.js';
 import type { MiUser } from './User.js';
 
+// Keep the unique constraint referenced by existing database foreign keys.
+@Unique('UQ_e263909ca4fe5d57f8d4230dd5c', ['noteId'])
 @Entity('promo_note')
 export class MiPromoNote {
 	@PrimaryColumn(id())

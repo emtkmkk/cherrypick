@@ -9,7 +9,7 @@ export class RemoveNoteEditHistory1761583921158 {
 	async up(queryRunner) {
 		// Preserve pre-4.17 history. CW and text were stored together, so converting
 		// these strings into structured revisions would invent missing information.
-		await queryRunner.query('ALTER TABLE "note" ADD COLUMN IF NOT EXISTS "noteEditHistory" character varying(3000) array NOT NULL DEFAULT \'{}\'');
+		await queryRunner.query('ALTER TABLE "note" ADD COLUMN IF NOT EXISTS "noteEditHistory" character varying(3000) array DEFAULT \'{}\'');
 	}
 
 	async down(queryRunner) {

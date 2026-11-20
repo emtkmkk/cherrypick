@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Column, CreateDateColumn, Entity, Index, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { MiUser } from './User.js';
 
 @Entity('mkkey_account_link')
@@ -11,7 +11,7 @@ export class MiMkkeyAccountLink {
 	@PrimaryGeneratedColumn()
 	public id: number;
 
-	@Index({ unique: true })
+	@Index('IDX_mkkey_account_link_mkkey_user_id', { unique: true })
 	@Column('varchar', {
 		length: 128,
 	})
@@ -22,16 +22,16 @@ export class MiMkkeyAccountLink {
 	})
 	public mkkeyUsernameLower: string;
 
-	@Index({ unique: true })
+	@Index('IDX_mkkey_account_link_user_id', { unique: true })
 	@Column('varchar', {
 		length: 32,
 	})
 	public userId: MiUser['id'];
 
-	@OneToOne(type => MiUser, {
+	@ManyToOne(type => MiUser, {
 		onDelete: 'CASCADE',
 	})
-	@JoinColumn({ name: 'userId' })
+	@JoinColumn({ name: 'userId', foreignKeyConstraintName: 'FK_mkkey_account_link_user_id' })
 	public user: MiUser | null;
 
 	@CreateDateColumn({

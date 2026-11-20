@@ -10,7 +10,7 @@ import * as assert from 'assert';
 import { setTimeout } from 'node:timers/promises';
 import { Redis } from 'ioredis';
 import { SignupResponse, Note, UserList } from 'cherrypick-js/entities.js';
-import { api, post, randomString, sendEnvUpdateRequest, signup, uploadUrl } from '../utils.js';
+import { api, post, randomString, sendEnvUpdateRequest, signup, uploadFile } from '../utils.js';
 import { loadConfig } from '@/config.js';
 
 function genHost() {
@@ -306,8 +306,8 @@ describe('Timelines', () => {
 				await api('following/create', { userId: bob.id }, alice);
 				await setTimeout(250);
 				const [bobFile, carolFile] = await Promise.all([
-					uploadUrl(bob, 'https://raw.githubusercontent.com/misskey-dev/assets/main/public/icon.png'),
-					uploadUrl(carol, 'https://raw.githubusercontent.com/misskey-dev/assets/main/public/icon.png'),
+					uploadFile(bob).then(result => result.body!),
+					uploadFile(carol).then(result => result.body!),
 				]);
 				const bobNote = await post(bob, { fileIds: [bobFile.id] });
 				const carolNote = await post(carol, { fileIds: [carolFile.id] });
@@ -482,8 +482,8 @@ describe('Timelines', () => {
 				await api('following/create', { userId: bob.id }, alice);
 				await setTimeout(250);
 				const [bobFile, carolFile] = await Promise.all([
-					uploadUrl(bob, 'https://raw.githubusercontent.com/misskey-dev/assets/main/public/icon.png'),
-					uploadUrl(carol, 'https://raw.githubusercontent.com/misskey-dev/assets/main/public/icon.png'),
+					uploadFile(bob).then(result => result.body!),
+					uploadFile(carol).then(result => result.body!),
 				]);
 				const bobNote1 = await post(bob, { text: 'hi' });
 				const bobNote2 = await post(bob, { fileIds: [bobFile.id] });
@@ -1000,7 +1000,7 @@ describe('Timelines', () => {
 			test('[withFiles: true] ファイル付きノートのみ含まれる', async () => {
 				const [alice, bob] = await Promise.all([signup(), signup()]);
 
-				const file = await uploadUrl(bob, 'https://raw.githubusercontent.com/misskey-dev/assets/main/public/icon.png');
+				const file = await uploadFile(bob).then(result => result.body!);
 				const bobNote1 = await post(bob, { text: 'hi' });
 				const bobNote2 = await post(bob, { fileIds: [file.id] });
 
@@ -1257,7 +1257,7 @@ describe('Timelines', () => {
 			test('[withFiles: true] ファイル付きノートのみ含まれる', async () => {
 				const [alice, bob] = await Promise.all([signup(), signup()]);
 
-				const file = await uploadUrl(bob, 'https://raw.githubusercontent.com/misskey-dev/assets/main/public/icon.png');
+				const file = await uploadFile(bob).then(result => result.body!);
 				const bobNote1 = await post(bob, { text: 'hi' });
 				const bobNote2 = await post(bob, { fileIds: [file.id] });
 
@@ -1563,7 +1563,7 @@ describe('Timelines', () => {
 
 				const list = await api('users/lists/create', { name: 'list' }, alice).then(res => res.body);
 				await api('users/lists/push', { listId: list.id, userId: bob.id }, alice);
-				const file = await uploadUrl(bob, 'https://raw.githubusercontent.com/misskey-dev/assets/main/public/icon.png');
+				const file = await uploadFile(bob).then(result => result.body!);
 				const bobNote1 = await post(bob, { text: 'hi' });
 				const bobNote2 = await post(bob, { fileIds: [file.id] });
 
@@ -1766,7 +1766,7 @@ describe('Timelines', () => {
 			test('[withFiles: true] ファイル付きノートのみ含まれる', async () => {
 				const [alice, bob] = await Promise.all([signup(), signup()]);
 
-				const file = await uploadUrl(bob, 'https://raw.githubusercontent.com/misskey-dev/assets/main/public/icon.png');
+				const file = await uploadFile(bob).then(result => result.body!);
 				const bobNote1 = await post(bob, { text: 'hi' });
 				const bobNote2 = await post(bob, { fileIds: [file.id] });
 

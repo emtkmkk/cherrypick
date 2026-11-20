@@ -12,6 +12,7 @@ import { MiChannel } from './Channel.js';
 import { MiNote } from './Note.js';
 import type { MiDriveFile } from './DriveFile.js';
 
+@Index('IDX_note_draft_deliveryTargets', { synchronize: false })
 @Entity('note_draft')
 @Index('IDX_NOTE_DRAFT_FILE_IDS', { synchronize: false }) // GIN for fileIds in production
 @Index('IDX_NOTE_DRAFT_VISIBLE_USER_IDS', { synchronize: false }) // GIN for visibleUserIds in production
@@ -217,7 +218,7 @@ export class MiNoteDraft {
 
 	@Column('jsonb', {
 		nullable: true,
-		default: {},
+		default: null,
 	})
 	public deliveryTargets: {
 		mode: 'include' | 'exclude';
