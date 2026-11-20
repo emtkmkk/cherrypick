@@ -3,7 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { runMkkeyAuth } from '@/scripts/mkkey-sso.js';
+import { runMkkeyAuth } from '@/utility/mkkey-sso.js';
 
 vi.mock('@@/js/config.js', () => ({ apiUrl: 'https://cp.example/api' }));
 

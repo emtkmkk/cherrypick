@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { StoryObj } from '@storybook/vue3';
 import { HttpResponse, http } from 'msw';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import { file } from '../../.storybook/fakes.js';
 import { commonHandlers } from '../../.storybook/mocks.js';
 import MkCropperDialog from './MkCropperDialog.vue';
+import type { StoryObj } from '@storybook/vue3';
 export const Default = {
 	render(args) {
 		return {
@@ -38,7 +38,7 @@ export const Default = {
 		};
 	},
 	args: {
-		file: file(),
+		imageFile: new Blob(['fake image data'], { type: 'image/jpeg' }),
 		aspectRatio: NaN,
 	},
 	parameters: {
@@ -53,7 +53,7 @@ export const Default = {
 				http.get('/proxy/image.webp', async ({ request }) => {
 					const url = new URL(request.url).searchParams.get('url');
 					if (url === 'https://github.com/kokonect-link/cherrypick/blob/master/packages/frontend/assets/fedi.jpg?raw=true') {
-						const image = await (await fetch('client-assets/fedi.jpg')).blob();
+						const image = await (await window.fetch('client-assets/fedi.jpg')).blob();
 						return new HttpResponse(image, {
 							headers: {
 								'Content-Type': 'image/jpeg',

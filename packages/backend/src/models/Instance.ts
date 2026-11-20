@@ -14,7 +14,7 @@ export class MiInstance {
 	/**
 	 * このインスタンスを捕捉した日時
 	 */
-	@Index()
+	@Index('IDX_2cd3b2a6b4cf0b910b260afe08')
 	@Column('timestamp with time zone', {
 		comment: 'The caught date of the Instance.',
 	})
@@ -97,6 +97,14 @@ export class MiInstance {
 		enum: ['none', 'manuallySuspended', 'goneSuspended', 'autoSuspendedForNotResponding'],
 	})
 	public suspensionState: 'none' | 'manuallySuspended' | 'goneSuspended' | 'autoSuspendedForNotResponding';
+
+	/**
+	 * このインスタンスが隔離制限されているかどうか
+	 */
+	@Column('boolean', {
+		default: false,
+	})
+	public quarantineLimited: boolean;
 
 	@Column('varchar', {
 		length: 64, nullable: true,

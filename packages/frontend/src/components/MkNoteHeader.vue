@@ -13,7 +13,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkA v-else v-user-preview="note.user.id" :class="$style.name" :to="userPage(note.user)" noteClick>
 				<MkUserName :user="note.user"/>
 			</MkA>
-			<div v-if="note.user.isBot" :class="$style.isBot">bot</div>
+			<div v-if="note.user.isLocked" :class="$style.userBadge"><i class="ti ti-lock"></i></div>
+			<div v-if="note.user.isBot" :class="$style.userBadge"><i class="ti ti-robot"></i></div>
+			<div v-if="note.user.isProxy" :class="$style.userBadge"><i class="ti ti-ghost"></i></div>
 			<div v-if="note.user.badgeRoles" :class="$style.badgeRoles">
 				<img v-for="(role, i) in note.user.badgeRoles" :key="i" v-tooltip="role.name" :class="$style.badgeRole" :src="role.iconUrl!"/>
 			</div>
@@ -37,15 +39,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</span>
 			<span v-if="note.localOnly" style="margin-right: 0.5em;"><i v-tooltip="i18n.ts._visibility['disableFederation']" class="ti ti-rocket-off"></i></span>
 			<span v-if="note.localAndFollowers" style="margin-right: 0.5em;"><i v-tooltip="i18n.ts._visibility['localAndFollowers']" class="ti ti-briefcase-off"></i></span>
+			<span
+				v-if="note.deliveryTargets && (note.deliveryTargets.mode === 'include' || note.deliveryTargets.hosts?.length)"
+				v-tooltip="`${i18n.ts._deliveryTargetControl[note.deliveryTargets.mode === 'include' ? 'deliveryTargetsInclude' : 'deliveryTargetsExclude'] + ':' + (note.deliveryTargets.hosts?.length ? '\n' + note.deliveryTargets.hosts.map((h, i) => note.deliveryTargets.names?.[i] ? `${note.deliveryTargets.names[i]} (${h})` : h).join('\n') : '\n' + i18n.ts.none)}`"
+				style="margin-right: 0.5em;"
+			>
+				<i :class="note.deliveryTargets.mode === 'include' ? 'ti ti-truck' : 'ti ti-truck-filled'"></i>
+			</span>
 			<span v-if="note.channel" style="margin-right: 0.5em;"><i v-tooltip="note.channel.name" class="ti ti-device-tv"></i></span>
 			<div v-if="mock">
 				<MkTime :time="note.createdAt" colored/>
 			</div>
 			<MkA v-else :class="$style.time" :to="notePage(note)">
-				<MkTime :time="note.createdAt" :mode="defaultStore.state.enableAbsoluteTime ? 'absolute' : 'relative'" colored/>
+				<MkTime :time="note.createdAt" :mode="prefer.s.enableAbsoluteTime ? 'absolute' : 'relative'" colored/>
 			</MkA>
 		</div>
-		<div :style="$style.info"><MkInstanceTicker v-if="showTicker" :instance="note.user.instance" @click.stop="showOnRemote"/></div>
+		<div :style="$style.info"><MkInstanceTicker v-if="showTicker" :host="note.user.host" :instance="note.user.instance" @click.stop="showOnRemote"/></div>
 	</div>
 </header>
 </template>
@@ -56,24 +65,26 @@ import * as Misskey from 'cherrypick-js';
 import { i18n } from '@/i18n.js';
 import { notePage } from '@/filters/note.js';
 import { userPage } from '@/filters/user.js';
-import { defaultStore } from '@/store.js';
-import { useRouter } from '@/router/supplier.js';
+import { DI } from '@/di.js';
+import { prefer } from '@/preferences.js';
+import { useRouter } from '@/router.js';
 import MkInstanceTicker from '@/components/MkInstanceTicker.vue';
 
 const props = defineProps<{
-	note: Misskey.entities.Note & {
-		isSchedule?: boolean
-	};
-	scheduled?: boolean;
+	note: Misskey.entities.Note;
+	deliveryTargets?: {
+		mode: 'include' | 'exclude';
+		hosts: string[];
+	} | null;
 }>();
 
-const mock = inject<boolean>('mock', false);
+const mock = inject(DI.mock, false);
 
-const showTicker = (defaultStore.state.instanceTicker === 'always') || (defaultStore.state.instanceTicker === 'remote' && props.note.user.instance);
+const showTicker = (prefer.s.instanceTicker === 'always') || (prefer.s.instanceTicker === 'remote' && props.note.user.instance);
 const router = useRouter();
 
 function showOnRemote() {
-	if (props.note.user.instance === undefined) router.push(notePage(props.note));
+	if (props.note.user.instance === undefined) router.pushByPath(notePage(props.note));
 	else window.open(props.note.url ?? props.note.uri, '_blank', 'noopener');
 }
 </script>
@@ -119,6 +130,10 @@ function showOnRemote() {
 		color: var(--MI_THEME-nameHover);
 		text-decoration: none;
 	}
+}
+
+.userBadge {
+	margin: 0 .5em 0 0;
 }
 
 .isBot {

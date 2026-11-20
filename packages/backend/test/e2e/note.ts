@@ -30,6 +30,29 @@ describe('Note', () => {
 		tom = await signup({ username: 'tom', host: 'example.com' });
 	}, 1000 * 60 * 2);
 
+	test('更新前の編集履歴を閲覧できる', async () => {
+		const note = await post(alice, { text: 'current' });
+		const history = ['previous text', 'CW and text\nkept together'];
+		await Notes.update(note.id, { noteEditHistory: history });
+		const res = await api('notes/show', { noteId: note.id }, alice);
+		assert.strictEqual(res.status, 200);
+		assert.deepStrictEqual(res.body.noteEditHistory, history);
+	});
+
+	test('閲覧できない投稿の旧編集履歴を公開しない', async () => {
+		const note = await post(alice, { text: 'private', visibility: 'specified', visibleUserIds: [] });
+		await Notes.update(note.id, { noteEditHistory: ['private previous text'] });
+		const res = await api('notes/show', { noteId: note.id }, bob);
+		if (res.status === 200) {
+			assert.strictEqual(res.body.isHidden, true);
+			assert.deepStrictEqual(res.body.noteEditHistory, []);
+		} else {
+			assert.strictEqual(res.status, 400);
+		}
+		const histories = await api('notes/history', { noteId: note.id }, bob);
+		assert.strictEqual(histories.status, 400);
+	});
+
 	test('投稿できる', async () => {
 		const post = {
 			text: 'test',

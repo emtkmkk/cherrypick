@@ -16,6 +16,6 @@ export class MiLocalRelaySubscriber {
 	public followId: string;
 
 	@ManyToOne(() => MiUser, { onDelete: 'CASCADE' })
-	@JoinColumn({ name: 'userId' })
+	@JoinColumn({ name: 'userId', foreignKeyConstraintName: 'FK_local_relay_subscriber_user' })
 	public user: MiUser;
 }

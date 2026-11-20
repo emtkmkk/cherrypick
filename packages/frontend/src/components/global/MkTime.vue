@@ -14,10 +14,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import isChromatic from 'chromatic/isChromatic';
-import { onMounted, onUnmounted, ref, computed } from 'vue';
+import { computed } from 'vue';
 import { dateTimeFormat } from '@@/js/intl-const.js';
 import { i18n } from '@/i18n.js';
-import { defaultStore } from '@/store.js';
+import { useLowresTime } from '@/composables/use-lowres-time.js';
+import { prefer } from '@/preferences.js';
 
 const props = withDefaults(defineProps<{
 	time: Date | string | number | null;
@@ -47,15 +48,17 @@ const _time = props.time == null ? NaN : getDateSafe(props.time).getTime();
 const invalid = Number.isNaN(_time);
 const absolute = !invalid ? dateTimeFormat.format(_time) : i18n.ts._ago.invalid;
 
+const actualNow = useLowresTime();
+const now = computed(() => (props.origin ? props.origin.getTime() : actualNow.value));
+
 // eslint-disable-next-line vue/no-setup-props-reactivity-loss
-const now = ref(props.origin?.getTime() ?? Date.now());
 const ago = computed(() => (now.value - _time) / 1000/*ms*/);
 
 const relative = computed<string>(() => {
 	// if (props.mode === 'absolute') return ''; // absoluteではrelativeを使わないので計算しない
 	if (invalid) return i18n.ts._ago.invalid;
 
-	if (defaultStore.state.enableMarkByDate) {
+	if (prefer.s.enableMarkByDate) {
 		return (
 			ago.value >= 86400 ? i18n.tsx._ago.daysAgo({ n: Math.round(ago.value / 86400).toString() }) :
 			ago.value >= 3600 ? i18n.tsx._ago.hoursAgo({ n: Math.round(ago.value / 3600).toString() }) :
@@ -87,29 +90,6 @@ const relative = computed<string>(() => {
 		);
 	}
 });
-
-let tickId: number;
-let currentInterval: number;
-
-function tick() {
-	now.value = Date.now();
-	const nextInterval = ago.value < 60 ? 10000 : ago.value < 3600 ? 60000 : 180000;
-
-	if (currentInterval !== nextInterval) {
-		if (tickId) window.clearInterval(tickId);
-		currentInterval = nextInterval;
-		tickId = window.setInterval(tick, nextInterval);
-	}
-}
-
-if (!invalid && props.origin === null && (props.mode === 'relative' || props.mode === 'detail')) {
-	onMounted(() => {
-		tick();
-	});
-	onUnmounted(() => {
-		if (tickId) window.clearInterval(tickId);
-	});
-}
 </script>
 
 <style lang="scss" module>

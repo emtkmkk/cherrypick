@@ -31,14 +31,15 @@ export const packedNoteSchema = {
 				format: 'date-time',
 			},
 		},
-		noteEditHistory: {
-			type: 'array',
-			optional: true, nullable: false,
-		},
 		deletedAt: {
 			type: 'string',
 			optional: true, nullable: true,
 			format: 'date-time',
+		},
+		noteEditHistory: {
+			type: 'array',
+			optional: true, nullable: false,
+			items: { type: 'string', optional: false, nullable: false },
 		},
 		text: {
 			type: 'string',
@@ -286,6 +287,11 @@ export const packedNoteSchema = {
 			type: 'number',
 			optional: true, nullable: false,
 		},
+		hasPoll: {
+			type: 'boolean',
+			optional: true, nullable: false,
+		},
+
 		myReaction: {
 			type: 'string',
 			optional: true, nullable: true,
@@ -294,6 +300,29 @@ export const packedNoteSchema = {
 			type: 'string',
 			optional: true, nullable: true,
 			format: 'date-time',
+		},
+		deliveryTargets: {
+			type: 'object',
+			optional: true, nullable: true,
+			properties: {
+				mode: {
+					type: 'string',
+					optional: false, nullable: false,
+					enum: ['include', 'exclude'],
+				},
+				hosts: {
+					type: 'array',
+					optional: true, nullable: true,
+					items: {
+						type: 'string',
+						optional: false, nullable: false,
+					},
+				},
+			},
+		},
+		hasDeliveryTargets: {
+			type: 'boolean',
+			optional: false, nullable: false,
 		},
 	},
 } as const;

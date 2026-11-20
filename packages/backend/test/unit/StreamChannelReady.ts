@@ -13,7 +13,7 @@ test('acknowledges a channel only after its asynchronous initialization finishes
 	let initialized!: () => void;
 	const channel = { init: jest.fn(() => new Promise<void>(resolve => { initialized = resolve; })) };
 	const service = { requireCredential: false, shouldShare: false, create: () => channel };
-	const connection = new Connection({ getChannelService: () => service } as never, {} as never, {} as never, {} as never, {} as never, null, null);
+	const connection = new Connection({ getChannelService: () => service } as never, {} as never, {} as never, {} as never, null, null);
 	const send = jest.spyOn(connection, 'sendMessageToWs').mockImplementation(() => {});
 	const ready = connection.connectChannel('test-id', {}, 'localTimeline', true);
 	expect(send).not.toHaveBeenCalled();

@@ -4,14 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkStickyContainer>
-	<template #header><MkPageHeader :actions="headerActions" :tabs="headerTabs"/></template>
-	<MkSpacer :contentMax="800">
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 800px;">
 		<Transition
-			:enterActiveClass="defaultStore.state.animation ? $style.fadeEnterActive : ''"
-			:leaveActiveClass="defaultStore.state.animation ? $style.fadeLeaveActive : ''"
-			:enterFromClass="defaultStore.state.animation ? $style.fadeEnterFrom : ''"
-			:leaveToClass="defaultStore.state.animation ? $style.fadeLeaveTo : ''"
+			:enterActiveClass="prefer.s.animation ? $style.fadeEnterActive : ''"
+			:leaveActiveClass="prefer.s.animation ? $style.fadeLeaveActive : ''"
+			:enterFromClass="prefer.s.animation ? $style.fadeEnterFrom : ''"
+			:leaveToClass="prefer.s.animation ? $style.fadeLeaveTo : ''"
 			mode="out-in"
 		>
 			<div v-if="page" :key="page.id" class="_gaps">
@@ -82,11 +81,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<div v-if="page.createdAt != page.updatedAt"><i class="ti ti-clock-edit"></i> {{ i18n.ts.updatedAt }}: <MkTime :time="page.updatedAt" mode="detail"/></div>
 					</div>
 				</div>
-				<MkAd :prefer="['horizontal', 'horizontal-big']"/>
+				<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
 				<MkContainer :max-height="300" :foldable="true" class="other">
 					<template #icon><i class="ti ti-clock"></i></template>
 					<template #header>{{ i18n.ts.recentPosts }}</template>
-					<MkPagination v-slot="{items}" :pagination="otherPostsPagination" :class="$style.relatedPagesRoot" class="_gaps">
+					<MkPagination v-slot="{items}" :paginator="otherPostsPaginator" :class="$style.relatedPagesRoot" class="_gaps">
 						<MkPagePreview v-for="page in items" :key="page.id" :page="page" :class="$style.relatedPagesItem"/>
 					</MkPagination>
 				</MkContainer>
@@ -94,19 +93,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkError v-else-if="error" @retry="fetchPage()"/>
 			<MkLoading v-else/>
 		</Transition>
-	</MkSpacer>
-</MkStickyContainer>
+	</div>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, ref, defineAsyncComponent } from 'vue';
+import { computed, watch, ref, defineAsyncComponent, markRaw } from 'vue';
 import * as Misskey from 'cherrypick-js';
 import { url } from '@@/js/config.js';
 import type { MenuItem } from '@/types/menu.js';
 import XPage from '@/components/page/page.vue';
 import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
-import { misskeyApi } from '@/scripts/misskey-api.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import MkMediaImage from '@/components/MkMediaImage.vue';
 import MkImgWithBlurhash from '@/components/MkImgWithBlurhash.vue';
 import MkFollowButton from '@/components/MkFollowButton.vue';
@@ -114,15 +113,18 @@ import MkContainer from '@/components/MkContainer.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkPagePreview from '@/components/MkPagePreview.vue';
 import { i18n } from '@/i18n.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
-import { pageViewInterruptors, defaultStore } from '@/store.js';
-import { deepClone } from '@/scripts/clone.js';
-import { $i } from '@/account.js';
-import { isSupportShare } from '@/scripts/navigator.js';
+import { definePage } from '@/page.js';
+import { deepClone } from '@/utility/clone.js';
+import { $i } from '@/i.js';
+import { isSupportShare } from '@/utility/navigator.js';
 import { instance } from '@/instance.js';
-import { getStaticImageUrl } from '@/scripts/media-proxy.js';
-import { copyToClipboard } from '@/scripts/copy-to-clipboard.js';
-import { useRouter } from '@/router/supplier.js';
+import { getStaticImageUrl } from '@/utility/media-proxy.js';
+import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
+import { useRouter } from '@/router.js';
+import { prefer } from '@/preferences.js';
+import { getPluginHandlers } from '@/plugin.js';
+import { Paginator } from '@/utility/paginator.js';
+import { popup } from '@/os.js';
 
 const router = useRouter();
 
@@ -133,13 +135,12 @@ const props = defineProps<{
 
 const page = ref<Misskey.entities.Page | null>(null);
 const error = ref<any>(null);
-const otherPostsPagination = {
-	endpoint: 'users/pages' as const,
+const otherPostsPaginator = markRaw(new Paginator('users/pages', {
 	limit: 6,
-	params: computed(() => ({
+	computedParams: computed(() => page.value ? ({
 		userId: page.value.user.id,
-	})),
-};
+	}) : undefined),
+}));
 const path = computed(() => props.username + '/' + props.pageName);
 
 function fetchPage() {
@@ -151,6 +152,7 @@ function fetchPage() {
 		page.value = _page;
 
 		// plugin
+		const pageViewInterruptors = getPluginHandlers('page_view_interruptor');
 		if (pageViewInterruptors.length > 0) {
 			let result = deepClone(_page);
 			for (const interruptor of pageViewInterruptors) {
@@ -188,13 +190,16 @@ function share(ev: MouseEvent) {
 function copyLink() {
 	if (!page.value) return;
 
-	copyToClipboard(`${url}/@${page.value.user.username}/pages/${page.value.name}`);
-	os.success();
+	copyToClipboard(`${url}/@${page.value.user.username}/pages/${page.value.name}`, 'link');
 }
 
 function shareQRCode() {
 	if (!page.value) return;
-	os.displayQRCode(`${url}/@${page.value.user.username}/pages/${page.value.name}`);
+	const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkQRCode.vue')), {
+		qrCode: `${url}/@${page.value.user.username}/pages/${page.value.name}`,
+	}, {
+		closed: () => dispose(),
+	});
 }
 
 function shareWithNote() {
@@ -251,12 +256,12 @@ function pin(pin) {
 	});
 }
 
-function reportAbuse() {
+async function reportAbuse() {
 	if (!page.value) return;
 
 	const pageUrl = `${url}/@${props.username}/pages/${props.pageName}`;
 
-	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkAbuseReportWindow.vue')), {
+	const { dispose } = await os.popupAsyncWithDialog(import('@/components/MkAbuseReportWindow.vue').then(x => x.default), {
 		user: page.value.user,
 		initialComment: `Page: ${pageUrl}\n-----\n`,
 	}, {
@@ -272,8 +277,12 @@ function showMenu(ev: MouseEvent) {
 	if ($i && $i.id === page.value.userId) {
 		menuItems.push({
 			icon: 'ti ti-pencil',
-			text: i18n.ts.editThisPage,
-			action: () => router.push(`/pages/edit/${page.value.id}`),
+			text: i18n.ts.edit,
+			action: () => router.push('/pages/edit/:initPageId', {
+				params: {
+					initPageId: page.value!.id,
+				},
+			}),
 		});
 
 		if ($i.pinnedPageId === page.value.id) {
@@ -291,10 +300,6 @@ function showMenu(ev: MouseEvent) {
 		}
 	} else if ($i && $i.id !== page.value.userId) {
 		menuItems.push({
-			icon: 'ti ti-code',
-			text: i18n.ts._pages.viewSource,
-			action: () => router.push(`/@${props.username}/pages/${props.pageName}/view-source`),
-		}, {
 			icon: 'ti ti-exclamation-circle',
 			text: i18n.ts.reportAbuse,
 			action: reportAbuse,
@@ -328,7 +333,7 @@ const headerActions = computed(() => []);
 
 const headerTabs = computed(() => []);
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: page.value ? page.value.title || page.value.name : i18n.ts.pages,
 	...page.value ? {
 		avatar: page.value.user,

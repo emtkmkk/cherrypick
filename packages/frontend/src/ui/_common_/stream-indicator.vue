@@ -4,14 +4,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div v-if="hasRequireRefresh && defaultStore.state.requireRefreshBehavior === 'quiet'" :class="$style.root" class="_panel _shadow" @click="resetRequireRefresh">
+<div v-if="hasRequireRefresh && prefer.s.requireRefreshBehavior === 'quiet'" :class="$style.root" class="_panel _shadow" @click="resetRequireRefresh">
 	<div><i class="ti ti-alert-circle"></i> {{ i18n.ts.reloadToApplySetting2 }}</div>
 	<div :class="$style.command" class="_buttons">
 		<MkButton small primary @click="reload">{{ i18n.ts.reload }}</MkButton>
 		<MkButton small>{{ i18n.ts.doNothing }}</MkButton>
 	</div>
 </div>
-<div v-if="hasDisconnected && defaultStore.state.serverDisconnectedBehavior === 'quiet'" :class="$style.root" class="_panel _shadow" @click="resetDisconnected">
+<div v-if="hasDisconnected && prefer.s.serverDisconnectedBehavior === 'quiet'" :class="$style.root" class="_panel _shadow" @click="resetDisconnected">
 	<div><i class="ti ti-alert-triangle"></i> {{ i18n.ts.disconnectedFromServer }}</div>
 	<div :class="$style.command" class="_buttons">
 		<MkButton small primary @click="reload">{{ i18n.ts.reload }}</MkButton>
@@ -26,7 +26,8 @@ import { useStream } from '@/stream.js';
 import { i18n } from '@/i18n.js';
 import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
+import { store } from '@/store.js';
 import { globalEvents } from '@/events.js';
 
 const zIndex = os.claimZIndex('high');
@@ -36,14 +37,14 @@ const hasDisconnected = ref(false);
 const timeoutId = ref<number>();
 
 function onDisconnected() {
-	window.clearTimeout(timeoutId);
+	window.clearTimeout(timeoutId.value);
 	timeoutId.value = window.setTimeout(() => {
 		hasDisconnected.value = true;
 	}, 1000 * 10);
 }
 
 function resetDisconnected() {
-	window.clearTimeout(timeoutId);
+	window.clearTimeout(timeoutId.value);
 	hasDisconnected.value = false;
 }
 
@@ -52,22 +53,24 @@ function resetRequireRefresh() {
 }
 
 function reload() {
-	location.reload();
+	window.location.reload();
 }
 
-useStream().on('_connected_', resetDisconnected);
-useStream().on('_disconnected_', onDisconnected);
+if (store.s.realtimeMode) {
+	useStream().on('_connected_', resetDisconnected);
+	useStream().on('_disconnected_', onDisconnected);
+
+	onUnmounted(() => {
+		window.clearTimeout(timeoutId.value);
+		useStream().off('_connected_', resetDisconnected);
+		useStream().off('_disconnected_', onDisconnected);
+	});
+}
 
 onMounted(() => {
-	globalEvents.on('hasRequireRefresh', (hasRequireRefresh_receive) => {
-		hasRequireRefresh.value = hasRequireRefresh_receive;
+	globalEvents.on('hasRequireRefresh', (value) => {
+		hasRequireRefresh.value = value;
 	});
-});
-
-onUnmounted(() => {
-	window.clearTimeout(timeoutId);
-	useStream().off('_connected_', resetDisconnected);
-	useStream().off('_disconnected_', onDisconnected);
 });
 </script>
 

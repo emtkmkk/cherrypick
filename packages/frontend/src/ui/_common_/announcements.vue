@@ -30,8 +30,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
-import { $i } from '@/account.js';
-import { mkkeyLink, mkkeyLinkBusy, loadMkkeyLink, linkMkkeyAccount } from '@/scripts/mkkey-link.js';
+import { $i } from '@/i.js';
+import { mkkeyLink, mkkeyLinkBusy, loadMkkeyLink, linkMkkeyAccount } from '@/utility/mkkey-link.js';
 import { i18n } from '@/i18n.js';
 
 const linkNoticeDismissed = ref(false);

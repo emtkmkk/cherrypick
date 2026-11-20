@@ -28,8 +28,15 @@ export const meta = {
 		optional: true, nullable: false,
 		properties: {
 			sourceLang: { type: 'string' },
-			text: { type: 'array', items: { type: 'string' } },
-			translator: { type: 'string' },
+			text: {
+				type: 'array',
+				optional: true, nullable: false,
+				items: {
+					type: 'string',
+					optional: false, nullable: true,
+				},
+			},
+			translator: { type: 'string', optional: false, nullable: false },
 		},
 	},
 
@@ -182,9 +189,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		const translationClient = new TranslationServiceClient({ keyFilename: path });
 
+		const detectText = text.join('\n');
 		const detectRequest = {
 			parent: `projects/${projectId}/locations/${location}`,
-			content: text.join('\n'),
+			content: detectText,
 		};
 
 		let detectedLanguage = null;

@@ -4,43 +4,65 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div>
-	<MkStickyContainer>
-		<template #header><XHeader :tabs="headerTabs"/></template>
-		<MkSpacer :contentMax="700" :marginMin="16" :marginMax="32">
-			<FormSuspense :p="init">
-				<div class="_gaps_m">
+<PageWithHeader :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 700px; --MI_SPACER-min: 16px; --MI_SPACER-max: 32px;">
+		<SearchMarker path="/admin/moderation" :label="i18n.ts.moderation" :keywords="['moderation']" icon="ti ti-shield" :inlining="['serverRules']">
+			<div class="_gaps_m">
+				<SearchMarker :keywords="['open', 'registration']">
 					<MkSwitch :modelValue="enableRegistration" @update:modelValue="onChange_enableRegistration">
-						<template #label>{{ i18n.ts._serverSettings.openRegistration }}</template>
+						<template #label><SearchLabel>{{ i18n.ts._serverSettings.openRegistration }}</SearchLabel></template>
 						<template #caption>
-							<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> {{ i18n.ts._serverSettings.openRegistrationWarning }}</div>
+							<div><SearchText>{{ i18n.ts._serverSettings.thisSettingWillAutomaticallyOffWhenModeratorsInactive }}</SearchText></div>
+							<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> <SearchText>{{ i18n.ts._serverSettings.openRegistrationWarning }}</SearchText></div>
 							<div v-if="(enableRegistration && disableRegistrationWhenInactive) || disableRegistrationWhenInactive" style="margin-top: 8px;">{{ i18n.ts._serverSettings.thisSettingWillAutomaticallyOffWhenModeratorsInactive }}</div>
 						</template>
 					</MkSwitch>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['registration', 'inactive', 'signup']">
 					<MkSwitch v-model="disableRegistrationWhenInactive" :disabled="!enableRegistration" @change="onChange_disableRegistrationWhenInactive">
 						<template #label>{{ i18n.ts.disableRegistrationWhenInactive }}</template>
 					</MkSwitch>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['public', 'note', 'inactive']">
 					<MkSwitch v-model="disablePublicNoteWhenInactive" @change="onChange_disablePublicNoteWhenInactive">
 						<template #label>{{ i18n.ts.disablePublicNoteWhenInactive }}</template>
 					</MkSwitch>
+				</SearchMarker>
 
-					<MkInput v-if="disableRegistrationWhenInactive || disablePublicNoteWhenInactive" v-model="moderatorInactivityLimitDays" type="number" :min="1" :max="30">
+				<template v-if="disableRegistrationWhenInactive || disablePublicNoteWhenInactive">
+					<MkInput v-model="moderatorInactivityLimitDays" type="number" :min="1" :max="30">
 						<template #label>{{ i18n.ts.expirationDate + `(${i18n.ts._time.day})` }}</template>
 					</MkInput>
 
-					<MkButton v-if="meta.moderatorInactivityLimitDays !== moderatorInactivityLimitDays" primary rounded @click="onChange_moderatorInactivityLimitDays"><i class="ti ti-check"></i> {{ i18n.ts.save }}</MkButton>
+					<MkButton v-if="meta.moderatorInactivityLimitDays !== moderatorInactivityLimitDays" primary rounded @click="onChange_moderatorInactivityLimitDays">
+						<i class="ti ti-check"></i> {{ i18n.ts.save }}
+					</MkButton>
+				</template>
 
+				<SearchMarker :keywords="['email', 'required', 'signup']">
 					<MkSwitch v-model="emailRequiredForSignup" @change="onChange_emailRequiredForSignup">
-						<template #label>{{ i18n.ts.emailRequiredForSignup }}</template>
+						<template #label><SearchLabel>{{ i18n.ts.emailRequiredForSignup }}</SearchLabel> ({{ i18n.ts.recommended }})</template>
 					</MkSwitch>
+				</SearchMarker>
 
-					<FormLink to="/admin/server-rules">{{ i18n.ts.serverRules }}</FormLink>
+				<SearchMarker :keywords="['ugc', 'content', 'visibility', 'visitor', 'guest']">
+					<MkSelect v-model="ugcVisibilityForVisitor" :items="ugcVisibilityForVisitorDef" @update:modelValue="onChange_ugcVisibilityForVisitor">
+						<template #label><SearchLabel>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor }}</SearchLabel></template>
+						<template #caption>
+							<div><SearchText>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor_description }}</SearchText></div>
+							<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> <SearchText>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor_description2 }}</SearchText></div>
+						</template>
+					</MkSelect>
+				</SearchMarker>
 
+				<XServerRules/>
+
+				<SearchMarker :keywords="['preserved', 'usernames']">
 					<MkFolder>
-						<template #icon><i class="ti ti-lock-star"></i></template>
-						<template #label>{{ i18n.ts.preservedUsernames }}</template>
+						<template #icon><SearchIcon><i class="ti ti-lock-star"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.preservedUsernames }}</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="preservedUsernames">
@@ -49,10 +71,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_preservedUsernames">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['sensitive', 'words']">
 					<MkFolder>
-						<template #icon><i class="ti ti-message-exclamation"></i></template>
-						<template #label>{{ i18n.ts.sensitiveWords }}</template>
+						<template #icon><SearchIcon><i class="ti ti-message-exclamation"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.sensitiveWords }}</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="sensitiveWords">
@@ -61,10 +85,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_sensitiveWords">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['prohibited', 'words']">
 					<MkFolder>
-						<template #icon><i class="ti ti-message-x"></i></template>
-						<template #label>{{ i18n.ts.prohibitedWords }}</template>
+						<template #icon><SearchIcon><i class="ti ti-message-x"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.prohibitedWords }}</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="prohibitedWords">
@@ -73,10 +99,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_prohibitedWords">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['prohibited', 'name', 'user']">
 					<MkFolder>
-						<template #icon><i class="ti ti-user-x"></i></template>
-						<template #label>{{ i18n.ts.prohibitedWordsForNameOfUser }}</template>
+						<template #icon><SearchIcon><i class="ti ti-user-x"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.prohibitedWordsForNameOfUser }}</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="prohibitedWordsForNameOfUser">
@@ -85,10 +113,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_prohibitedWordsForNameOfUser">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['trusted', 'link', 'url']">
 					<MkFolder>
-						<template #icon><i class="ti ti-link"></i></template>
-						<template #label>{{ i18n.ts.trustedLinkUrlPatterns }}</template>
+						<template #icon><SearchIcon><i class="ti ti-link"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.trustedLinkUrlPatterns }}</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="trustedLinkUrlPatterns">
@@ -97,10 +127,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_trustedLinkUrlPatterns">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['hidden', 'tags', 'hashtags']">
 					<MkFolder>
-						<template #icon><i class="ti ti-eye-off"></i></template>
-						<template #label>{{ i18n.ts.hiddenTags }}</template>
+						<template #icon><SearchIcon><i class="ti ti-eye-off"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.hiddenTags }}</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="hiddenTags">
@@ -109,10 +141,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_hiddenTags">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['silenced', 'servers', 'hosts']">
 					<MkFolder>
-						<template #icon><i class="ti ti-eye-off"></i></template>
-						<template #label>{{ i18n.ts.silencedInstances }}</template>
+						<template #icon><SearchIcon><i class="ti ti-eye-off"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.silencedInstances }}</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="silencedHosts">
@@ -121,10 +155,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_silencedHosts">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['media', 'silenced', 'servers', 'hosts']">
 					<MkFolder>
-						<template #icon><i class="ti ti-eye-off"></i></template>
-						<template #label>{{ i18n.ts.mediaSilencedInstances }}</template>
+						<template #icon><SearchIcon><i class="ti ti-eye-off"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.mediaSilencedInstances }}</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="mediaSilencedHosts">
@@ -133,10 +169,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_mediaSilencedHosts">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['blocked', 'servers', 'hosts']">
 					<MkFolder>
-						<template #icon><i class="ti ti-ban"></i></template>
-						<template #label>{{ i18n.ts.blockedInstances }}</template>
+						<template #icon><SearchIcon><i class="ti ti-ban"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.blockedInstances }}</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="blockedHosts">
@@ -145,10 +183,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_blockedHosts">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+				</SearchMarker>
 
+				<SearchMarker :keywords="['bubble', 'timeline']">
 					<MkFolder>
-						<template #icon><i class="ti ti-droplet"></i></template>
-						<template #label>{{ i18n.ts.bubbleTimeline }}</template>
+						<template #icon><SearchIcon><i class="ti ti-droplet"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.bubbleTimeline }}</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="bubbleTimeline">
@@ -157,64 +197,59 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_bubbleTimeline">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
-				</div>
-			</FormSuspense>
-		</MkSpacer>
-	</MkStickyContainer>
-</div>
+				</SearchMarker>
+			</div>
+		</SearchMarker>
+	</div>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
-import XHeader from './_header_.vue';
+import * as Misskey from 'cherrypick-js';
+import XServerRules from './server-rules.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
-import FormSuspense from '@/components/form/suspense.vue';
 import * as os from '@/os.js';
-import { misskeyApi } from '@/scripts/misskey-api.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { fetchInstance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { definePage } from '@/page.js';
+import { useMkSelect } from '@/composables/use-mkselect.js';
 import MkButton from '@/components/MkButton.vue';
 import FormLink from '@/components/form/link.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import MkSelect from '@/components/MkSelect.vue';
 
 const meta = await misskeyApi('admin/meta');
 
-const enableRegistration = ref<boolean>(false);
-const disableRegistrationWhenInactive = ref<boolean>(false);
-const disablePublicNoteWhenInactive = ref<boolean>(false);
-const moderatorInactivityLimitDays = ref<number>(7);
-const emailRequiredForSignup = ref<boolean>(false);
-const sensitiveWords = ref<string>('');
-const prohibitedWords = ref<string>('');
-const prohibitedWordsForNameOfUser = ref<string>('');
-const hiddenTags = ref<string>('');
-const preservedUsernames = ref<string>('');
-const blockedHosts = ref<string>('');
-const silencedHosts = ref<string>('');
-const mediaSilencedHosts = ref<string>('');
-const trustedLinkUrlPatterns = ref<string>('');
-const bubbleTimeline = ref<string>('');
-
-async function init() {
-	enableRegistration.value = !meta.disableRegistration;
-	disableRegistrationWhenInactive.value = meta.disableRegistrationWhenInactive;
-	disablePublicNoteWhenInactive.value = meta.disablePublicNoteWhenInactive;
-	moderatorInactivityLimitDays.value = meta.moderatorInactivityLimitDays;
-	emailRequiredForSignup.value = meta.emailRequiredForSignup;
-	sensitiveWords.value = meta.sensitiveWords.join('\n');
-	prohibitedWords.value = meta.prohibitedWords.join('\n');
-	prohibitedWordsForNameOfUser.value = meta.prohibitedWordsForNameOfUser.join('\n');
-	hiddenTags.value = meta.hiddenTags.join('\n');
-	preservedUsernames.value = meta.preservedUsernames.join('\n');
-	blockedHosts.value = meta.blockedHosts.join('\n');
-	silencedHosts.value = meta.silencedHosts?.join('\n') ?? '';
-	mediaSilencedHosts.value = meta.mediaSilencedHosts.join('\n');
-	trustedLinkUrlPatterns.value = meta.trustedLinkUrlPatterns.join('\n');
-	bubbleTimeline.value = meta.bubbleInstances.join('\n');
-}
+const enableRegistration = ref(!meta.disableRegistration);
+const emailRequiredForSignup = ref(meta.emailRequiredForSignup);
+const {
+	model: ugcVisibilityForVisitor,
+	def: ugcVisibilityForVisitorDef,
+} = useMkSelect({
+	items: [
+		{ label: i18n.ts._serverSettings._userGeneratedContentsVisibilityForVisitor.all, value: 'all' },
+		{ label: i18n.ts._serverSettings._userGeneratedContentsVisibilityForVisitor.localOnly, value: 'local' },
+		{ label: i18n.ts._serverSettings._userGeneratedContentsVisibilityForVisitor.none, value: 'none' },
+	],
+	initialValue: meta.ugcVisibilityForVisitor,
+});
+const disableRegistrationWhenInactive = ref(meta.disableRegistrationWhenInactive);
+const disablePublicNoteWhenInactive = ref(meta.disablePublicNoteWhenInactive);
+const moderatorInactivityLimitDays = ref(meta.moderatorInactivityLimitDays);
+const sensitiveWords = ref(meta.sensitiveWords.join('\n'));
+const prohibitedWords = ref(meta.prohibitedWords.join('\n'));
+const prohibitedWordsForNameOfUser = ref(meta.prohibitedWordsForNameOfUser.join('\n'));
+const hiddenTags = ref(meta.hiddenTags.join('\n'));
+const preservedUsernames = ref(meta.preservedUsernames.join('\n'));
+const blockedHosts = ref(meta.blockedHosts.join('\n'));
+const silencedHosts = ref(meta.silencedHosts?.join('\n') ?? '');
+const mediaSilencedHosts = ref(meta.mediaSilencedHosts.join('\n'));
+const trustedLinkUrlPatterns = ref(meta.trustedLinkUrlPatterns.join('\n'));
+const bubbleTimeline = ref(meta.bubbleInstances.join('\n'));
 
 async function onChange_enableRegistration(value: boolean) {
 	if (value) {
@@ -264,6 +299,14 @@ async function onChange_moderatorInactivityLimitDays() {
 function onChange_emailRequiredForSignup(value: boolean) {
 	os.apiWithDialog('admin/update-meta', {
 		emailRequiredForSignup: value,
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onChange_ugcVisibilityForVisitor(value: typeof ugcVisibilityForVisitor.value) {
+	os.apiWithDialog('admin/update-meta', {
+		ugcVisibilityForVisitor: value,
 	}).then(() => {
 		fetchInstance(true);
 	});
@@ -351,7 +394,7 @@ function save_bubbleTimeline() {
 
 const headerTabs = computed(() => []);
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: i18n.ts.moderation,
 	icon: 'ti ti-shield',
 }));

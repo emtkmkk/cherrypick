@@ -5,18 +5,18 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/vue';
 import SignupDialog from '@/components/MkSignupDialog.vue';
-import { runMkkeyAuth } from '@/scripts/mkkey-sso.js';
-import { signinOrContinueMkkeySignup } from '@/scripts/mkkey-signup.js';
-import { login } from '@/account.js';
+import { runMkkeyAuth } from '@/utility/mkkey-sso.js';
+import { signinOrContinueMkkeySignup } from '@/utility/mkkey-signup.js';
+import { login } from '@/accounts.js';
 import { alert } from '@/os.js';
 
 vi.mock('@/i18n.js', () => ({ i18n: { ts: {
 	signup: '新規登録', signupWithMkkey: 'mkkey.netでログインして登録', signupWithInvitationCode: '招待コードで登録',
 } } }));
-vi.mock('@/account.js', () => ({ login: vi.fn() }));
+vi.mock('@/accounts.js', () => ({ login: vi.fn() }));
 vi.mock('@/os.js', () => ({ alert: vi.fn() }));
-vi.mock('@/scripts/mkkey-sso.js', () => ({ runMkkeyAuth: vi.fn(), mkkeyAuthError: () => '認証失敗' }));
-vi.mock('@/scripts/mkkey-signup.js', () => ({ signinOrContinueMkkeySignup: vi.fn() }));
+vi.mock('@/utility/mkkey-sso.js', () => ({ runMkkeyAuth: vi.fn(), mkkeyAuthError: () => '認証失敗' }));
+vi.mock('@/utility/mkkey-signup.js', () => ({ signinOrContinueMkkeySignup: vi.fn() }));
 vi.mock('@/components/MkButton.vue', () => ({ default: {
 	props: ['disabled'], emits: ['click'], template: '<button :disabled="disabled" @click="$emit(\'click\')"><slot/></button>',
 } }));

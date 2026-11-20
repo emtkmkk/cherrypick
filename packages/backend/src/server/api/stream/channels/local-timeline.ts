@@ -59,6 +59,9 @@ class LocalTimelineChannel extends Channel {
 		if (note.visibility !== 'public') return;
 		if (note.channelId != null) return;
 		if (this.bubbleHosts.length > 0 && note.reply?.user.host != null && !this.bubbleHosts.includes(note.reply.user.host)) return;
+		if (note.user.requireSigninToViewContents && this.user == null) return;
+		if (note.renote && note.renote.user.requireSigninToViewContents && this.user == null) return;
+		if (note.reply && note.reply.user.requireSigninToViewContents && this.user == null) return;
 
 		// 関係ない返信は除外
 		if (note.reply && !this.withReplies) {
@@ -82,8 +85,6 @@ class LocalTimelineChannel extends Channel {
 		}
 
 		if (this.user == null && note.localAndFollowers) return;
-
-		this.connection.cacheNote(note);
 
 		this.send('note', note);
 	}

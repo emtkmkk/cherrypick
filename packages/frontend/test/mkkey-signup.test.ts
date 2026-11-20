@@ -3,11 +3,11 @@
  */
 
 import { beforeEach, expect, test, vi } from 'vitest';
-import { signinOrContinueMkkeySignup } from '@/scripts/mkkey-signup.js';
-import { mkkeySsoRequest } from '@/scripts/mkkey-sso.js';
+import { signinOrContinueMkkeySignup } from '@/utility/mkkey-signup.js';
+import { mkkeySsoRequest } from '@/utility/mkkey-sso.js';
 import { inputText } from '@/os.js';
 
-vi.mock('@/scripts/mkkey-sso.js', () => ({ mkkeySsoRequest: vi.fn() }));
+vi.mock('@/utility/mkkey-sso.js', () => ({ mkkeySsoRequest: vi.fn() }));
 vi.mock('@/os.js', () => ({ inputText: vi.fn() }));
 beforeEach(() => { vi.resetAllMocks(); });
 

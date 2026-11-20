@@ -223,7 +223,6 @@ remove: "ລຶບ"
 removed: "ລຶບແລ້ວ"
 resetAreYouSure: "ຣີ​ເຊັດບໍ?"
 saved: "ບັນທຶກແລ້ວ"
-messaging: "ແຊັຕ"
 upload: "ອັບໂຫຼດ"
 keepOriginalUploading: "ຮັກສາຮູບພາບຕົ້ນສະບັບ"
 fromDrive: "ຈາກ Drive"
@@ -233,7 +232,6 @@ uploadFromUrlDescription: "URL ຂອງໄຟລ໌ທີ່ທ່ານຕ້�
 uploadFromUrlRequested: "ຮ້ອງຂໍການອັບໂຫລດແລ້ວ"
 explore: "ສຳຫຼວດ"
 messageRead: "ອ່ານແລ້ວ"
-startMessaging: "ເລີ່ມການສົນທະນາໃໝ່"
 nUsersRead: "ອ່ານໂດຍ {n}"
 agree: "ຍອມຮັບ"
 termsOfService: "ເງື່ອນໄຂການບໍລິການ"
@@ -394,6 +392,12 @@ searchByGoogle: "ຄົ້ນຫາ"
 file: "ໄຟລ໌"
 replies: "ຕອບ​ກັບ"
 renotes: "Renote"
+information: "ກ່ຽວກັບ"
+_chat:
+  invitations: "ເຊີນ"
+  noHistory: "​ບໍ່​ມີປະຫວັດ"
+  members: "ສະມາຊິກ"
+  home: "ໜ້າຫຼັກ"
 _delivery:
   stop: "ໂຈະ"
   _type:
@@ -412,7 +416,6 @@ _theme:
 _sfx:
   note: "ບັນທຶກ"
   notification: "ການແຈ້ງເຕືອນ"
-  chat: "ແຊ໋ດ"
 _2fa:
   renewTOTPCancel: "ບໍ່​ແມ່ນ​ຕອນ​ນີ້"
 _widgets:
@@ -430,6 +433,7 @@ _cw:
 _visibility:
   home: "ໜ້າຫຼັກ"
   followers: "ຜູ້ຕິດຕາມ"
+  specified: "ໂພສ Direct note"
 _profile:
   name: "ຊື່"
   username: "ຊື່ຜູ້ໃຊ້"
@@ -467,6 +471,7 @@ _deck:
     list: "ລາຍການ"
     channel: "ຊ່ອງ"
     mentions: "ກ່າວເຖິງເຈົ້າ"
+    direct: "ໂພສ Direct note"
 _webhookSettings:
   name: "ຊື່"
 _abuseReport:
@@ -475,3 +480,10 @@ _abuseReport:
       mail: "ອີເມວ"
 _moderationLogTypes:
   suspend: "ລະງັບ"
+_remoteLookupErrors:
+  _noSuchObject:
+    title: "ບໍ່ພົບ"
+_search:
+  searchScopeAll: "ທັງໝົດ"
+_watermarkEditor:
+  image: "ຮູບພາບ"

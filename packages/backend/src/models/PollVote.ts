@@ -7,6 +7,7 @@ import { PrimaryColumn, Entity, Index, JoinColumn, Column, ManyToOne } from 'typ
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 import { MiNote } from './Note.js';
+import { MiPoll } from './Poll.js';
 
 @Entity('poll_vote')
 @Index(['userId', 'noteId', 'choice'], { unique: true })
@@ -33,6 +34,10 @@ export class MiPollVote {
 	})
 	@JoinColumn()
 	public note: MiNote | null;
+
+	@ManyToOne(() => MiPoll, { onDelete: 'CASCADE' })
+	@JoinColumn({ name: 'noteId', referencedColumnName: 'noteId', foreignKeyConstraintName: 'FK_poll_vote_poll' })
+	public poll: MiPoll | null;
 
 	@Column('integer')
 	public choice: number;

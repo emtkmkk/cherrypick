@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button :class="$style.closeButton" class="_button" @click="onClose"><i class="ti ti-x"></i></button>
 		</div>
 		<div :class="$style.content">
-			<MkSignin :autoSet="autoSet" :message="message" :openOnRemote="openOnRemote" @login="onLogin"/>
+			<MkSignin :autoSet="autoSet" :message="message" :openOnRemote="openOnRemote" :initialUsername="initialUsername" @login="onLogin"/>
 		</div>
 	</div>
 </MkModal>
@@ -23,8 +23,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import * as Misskey from 'cherrypick-js';
-import { shallowRef } from 'vue';
-import type { OpenOnRemoteOptions } from '@/scripts/please-login.js';
+import { useTemplateRef } from 'vue';
+import type { OpenOnRemoteOptions } from '@/utility/please-login.js';
 import MkSignin from '@/components/MkSignin.vue';
 import MkModal from '@/components/MkModal.vue';
 import { i18n } from '@/i18n.js';
@@ -33,10 +33,12 @@ withDefaults(defineProps<{
 	autoSet?: boolean;
 	message?: string,
 	openOnRemote?: OpenOnRemoteOptions,
+	initialUsername?: string;
 }>(), {
 	autoSet: false,
 	message: '',
 	openOnRemote: undefined,
+	initialUsername: undefined,
 });
 
 const emit = defineEmits<{
@@ -45,7 +47,7 @@ const emit = defineEmits<{
 	(ev: 'cancelled'): void;
 }>();
 
-const modal = shallowRef<InstanceType<typeof MkModal>>();
+const modal = useTemplateRef('modal');
 
 function onClose() {
 	emit('cancelled');
@@ -83,7 +85,7 @@ function onLogin(res: Misskey.entities.SigninFlowResponse & { finished: true }) 
 	align-items: center;
 	font-weight: bold;
 	backdrop-filter: var(--MI-blur, blur(15px));
-	background: var(--MI_THEME-acrylicBg);
+	background: color(from var(--MI_THEME-bg) srgb r g b / 0.5);
 	z-index: 1;
 }
 

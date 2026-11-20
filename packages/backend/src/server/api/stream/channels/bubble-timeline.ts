@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: syuilo and other misskey contributors
+ * SPDX-FileCopyrightText: syuilo and misskey-project
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
@@ -78,8 +78,6 @@ class BubbleTimelineChannel extends Channel {
 		}
 
 		if (this.user == null && note.localAndFollowers) return;
-
-		this.connection.cacheNote(note);
 
 		this.send('note', note);
 	}

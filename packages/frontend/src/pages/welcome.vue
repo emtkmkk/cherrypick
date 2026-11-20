@@ -6,7 +6,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div v-if="instance">
 	<XSetup v-if="instance.requireSetup"/>
-	<XEntrance v-else/>
+	<XEntranceClassic v-else-if="(instance.clientOptions.entrancePageStyle ?? 'classic') === 'classic'"/>
+	<XEntranceSimple v-else/>
 </div>
 </template>
 
@@ -15,8 +16,9 @@ import { computed, ref } from 'vue';
 import * as Misskey from 'cherrypick-js';
 import { instanceName } from '@@/js/config.js';
 import XSetup from './welcome.setup.vue';
-import XEntrance from './welcome.entrance.a.vue';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import XEntranceClassic from './welcome.entrance.classic.vue';
+import XEntranceSimple from './welcome.entrance.simple.vue';
+import { definePage } from '@/page.js';
 import { fetchInstance } from '@/instance.js';
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
@@ -29,7 +31,7 @@ const headerActions = computed(() => []);
 
 const headerTabs = computed(() => []);
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: instanceName,
 	icon: null,
 }));

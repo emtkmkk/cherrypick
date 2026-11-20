@@ -24,9 +24,9 @@ import { AppLockService } from './AppLockService.js';
 import { AchievementService } from './AchievementService.js';
 import { AvatarDecorationService } from './AvatarDecorationService.js';
 import { CaptchaService } from './CaptchaService.js';
-import { CreateSystemUserService } from './CreateSystemUserService.js';
 import { CustomEmojiService } from './CustomEmojiService.js';
 import { DeleteAccountService } from './DeleteAccountService.js';
+import { TruncateAccountService } from './TruncateAccountService.js';
 import { DownloadService } from './DownloadService.js';
 import { DriveService } from './DriveService.js';
 import { EmailService } from './EmailService.js';
@@ -37,9 +37,8 @@ import { HashtagService } from './HashtagService.js';
 import { HttpRequestService } from './HttpRequestService.js';
 import { IdService } from './IdService.js';
 import { ImageProcessingService } from './ImageProcessingService.js';
-import { InstanceActorService } from './InstanceActorService.js';
+import { SystemAccountService } from './SystemAccountService.js';
 import { InternalStorageService } from './InternalStorageService.js';
-import { MessagingService } from './MessagingService.js';
 import { MetaService } from './MetaService.js';
 import { MfmService } from './MfmService.js';
 import { ModerationLogService } from './ModerationLogService.js';
@@ -47,7 +46,7 @@ import { NoteCreateService } from './NoteCreateService.js';
 import { NoteUpdateService } from './NoteUpdateService.js';
 import { NoteDeleteService } from './NoteDeleteService.js';
 import { NotePiningService } from './NotePiningService.js';
-import { NoteReadService } from './NoteReadService.js';
+import { NoteDraftService } from './NoteDraftService.js';
 import { NotificationService } from './NotificationService.js';
 import { PollService } from './PollService.js';
 import { PushNotificationService } from './PushNotificationService.js';
@@ -72,7 +71,6 @@ import { UserSuspendService } from './UserSuspendService.js';
 import { UserAuthService } from './UserAuthService.js';
 import { VideoProcessingService } from './VideoProcessingService.js';
 import { UserWebhookService } from './UserWebhookService.js';
-import { ProxyAccountService } from './ProxyAccountService.js';
 import { UtilityService } from './UtilityService.js';
 import { FileInfoService } from './FileInfoService.js';
 import { SearchService } from './SearchService.js';
@@ -80,8 +78,11 @@ import { ClipService } from './ClipService.js';
 import { FeaturedService } from './FeaturedService.js';
 import { FanoutTimelineService } from './FanoutTimelineService.js';
 import { ChannelFollowingService } from './ChannelFollowingService.js';
+import { ChatService } from './ChatService.js';
 import { RegistryApiService } from './RegistryApiService.js';
 import { ReversiService } from './ReversiService.js';
+import { PageService } from './PageService.js';
+import { ActivityPubAccessControlService } from './ActivityPubAccessControlService.js';
 
 import { ChartLoggerService } from './chart/ChartLoggerService.js';
 import FederationChart from './chart/charts/federation.js';
@@ -105,6 +106,7 @@ import { AppEntityService } from './entities/AppEntityService.js';
 import { AuthSessionEntityService } from './entities/AuthSessionEntityService.js';
 import { BlockingEntityService } from './entities/BlockingEntityService.js';
 import { ChannelEntityService } from './entities/ChannelEntityService.js';
+import { ChatEntityService } from './entities/ChatEntityService.js';
 import { ClipEntityService } from './entities/ClipEntityService.js';
 import { DriveFileEntityService } from './entities/DriveFileEntityService.js';
 import { DriveFolderEntityService } from './entities/DriveFolderEntityService.js';
@@ -116,13 +118,13 @@ import { GalleryPostEntityService } from './entities/GalleryPostEntityService.js
 import { HashtagEntityService } from './entities/HashtagEntityService.js';
 import { InstanceEntityService } from './entities/InstanceEntityService.js';
 import { InviteCodeEntityService } from './entities/InviteCodeEntityService.js';
-import { MessagingMessageEntityService } from './entities/MessagingMessageEntityService.js';
 import { ModerationLogEntityService } from './entities/ModerationLogEntityService.js';
 import { MutingEntityService } from './entities/MutingEntityService.js';
 import { RenoteMutingEntityService } from './entities/RenoteMutingEntityService.js';
 import { NoteEntityService } from './entities/NoteEntityService.js';
 import { NoteFavoriteEntityService } from './entities/NoteFavoriteEntityService.js';
 import { NoteReactionEntityService } from './entities/NoteReactionEntityService.js';
+import { NoteDraftEntityService } from './entities/NoteDraftEntityService.js';
 import { NotificationEntityService } from './entities/NotificationEntityService.js';
 import { PageEntityService } from './entities/PageEntityService.js';
 import { PageLikeEntityService } from './entities/PageLikeEntityService.js';
@@ -159,6 +161,8 @@ import { ApEventService } from './activitypub/models/ApEventService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
+import { NoteHistorySerivce } from './NoteHistoryService.js';
+import { NoteHistoryEntityService } from './entities/NoteHistoryEntityService.js';
 import type { Provider } from '@nestjs/common';
 
 //#region 文字列ベースでのinjection用(循環参照対応のため)
@@ -174,9 +178,9 @@ const $AppLockService: Provider = { provide: 'AppLockService', useExisting: AppL
 const $AchievementService: Provider = { provide: 'AchievementService', useExisting: AchievementService };
 const $AvatarDecorationService: Provider = { provide: 'AvatarDecorationService', useExisting: AvatarDecorationService };
 const $CaptchaService: Provider = { provide: 'CaptchaService', useExisting: CaptchaService };
-const $CreateSystemUserService: Provider = { provide: 'CreateSystemUserService', useExisting: CreateSystemUserService };
 const $CustomEmojiService: Provider = { provide: 'CustomEmojiService', useExisting: CustomEmojiService };
 const $DeleteAccountService: Provider = { provide: 'DeleteAccountService', useExisting: DeleteAccountService };
+const $TruncateAccountService: Provider = { provide: 'TruncateAccountService', useExisting: TruncateAccountService };
 const $DownloadService: Provider = { provide: 'DownloadService', useExisting: DownloadService };
 const $DriveService: Provider = { provide: 'DriveService', useExisting: DriveService };
 const $EmailService: Provider = { provide: 'EmailService', useExisting: EmailService };
@@ -187,9 +191,7 @@ const $HashtagService: Provider = { provide: 'HashtagService', useExisting: Hash
 const $HttpRequestService: Provider = { provide: 'HttpRequestService', useExisting: HttpRequestService };
 const $IdService: Provider = { provide: 'IdService', useExisting: IdService };
 const $ImageProcessingService: Provider = { provide: 'ImageProcessingService', useExisting: ImageProcessingService };
-const $InstanceActorService: Provider = { provide: 'InstanceActorService', useExisting: InstanceActorService };
 const $InternalStorageService: Provider = { provide: 'InternalStorageService', useExisting: InternalStorageService };
-const $MessagingService: Provider = { provide: 'MessagingService', useExisting: MessagingService };
 const $MetaService: Provider = { provide: 'MetaService', useExisting: MetaService };
 const $MfmService: Provider = { provide: 'MfmService', useExisting: MfmService };
 const $ModerationLogService: Provider = { provide: 'ModerationLogService', useExisting: ModerationLogService };
@@ -197,10 +199,10 @@ const $NoteCreateService: Provider = { provide: 'NoteCreateService', useExisting
 const $NoteUpdateService: Provider = { provide: 'NoteUpdateService', useExisting: NoteUpdateService };
 const $NoteDeleteService: Provider = { provide: 'NoteDeleteService', useExisting: NoteDeleteService };
 const $NotePiningService: Provider = { provide: 'NotePiningService', useExisting: NotePiningService };
-const $NoteReadService: Provider = { provide: 'NoteReadService', useExisting: NoteReadService };
+const $NoteDraftService: Provider = { provide: 'NoteDraftService', useExisting: NoteDraftService };
 const $NotificationService: Provider = { provide: 'NotificationService', useExisting: NotificationService };
 const $PollService: Provider = { provide: 'PollService', useExisting: PollService };
-const $ProxyAccountService: Provider = { provide: 'ProxyAccountService', useExisting: ProxyAccountService };
+const $SystemAccountService: Provider = { provide: 'SystemAccountService', useExisting: SystemAccountService };
 const $PushNotificationService: Provider = { provide: 'PushNotificationService', useExisting: PushNotificationService };
 const $QueryService: Provider = { provide: 'QueryService', useExisting: QueryService };
 const $ReactionService: Provider = { provide: 'ReactionService', useExisting: ReactionService };
@@ -235,8 +237,11 @@ const $FeaturedService: Provider = { provide: 'FeaturedService', useExisting: Fe
 const $FanoutTimelineService: Provider = { provide: 'FanoutTimelineService', useExisting: FanoutTimelineService };
 const $FanoutTimelineEndpointService: Provider = { provide: 'FanoutTimelineEndpointService', useExisting: FanoutTimelineEndpointService };
 const $ChannelFollowingService: Provider = { provide: 'ChannelFollowingService', useExisting: ChannelFollowingService };
+const $ChatService: Provider = { provide: 'ChatService', useExisting: ChatService };
 const $RegistryApiService: Provider = { provide: 'RegistryApiService', useExisting: RegistryApiService };
 const $ReversiService: Provider = { provide: 'ReversiService', useExisting: ReversiService };
+const $PageService: Provider = { provide: 'PageService', useExisting: PageService };
+const $ActivityPubAccessControlService: Provider = { provide: 'ActivityPubAccessControlService', useExisting: ActivityPubAccessControlService };
 
 const $ChartLoggerService: Provider = { provide: 'ChartLoggerService', useExisting: ChartLoggerService };
 const $FederationChart: Provider = { provide: 'FederationChart', useExisting: FederationChart };
@@ -261,6 +266,7 @@ const $AppEntityService: Provider = { provide: 'AppEntityService', useExisting: 
 const $AuthSessionEntityService: Provider = { provide: 'AuthSessionEntityService', useExisting: AuthSessionEntityService };
 const $BlockingEntityService: Provider = { provide: 'BlockingEntityService', useExisting: BlockingEntityService };
 const $ChannelEntityService: Provider = { provide: 'ChannelEntityService', useExisting: ChannelEntityService };
+const $ChatEntityService: Provider = { provide: 'ChatEntityService', useExisting: ChatEntityService };
 const $ClipEntityService: Provider = { provide: 'ClipEntityService', useExisting: ClipEntityService };
 const $DriveFileEntityService: Provider = { provide: 'DriveFileEntityService', useExisting: DriveFileEntityService };
 const $DriveFolderEntityService: Provider = { provide: 'DriveFolderEntityService', useExisting: DriveFolderEntityService };
@@ -272,13 +278,14 @@ const $GalleryPostEntityService: Provider = { provide: 'GalleryPostEntityService
 const $HashtagEntityService: Provider = { provide: 'HashtagEntityService', useExisting: HashtagEntityService };
 const $InstanceEntityService: Provider = { provide: 'InstanceEntityService', useExisting: InstanceEntityService };
 const $InviteCodeEntityService: Provider = { provide: 'InviteCodeEntityService', useExisting: InviteCodeEntityService };
-const $MessagingMessageEntityService: Provider = { provide: 'MessagingMessageEntityService', useExisting: MessagingMessageEntityService };
 const $ModerationLogEntityService: Provider = { provide: 'ModerationLogEntityService', useExisting: ModerationLogEntityService };
 const $MutingEntityService: Provider = { provide: 'MutingEntityService', useExisting: MutingEntityService };
 const $RenoteMutingEntityService: Provider = { provide: 'RenoteMutingEntityService', useExisting: RenoteMutingEntityService };
 const $NoteEntityService: Provider = { provide: 'NoteEntityService', useExisting: NoteEntityService };
 const $NoteFavoriteEntityService: Provider = { provide: 'NoteFavoriteEntityService', useExisting: NoteFavoriteEntityService };
+const $NoteHistoryEntityService: Provider = { provide: 'NoteHistoryEntityService', useExisting: NoteHistoryEntityService };
 const $NoteReactionEntityService: Provider = { provide: 'NoteReactionEntityService', useExisting: NoteReactionEntityService };
+const $NoteDraftEntityService: Provider = { provide: 'NoteDraftEntityService', useExisting: NoteDraftEntityService };
 const $NotificationEntityService: Provider = { provide: 'NotificationEntityService', useExisting: NotificationEntityService };
 const $PageEntityService: Provider = { provide: 'PageEntityService', useExisting: PageEntityService };
 const $PageLikeEntityService: Provider = { provide: 'PageLikeEntityService', useExisting: PageLikeEntityService };
@@ -332,9 +339,9 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		AchievementService,
 		AvatarDecorationService,
 		CaptchaService,
-		CreateSystemUserService,
 		CustomEmojiService,
 		DeleteAccountService,
+		TruncateAccountService,
 		DownloadService,
 		DriveService,
 		EmailService,
@@ -345,9 +352,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		HttpRequestService,
 		IdService,
 		ImageProcessingService,
-		InstanceActorService,
 		InternalStorageService,
-		MessagingService,
 		MetaService,
 		MfmService,
 		ModerationLogService,
@@ -355,10 +360,10 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		NoteUpdateService,
 		NoteDeleteService,
 		NotePiningService,
-		NoteReadService,
+		NoteDraftService,
 		NotificationService,
 		PollService,
-		ProxyAccountService,
+		SystemAccountService,
 		PushNotificationService,
 		QueryService,
 		ReactionService,
@@ -393,8 +398,12 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		FanoutTimelineService,
 		FanoutTimelineEndpointService,
 		ChannelFollowingService,
+		ChatService,
 		RegistryApiService,
 		ReversiService,
+		PageService,
+		NoteHistorySerivce,
+		ActivityPubAccessControlService,
 
 		ChartLoggerService,
 		FederationChart,
@@ -419,6 +428,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		AuthSessionEntityService,
 		BlockingEntityService,
 		ChannelEntityService,
+		ChatEntityService,
 		ClipEntityService,
 		DriveFileEntityService,
 		DriveFolderEntityService,
@@ -430,13 +440,14 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		HashtagEntityService,
 		InstanceEntityService,
 		InviteCodeEntityService,
-		MessagingMessageEntityService,
 		ModerationLogEntityService,
 		MutingEntityService,
 		RenoteMutingEntityService,
 		NoteEntityService,
 		NoteFavoriteEntityService,
+		NoteHistoryEntityService,
 		NoteReactionEntityService,
+		NoteDraftEntityService,
 		NotificationEntityService,
 		PageEntityService,
 		PageLikeEntityService,
@@ -486,9 +497,9 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$AchievementService,
 		$AvatarDecorationService,
 		$CaptchaService,
-		$CreateSystemUserService,
 		$CustomEmojiService,
 		$DeleteAccountService,
+		$TruncateAccountService,
 		$DownloadService,
 		$DriveService,
 		$EmailService,
@@ -499,9 +510,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$HttpRequestService,
 		$IdService,
 		$ImageProcessingService,
-		$InstanceActorService,
 		$InternalStorageService,
-		$MessagingService,
 		$MetaService,
 		$MfmService,
 		$ModerationLogService,
@@ -509,10 +518,10 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$NoteUpdateService,
 		$NoteDeleteService,
 		$NotePiningService,
-		$NoteReadService,
+		$NoteDraftService,
 		$NotificationService,
 		$PollService,
-		$ProxyAccountService,
+		$SystemAccountService,
 		$PushNotificationService,
 		$QueryService,
 		$ReactionService,
@@ -547,8 +556,11 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$FanoutTimelineService,
 		$FanoutTimelineEndpointService,
 		$ChannelFollowingService,
+		$ChatService,
 		$RegistryApiService,
 		$ReversiService,
+		$PageService,
+		$ActivityPubAccessControlService,
 
 		$ChartLoggerService,
 		$FederationChart,
@@ -573,6 +585,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$AuthSessionEntityService,
 		$BlockingEntityService,
 		$ChannelEntityService,
+		$ChatEntityService,
 		$ClipEntityService,
 		$DriveFileEntityService,
 		$DriveFolderEntityService,
@@ -584,13 +597,14 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$HashtagEntityService,
 		$InstanceEntityService,
 		$InviteCodeEntityService,
-		$MessagingMessageEntityService,
 		$ModerationLogEntityService,
 		$MutingEntityService,
 		$RenoteMutingEntityService,
 		$NoteEntityService,
 		$NoteFavoriteEntityService,
+		$NoteHistoryEntityService,
 		$NoteReactionEntityService,
+		$NoteDraftEntityService,
 		$NotificationEntityService,
 		$PageEntityService,
 		$PageLikeEntityService,
@@ -641,9 +655,9 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		AchievementService,
 		AvatarDecorationService,
 		CaptchaService,
-		CreateSystemUserService,
 		CustomEmojiService,
 		DeleteAccountService,
+		TruncateAccountService,
 		DownloadService,
 		DriveService,
 		EmailService,
@@ -654,9 +668,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		HttpRequestService,
 		IdService,
 		ImageProcessingService,
-		InstanceActorService,
 		InternalStorageService,
-		MessagingService,
 		MetaService,
 		MfmService,
 		ModerationLogService,
@@ -664,10 +676,10 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		NoteUpdateService,
 		NoteDeleteService,
 		NotePiningService,
-		NoteReadService,
+		NoteDraftService,
 		NotificationService,
 		PollService,
-		ProxyAccountService,
+		SystemAccountService,
 		PushNotificationService,
 		QueryService,
 		ReactionService,
@@ -702,8 +714,12 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		FanoutTimelineService,
 		FanoutTimelineEndpointService,
 		ChannelFollowingService,
+		ChatService,
 		RegistryApiService,
 		ReversiService,
+		PageService,
+		NoteHistorySerivce,
+		ActivityPubAccessControlService,
 
 		FederationChart,
 		NotesChart,
@@ -727,6 +743,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		AuthSessionEntityService,
 		BlockingEntityService,
 		ChannelEntityService,
+		ChatEntityService,
 		ClipEntityService,
 		DriveFileEntityService,
 		DriveFolderEntityService,
@@ -738,13 +755,14 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		HashtagEntityService,
 		InstanceEntityService,
 		InviteCodeEntityService,
-		MessagingMessageEntityService,
 		ModerationLogEntityService,
 		MutingEntityService,
 		RenoteMutingEntityService,
 		NoteEntityService,
 		NoteFavoriteEntityService,
+		NoteHistoryEntityService,
 		NoteReactionEntityService,
+		NoteDraftEntityService,
 		NotificationEntityService,
 		PageEntityService,
 		PageLikeEntityService,
@@ -794,9 +812,9 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$AchievementService,
 		$AvatarDecorationService,
 		$CaptchaService,
-		$CreateSystemUserService,
 		$CustomEmojiService,
 		$DeleteAccountService,
+		$TruncateAccountService,
 		$DownloadService,
 		$DriveService,
 		$EmailService,
@@ -807,9 +825,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$HttpRequestService,
 		$IdService,
 		$ImageProcessingService,
-		$InstanceActorService,
 		$InternalStorageService,
-		$MessagingService,
 		$MetaService,
 		$MfmService,
 		$ModerationLogService,
@@ -817,10 +833,10 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$NoteUpdateService,
 		$NoteDeleteService,
 		$NotePiningService,
-		$NoteReadService,
+		$NoteDraftService,
 		$NotificationService,
 		$PollService,
-		$ProxyAccountService,
+		$SystemAccountService,
 		$PushNotificationService,
 		$QueryService,
 		$ReactionService,
@@ -854,8 +870,11 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$FanoutTimelineService,
 		$FanoutTimelineEndpointService,
 		$ChannelFollowingService,
+		$ChatService,
 		$RegistryApiService,
 		$ReversiService,
+		$PageService,
+		$ActivityPubAccessControlService,
 
 		$FederationChart,
 		$NotesChart,
@@ -879,6 +898,7 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$AuthSessionEntityService,
 		$BlockingEntityService,
 		$ChannelEntityService,
+		$ChatEntityService,
 		$ClipEntityService,
 		$DriveFileEntityService,
 		$DriveFolderEntityService,
@@ -890,13 +910,14 @@ const $ApEventService: Provider = { provide: 'ApEventService', useExisting: ApEv
 		$HashtagEntityService,
 		$InstanceEntityService,
 		$InviteCodeEntityService,
-		$MessagingMessageEntityService,
 		$ModerationLogEntityService,
 		$MutingEntityService,
 		$RenoteMutingEntityService,
 		$NoteEntityService,
 		$NoteFavoriteEntityService,
+		$NoteHistoryEntityService,
 		$NoteReactionEntityService,
+		$NoteDraftEntityService,
 		$NotificationEntityService,
 		$PageEntityService,
 		$PageLikeEntityService,

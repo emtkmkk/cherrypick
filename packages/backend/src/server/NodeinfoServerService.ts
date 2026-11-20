@@ -9,11 +9,11 @@ import type { Config } from '@/config.js';
 import { MetaService } from '@/core/MetaService.js';
 import { MAX_NOTE_TEXT_LENGTH } from '@/const.js';
 import { MemorySingleCache } from '@/misc/cache.js';
-import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { bindThis } from '@/decorators.js';
 import NotesChart from '@/core/chart/charts/notes.js';
 import UsersChart from '@/core/chart/charts/users.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
+import { SystemAccountService } from '@/core/SystemAccountService.js';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 const nodeinfo2_1path = '/nodeinfo/2.1';
@@ -26,7 +26,7 @@ export class NodeinfoServerService {
 		@Inject(DI.config)
 		private config: Config,
 
-		private userEntityService: UserEntityService,
+		private systemAccountService: SystemAccountService,
 		private metaService: MetaService,
 		private notesChart: NotesChart,
 		private usersChart: UsersChart,
@@ -47,7 +47,7 @@ export class NodeinfoServerService {
 
 	@bindThis
 	public createServer(fastify: FastifyInstance, options: FastifyPluginOptions, done: (err?: Error) => void) {
-		const nodeinfo2 = async (version: number) => {
+		const nodeinfo2 = async (version: number, userAgent?: string) => {
 			const now = Date.now();
 
 			const notesChart = await this.notesChart.getChart('hour', 1, null);
@@ -70,9 +70,12 @@ export class NodeinfoServerService {
 			const activeHalfyear = null;
 			const activeMonth = null;
 
-			const proxyAccount = meta.proxyAccountId ? await this.userEntityService.pack(meta.proxyAccountId).catch(() => null) : null;
+			const proxyAccount = await this.systemAccountService.fetch('proxy');
 
 			const basePolicies = { ...DEFAULT_POLICIES, ...meta.policies };
+
+			// JoinMisskey APIからのリクエストかどうかを判定
+			const isJoinMisskey = userAgent?.includes('JoinMisskey') ?? false;
 
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const document: any = {
@@ -80,8 +83,12 @@ export class NodeinfoServerService {
 					/*
 					 * ソフトウェアの名前を変更すると、一部の独自機能が使用できなくなったり、CherryPickとして認識されないなどの不利益が発生する場合があります。
 					 * フォーク開発者はこの点に注意して修正を行ってください。
+					 *
+					 * CherryPickはMisskey互換性のため、JoinMisskey APIからのリクエストには"misskey"として応答します。
+					 * これにより、Misskey Hubのインスタンスリストに掲載されます。
+					 * それ以外のリクエストには"cherrypick"として応答します。
 					 */
-					name: 'cherrypick',
+					name: isJoinMisskey ? 'misskey' : 'cherrypick',
 					version: this.config.version,
 					basedMisskeyVersion: this.config.basedMisskeyVersion,
 					homepage: nodeinfo_homepage,
@@ -129,8 +136,15 @@ export class NodeinfoServerService {
 					maxNoteTextLength: MAX_NOTE_TEXT_LENGTH,
 					enableEmail: meta.enableEmail,
 					enableServiceWorker: meta.enableServiceWorker,
-					proxyAccountName: proxyAccount ? proxyAccount.username : null,
+					proxyAccountName: proxyAccount.username,
 					themeColor: meta.themeColor ?? '#ffbcdc',
+					features: [
+						'enable_wide_emoji',
+						'enable_wide_emoji_reaction',
+						'emoji_reaction',
+						'quote',
+						'emoji_keyword',
+					],
 				},
 			};
 			if (version >= 21) {
@@ -140,10 +154,13 @@ export class NodeinfoServerService {
 			return document;
 		};
 
-		const cache = new MemorySingleCache<Awaited<ReturnType<typeof nodeinfo2>>>(1000 * 60 * 10); // 10m
+		// User-Agentによって異なる応答を返すため、キャッシュを使用しない
+		//const cache = new MemorySingleCache<Awaited<ReturnType<typeof nodeinfo2>>>(1000 * 60 * 10); // 10m
 
 		fastify.get(nodeinfo2_1path, async (request, reply) => {
-			const base = await cache.fetch(() => nodeinfo2(21));
+			const userAgent = request.headers['user-agent'];
+			//const base = await cache.fetch(() => nodeinfo2(21));
+			const base = await nodeinfo2(21, userAgent);
 
 			reply
 				.type(
@@ -158,7 +175,9 @@ export class NodeinfoServerService {
 		});
 
 		fastify.get(nodeinfo2_0path, async (request, reply) => {
-			const base = await cache.fetch(() => nodeinfo2(20));
+			const userAgent = request.headers['user-agent'];
+			//const base = await cache.fetch(() => nodeinfo2(20));
+			const base = await nodeinfo2(20, userAgent);
 
 			delete (base as any).software.repository;
 

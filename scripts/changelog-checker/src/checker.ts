@@ -28,12 +28,15 @@ export class Result {
  * base側の先頭とhead側で追加された分のリリースより1つ前のバージョンが等価であるかチェックする。
  */
 export function checkNewRelease(base: Release[], head: Release[]): Result {
-	const releaseCountDiff = head.length - base.length;
-	if (releaseCountDiff <= 0) {
+	// Upstream replaces its unreleased 4.x.x section with published releases.
+	// The anchor for an upstream update is the latest published base release.
+	const publishedBase = base.filter(release => !/^\d+\.x\.x$/.test(release.releaseName));
+	const releaseCountDiff = head.length - publishedBase.length;
+	if (releaseCountDiff <= 0 || publishedBase.length === 0) {
 		return Result.ofFailed('Invalid release count.');
 	}
 
-	const baseLatest = base[0];
+	const baseLatest = publishedBase[0];
 	const headPrevious = head[releaseCountDiff];
 
 	if (baseLatest.releaseName !== headPrevious.releaseName) {

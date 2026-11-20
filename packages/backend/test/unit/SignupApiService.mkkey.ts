@@ -2,7 +2,10 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { jest } from '@jest/globals';
+import { jest, beforeEach, afterEach } from '@jest/globals';
+const originalNodeEnv = process.env.NODE_ENV;
+beforeEach(() => { process.env.NODE_ENV = 'production'; });
+afterEach(() => { process.env.NODE_ENV = originalNodeEnv; });
 
 for (const name of ['CaptchaService', 'IdService', 'SignupService', 'EmailService']) {
 	jest.unstable_mockModule(`@/core/${name}.js`, () => ({ [name]: class {} }));

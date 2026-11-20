@@ -8,6 +8,18 @@ import {Release, ReleaseCategory} from "../src/parser";
 import {checkNewRelease, checkNewTopic} from "../src/checker";
 
 suite('checkNewRelease', () => {
+	test('上流の未リリース節が複数の安定版に置き換わる', () => {
+		const base = [new Release('4.x.x'), new Release('4.14.2')];
+		const head = [new Release('4.17.0'), new Release('4.16.0'), new Release('4.15.1'), new Release('4.15.0'), new Release('4.14.2')];
+		expect(checkNewRelease(base, head).success).toBe(true);
+	});
+
+	test('未リリース節があっても既存の安定版を落とした更新は拒否する', () => {
+		const base = [new Release('4.x.x'), new Release('4.14.2')];
+		const head = [new Release('4.17.0'), new Release('4.16.0')];
+		expect(checkNewRelease(base, head).success).toBe(false);
+	});
+
 	test('headに新しいリリースがある1', () => {
 		const base = [new Release('2024.12.0')]
 		const head = [new Release('2024.12.1'), new Release('2024.12.0')]

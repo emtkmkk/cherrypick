@@ -122,16 +122,12 @@ export class DropAndFusionGame extends EventEmitter<{
 
 	public get monoDefinitions() {
 		switch (this.gameMode) {
-			case "normal":
-				return NORAML_MONOS;
-			case "yen":
-				return YEN_MONOS;
-			case "square":
-				return SQUARE_MONOS;
-			case "sweets":
-				return SWEETS_MONOS;
-			case "space":
-				return NORAML_MONOS;
+			case 'normal': return NORAML_MONOS;
+			case 'yen': return YEN_MONOS;
+			case 'square': return SQUARE_MONOS;
+			case 'sweets': return SWEETS_MONOS;
+			case 'space': return NORAML_MONOS;
+			default: return NORAML_MONOS;
 		}
 	}
 
@@ -270,41 +266,29 @@ export class DropAndFusionGame extends EventEmitter<{
 	}
 
 	private createBody(mono: Mono, x: number, y: number) {
-		const options: Matter.IBodyDefinition = {
+		const options = {
 			label: mono.id,
 			density:
-				this.gameMode === "space" ? 0.01 : (mono.sizeX * mono.sizeY) / 10000,
+				this.gameMode === "space" ? 0.01 : (mono.sizeX * mono.sizeY) ** 0.8 / 2500,
 			restitution: this.gameMode === "space" ? 0.5 : 0.25,
 			frictionAir: this.gameMode === "space" ? 0 : 0.01,
 			friction: this.gameMode === "space" ? 0.5 : 0.7,
 			frictionStatic: this.gameMode === "space" ? 0 : 5,
 			slop: this.gameMode === "space" ? 0.01 : 0.7,
 			//mass: 0,
-			render: this.getMonoRenderOptions
-				? this.getMonoRenderOptions(mono)
-				: undefined,
-		};
-		if (mono.shape === "circle") {
+			render: this.getMonoRenderOptions ? this.getMonoRenderOptions(mono) : undefined,
+		} satisfies Matter.IChamferableBodyDefinition;
+		if (mono.shape === 'circle') {
 			return Matter.Bodies.circle(x, y, mono.sizeX / 2, options);
 		} else if (mono.shape === "rectangle") {
 			return Matter.Bodies.rectangle(x, y, mono.sizeX, mono.sizeY, options);
-		} else if (
-			mono.shape === "custom" &&
-			mono.vertices != null &&
-			mono.verticesSize != null
-		) {
-			//eslint-disable-line @typescript-eslint/no-unnecessary-condition
-			return Matter.Bodies.fromVertices(
-				x,
-				y,
-				mono.vertices.map((i) =>
-					i.map((j) => ({
-						x: (j.x / mono.verticesSize!) * mono.sizeX, //eslint-disable-line @typescript-eslint/no-non-null-assertion
-						y: (j.y / mono.verticesSize!) * mono.sizeY, //eslint-disable-line @typescript-eslint/no-non-null-assertion
-					})),
-				),
-				options,
-			);
+		} else if (mono.shape === 'custom' && mono.vertices != null && mono.verticesSize != null) { //eslint-disable-line @typescript-eslint/no-unnecessary-condition
+			return Matter.Bodies.fromVertices(x, y, mono.vertices.map(i => i.map(j => ({
+				// biome-ignore lint/style/noNonNullAssertion: verticesSize is checked in the condition
+				x: (j.x / mono.verticesSize!) * mono.sizeX, //eslint-disable-line @typescript-eslint/no-non-null-assertion
+				// biome-ignore lint/style/noNonNullAssertion: verticesSize is checked in the condition
+				y: (j.y / mono.verticesSize!) * mono.sizeY, //eslint-disable-line @typescript-eslint/no-non-null-assertion
+			}))), options);
 		} else {
 			throw new Error("unrecognized shape");
 		}
@@ -344,6 +328,16 @@ export class DropAndFusionGame extends EventEmitter<{
 	 */
 	private getMonoByBody(body: Matter.Body): Mono | null {
 		return this.monoDefinitions.find((m) => m.id === body.label) ?? null;
+	}
+
+	/**
+	 * モノ定義の最高レベルを返す
+	 *
+	 * @returns 最高レベル
+	 * @internal
+	 */
+	private getMaxMonoLevel(): number {
+		return Math.max(...this.monoDefinitions.map((m) => m.level));
 	}
 
 	/**
@@ -564,10 +558,13 @@ export class DropAndFusionGame extends EventEmitter<{
 	}
 
 	/**
-	 * 3体をまとめて level+2 に融合する（経路①）
+	 * 3体をまとめて融合する（経路①）
 	 *
 	 * @param bodies - 同ラベル3体
 	 * @returns 融合に成功したら true
+	 * @remarks
+	 * NOTE: 要求レベルが最大レベルを超える場合（例: 9×3 => level 11）は
+	 * 生成物なし（消滅）で 9999 点を加算する
 	 * @internal
 	 */
 	private fusionCluster(bodies: Matter.Body[]): boolean {
@@ -580,10 +577,14 @@ export class DropAndFusionGame extends EventEmitter<{
 			return false;
 		}
 
-		const targetLevel = currentMono.level + 2;
-		const nextMono =
-			this.monoDefinitions.find((m) => m.level === targetLevel) ?? null;
-		if (nextMono == null) return false;
+		const requestedTargetLevel = currentMono.level + 2;
+		const maxLevel = this.getMaxMonoLevel();
+		const isOverflowFusion = requestedTargetLevel > maxLevel;
+		const nextMono = isOverflowFusion
+			? null
+			: (this.monoDefinitions.find((m) => m.level === requestedTargetLevel) ??
+				null);
+		if (!isOverflowFusion && nextMono == null) return false;
 
 		const newX =
 			bodies.reduce((sum, b) => sum + b.position.x, 0) / bodies.length;
@@ -592,16 +593,21 @@ export class DropAndFusionGame extends EventEmitter<{
 
 		this.removeBodiesForFusion(...bodies);
 
-		this.advanceFusionCombo();
-		const score1 = this.fusionPairScore(currentMono, false);
-		this.score += score1;
-
-		this.advanceFusionCombo();
-		const score2 = this.fusionPairScore(currentMono, false);
-		this.score += score2;
-
-		this.addFusionProductBody(nextMono, newX, newY);
-		this.emit("fusioned", newX, newY, nextMono, score1 + score2);
+		let additionalScore: number;
+		if (isOverflowFusion) {
+			this.advanceFusionCombo();
+			additionalScore = this.fusionPairScore(currentMono, true);
+		} else {
+			if (nextMono == null) return false;
+			this.advanceFusionCombo();
+			const score1 = this.fusionPairScore(currentMono, false);
+			this.advanceFusionCombo();
+			const score2 = this.fusionPairScore(currentMono, false);
+			additionalScore = score1 + score2;
+			this.addFusionProductBody(nextMono, newX, newY);
+		}
+		this.score += additionalScore;
+		this.emit('fusioned', newX, newY, nextMono, additionalScore);
 		return true;
 	}
 
@@ -644,7 +650,7 @@ export class DropAndFusionGame extends EventEmitter<{
 		catcherBody: Matter.Body,
 		productBody: Matter.Body,
 		entry: {
-			bodyId: Matter.Body["id"];
+			bodyId: Matter.Body['id'];
 			productLevel: number;
 			expiresFrame: number;
 		},
@@ -662,10 +668,14 @@ export class DropAndFusionGame extends EventEmitter<{
 			return false;
 		}
 
-		const targetLevel = entry.productLevel + 1;
-		const nextMono =
-			this.monoDefinitions.find((m) => m.level === targetLevel) ?? null;
-		if (nextMono == null) return false;
+		const requestedTargetLevel = entry.productLevel + 1;
+		const maxLevel = this.getMaxMonoLevel();
+		const isOverflowFusion = requestedTargetLevel > maxLevel;
+		const nextMono = isOverflowFusion
+			? null
+			: (this.monoDefinitions.find((m) => m.level === requestedTargetLevel) ??
+				null);
+		if (!isOverflowFusion && nextMono == null) return false;
 
 		const newX = (catcherBody.position.x + productBody.position.x) / 2;
 		const newY = (catcherBody.position.y + productBody.position.y) / 2;
@@ -674,17 +684,13 @@ export class DropAndFusionGame extends EventEmitter<{
 		this.removeBodiesForFusion(catcherBody, productBody);
 
 		this.advanceFusionCombo();
-		const hasNextLevel = this.monoDefinitions.some(
-			(m) => m.level === targetLevel + 1,
-		);
-		const additionalScore = this.fusionPairScore(
-			catcherMono,
-			!hasNextLevel && this.gameMode !== "yen" && this.gameMode !== "sweets",
-		);
+		const additionalScore = this.fusionPairScore(catcherMono, isOverflowFusion);
 		this.score += additionalScore;
 
-		this.addFusionProductBody(nextMono, newX, newY);
-		this.emit("fusioned", newX, newY, nextMono, additionalScore);
+		if (nextMono) {
+			this.addFusionProductBody(nextMono, newX, newY);
+		}
+		this.emit('fusioned', newX, newY, nextMono, additionalScore);
 		return true;
 	}
 

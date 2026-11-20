@@ -20,22 +20,27 @@ describe('Timeline', () => {
 		]);
 
 		await bob.client.request('following/create', { userId: aliceInB.id });
-		// Follow delivery is asynchronous; the sender must know the remote follower
-		// before the very first test note is posted.
+		// Follow and Accept delivery are asynchronous. Confirm both sides before
+		// posting the first note so the receiver already knows its followee.
 		const deadline = Date.now() + 10_000;
 		while (true) {
-			const response = await alice.client.request('users/relation', { userId: bobInA.id });
+			const [senderResponse, receiverResponse] = await Promise.all([
+				alice.client.request('users/relation', { userId: bobInA.id }),
+				bob.client.request('users/relation', { userId: aliceInB.id }),
+			]);
 			// This fork returns an array even for a single userId; the SDK also
 			// permits a single relation object, so accept both response shapes.
-			const relations = Array.isArray(response) ? response : [response];
-			if (relations.some(relation => relation.id === bobInA.id && relation.isFollowed)) break;
+			const senderRelations = Array.isArray(senderResponse) ? senderResponse : [senderResponse];
+			const receiverRelations = Array.isArray(receiverResponse) ? receiverResponse : [receiverResponse];
+			if (senderRelations.some(relation => relation.id === bobInA.id && relation.isFollowed) &&
+				receiverRelations.some(relation => relation.id === aliceInB.id && relation.isFollowing)) break;
 			if (Date.now() >= deadline) throw new Error('Remote follow was not established before timeline tests');
 			await sleep(100);
 		}
 	});
 
 	type TimelineChannel = keyof Misskey.Channels & (`${string}Timeline` | 'antenna' | 'userList' | 'hashtag');
-	type TimelineEndpoint = keyof Misskey.Endpoints & (`${string}timeline` | 'antennas/notes' | 'roles/notes' | 'notes/search-by-tag');
+	type TimelineEndpoint = keyof Misskey.Endpoints & (`notes/${string}timeline` | 'antennas/notes' | 'roles/notes' | 'notes/search-by-tag');
 	const timelineMap = new Map<TimelineChannel, TimelineEndpoint>([
 		['antenna', 'antennas/notes'],
 		['globalTimeline', 'notes/global-timeline'],

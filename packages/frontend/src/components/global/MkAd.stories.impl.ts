@@ -4,8 +4,8 @@
  */
 
 import { expect, userEvent, waitFor, within } from '@storybook/test';
-import { StoryObj } from '@storybook/vue3';
 import MkAd from './MkAd.vue';
+import type { StoryObj } from '@storybook/vue3';
 import { i18n } from '@/i18n.js';
 
 const common = {
@@ -67,7 +67,7 @@ const common = {
 		await expect(imgAgain).toBeInTheDocument();
 	},
 	args: {
-		prefer: [],
+		preferForms: [],
 		specify: {
 			id: 'someadid',
 			ratio: 1,
@@ -75,6 +75,7 @@ const common = {
 			place: '',
 			imageUrl: '',
 			dayOfWeek: 7,
+			isSensitive: false,
 		},
 	},
 	parameters: {

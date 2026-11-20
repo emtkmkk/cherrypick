@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: noridev and cherrypick-project
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 

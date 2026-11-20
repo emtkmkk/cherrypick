@@ -156,7 +156,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		includeLocalRenotes: boolean,
 		withFiles: boolean,
 		withRenotes: boolean,
-        withCats: boolean,
+		withCats: boolean,
 	}, me: MiLocalUser) {
 		//#region Construct query
 		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
@@ -189,8 +189,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}));
 
 		this.queryService.generateVisibilityQuery(query, me);
-		this.queryService.generateMutedUserQuery(query, me);
-		this.queryService.generateBlockedUserQuery(query, me);
+		this.queryService.generateBaseNoteFilteringQuery(query, me);
 		this.queryService.generateMutedUserRenotesQueryForNotes(query, me);
 
 		if (ps.includeMyRenotes === false) {
@@ -229,6 +228,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				qb.orWhere(new Brackets(qb => {
 					qb.orWhere('note.text IS NOT NULL');
 					qb.orWhere('note.fileIds != \'{}\'');
+					qb.orWhere('0 < (SELECT COUNT(*) FROM poll WHERE poll."noteId" = note.id)');
 				}));
 			}));
 		}

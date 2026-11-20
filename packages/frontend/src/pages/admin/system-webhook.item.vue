@@ -70,11 +70,11 @@ function onDeleteClick() {
 
 </script>
 
-<style module lang="scss">
+<style lang="scss" module>
 .icon {
 	margin-right: 0.75em;
 	flex-shrink: 0;
 	text-align: center;
-	color: var(--MI_THEME-fgTransparentWeak);
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.75);
 }
 </style>

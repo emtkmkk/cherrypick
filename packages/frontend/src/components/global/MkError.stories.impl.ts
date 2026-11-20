@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { action } from '@storybook/addon-actions';
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+import { action } from 'storybook/actions';
 import { expect, waitFor } from '@storybook/test';
-import { StoryObj } from '@storybook/vue3';
 import MkError from './MkError.vue';
+import type { StoryObj } from '@storybook/vue3';
 export const Default = {
 	render(args) {
 		return {

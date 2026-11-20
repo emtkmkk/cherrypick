@@ -65,7 +65,7 @@ export const packedUserLiteSchema = {
 		avatarUrl: {
 			type: 'string',
 			format: 'url',
-			nullable: true, optional: false,
+			nullable: false, optional: false,
 		},
 		avatarBlurhash: {
 			type: 'string',
@@ -115,11 +115,19 @@ export const packedUserLiteSchema = {
 				},
 			},
 		},
+		isLocked: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
 		isBot: {
 			type: 'boolean',
 			nullable: false, optional: true,
 		},
 		isCat: {
+			type: 'boolean',
+			nullable: false, optional: true,
+		},
+		isProxy: {
 			type: 'boolean',
 			nullable: false, optional: true,
 		},
@@ -199,6 +207,14 @@ export const packedUserLiteSchema = {
 				},
 			},
 		},
+		setFederationAvatarShape: {
+			type: 'boolean',
+			nullable: true, optional: true,
+		},
+		isSquareAvatars: {
+			type: 'boolean',
+			nullable: true, optional: true,
+		},
 	},
 } as const;
 
@@ -252,10 +268,6 @@ export const packedUserDetailedNotMeOnlySchema = {
 		bannerBlurhash: {
 			type: 'string',
 			nullable: true, optional: false,
-		},
-		isLocked: {
-			type: 'boolean',
-			nullable: false, optional: false,
 		},
 		isSilenced: {
 			type: 'boolean',
@@ -366,6 +378,15 @@ export const packedUserDetailedNotMeOnlySchema = {
 			nullable: false, optional: false,
 			enum: ['public', 'followers', 'private'],
 		},
+		chatScope: {
+			type: 'string',
+			nullable: false, optional: false,
+			enum: ['everyone', 'following', 'followers', 'mutual', 'none'],
+		},
+		canChat: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
 		roles: {
 			type: 'array',
 			nullable: false, optional: false,
@@ -464,11 +485,11 @@ export const packedMeDetailedOnlySchema = {
 		},
 		isModerator: {
 			type: 'boolean',
-			nullable: true, optional: false,
+			nullable: false, optional: false,
 		},
 		isAdmin: {
 			type: 'boolean',
-			nullable: true, optional: false,
+			nullable: false, optional: false,
 		},
 		injectFeaturedNote: {
 			type: 'boolean',
@@ -544,11 +565,11 @@ export const packedMeDetailedOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: false,
 		},
-		hasUnreadMessagingMessage: {
+		hasUnreadChannel: {
 			type: 'boolean',
 			nullable: false, optional: false,
 		},
-		hasUnreadChannel: {
+		hasUnreadChatMessages: {
 			type: 'boolean',
 			nullable: false, optional: false,
 		},
@@ -590,7 +611,7 @@ export const packedMeDetailedOnlySchema = {
 		},
 		mutedInstances: {
 			type: 'array',
-			nullable: true, optional: false,
+			nullable: false, optional: false,
 			items: {
 				type: 'string',
 				nullable: false, optional: false,
@@ -608,10 +629,13 @@ export const packedMeDetailedOnlySchema = {
 				quote: { optional: true, ...notificationRecieveConfig },
 				reaction: { optional: true, ...notificationRecieveConfig },
 				pollEnded: { optional: true, ...notificationRecieveConfig },
+				scheduledNotePosted: { optional: true, ...notificationRecieveConfig },
+				scheduledNotePostFailed: { optional: true, ...notificationRecieveConfig },
 				receiveFollowRequest: { optional: true, ...notificationRecieveConfig },
 				followRequestAccepted: { optional: true, ...notificationRecieveConfig },
 				groupInvited: { optional: true, ...notificationRecieveConfig },
 				roleAssigned: { optional: true, ...notificationRecieveConfig },
+				chatRoomInvitationReceived: { optional: true, ...notificationRecieveConfig },
 				achievementEarned: { optional: true, ...notificationRecieveConfig },
 				app: { optional: true, ...notificationRecieveConfig },
 				test: { optional: true, ...notificationRecieveConfig },
@@ -629,18 +653,7 @@ export const packedMeDetailedOnlySchema = {
 			type: 'array',
 			nullable: false, optional: false,
 			items: {
-				type: 'object',
-				nullable: false, optional: false,
-				properties: {
-					name: {
-						type: 'string',
-						nullable: false, optional: false,
-					},
-					unlockedAt: {
-						type: 'number',
-						nullable: false, optional: false,
-					},
-				},
+				ref: 'Achievement',
 			},
 		},
 		loggedInDays: {
@@ -702,6 +715,14 @@ export const packedMeDetailedOnlySchema = {
 			},
 		},
 		//#endregion
+		autoDeleteNotesAfterDays: {
+			type: 'number',
+			nullable: true, optional: false,
+		},
+		autoDeleteKeepFavorites: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
 	},
 } as const;
 

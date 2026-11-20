@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div ref="rootEl" :class="$style.root">
-	<header :class="[$style.header, { [$style.reduceAnimation]: !defaultStore.state.animation, [$style.showEl]: (showEl && ['hideHeaderOnly', 'hideHeaderFloatBtn', 'hide'].includes(<string>defaultStore.state.displayHeaderNavBarWhenScroll)) && isMobile && mainRouter.currentRoute.value.name === 'explore' }]" class="_button" @click="showBody = !showBody">
+	<header :class="[$style.header, { [$style.reduceAnimation]: !prefer.s.animation, [$style.scrollToTransparent]: showEl , [$style.showEl]: (showEl && ['hideHeaderOnly', 'hideHeaderFloatBtn', 'hide'].includes(<string>prefer.s.displayHeaderNavBarWhenScroll)) && isMobile && mainRouter.currentRoute.value.name === 'explore' }]" class="_button" @click="showBody = !showBody">
 		<div :class="$style.title"><div><slot name="header"></slot></div></div>
 		<div :class="$style.divider"></div>
 		<button class="_button" :class="$style.button">
@@ -14,10 +14,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</button>
 	</header>
 	<Transition
-		:enterActiveClass="defaultStore.state.animation ? $style.folderToggleEnterActive : ''"
-		:leaveActiveClass="defaultStore.state.animation ? $style.folderToggleLeaveActive : ''"
-		:enterFromClass="defaultStore.state.animation ? $style.folderToggleEnterFrom : ''"
-		:leaveToClass="defaultStore.state.animation ? $style.folderToggleLeaveTo : ''"
+		:enterActiveClass="prefer.s.animation ? $style.folderToggleEnterActive : ''"
+		:leaveActiveClass="prefer.s.animation ? $style.folderToggleLeaveActive : ''"
+		:enterFromClass="prefer.s.animation ? $style.folderToggleEnterFrom : ''"
+		:leaveToClass="prefer.s.animation ? $style.folderToggleLeaveTo : ''"
 		@enter="enter"
 		@afterEnter="afterEnter"
 		@leave="leave"
@@ -31,22 +31,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, shallowRef, watch } from 'vue';
+import { onBeforeUnmount, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
 import { miLocalStorage } from '@/local-storage.js';
-import { mainRouter } from '@/router/main.js';
-import { defaultStore } from '@/store.js';
-import { getBgColor } from '@/scripts/get-bg-color.js';
-import { deviceKind } from '@/scripts/device-kind.js';
+import { prefer } from '@/preferences.js';
 import { globalEvents } from '@/events.js';
+import { getBgColor } from '@/utility/get-bg-color.js';
+import { mainRouter } from '@/router.js';
+import { deviceKind } from '@/utility/device-kind.js';
+import { scrollToVisibility } from '@/utility/scroll-to-visibility.js';
 
 const MOBILE_THRESHOLD = 500;
 
 const isMobile = ref(deviceKind === 'smartphone' || window.innerWidth <= MOBILE_THRESHOLD);
-window.addEventListener('resize', () => {
+const handleResize = () => {
 	isMobile.value = deviceKind === 'smartphone' || window.innerWidth <= MOBILE_THRESHOLD;
-});
+};
 
-const showEl = ref(false);
+window.addEventListener('resize', handleResize);
+
+const { showEl } = scrollToVisibility();
 
 const miLocalStoragePrefix = 'ui:folder:' as const;
 
@@ -58,7 +61,7 @@ const props = withDefaults(defineProps<{
 	persistKey: null,
 });
 
-const rootEl = shallowRef<HTMLElement>();
+const rootEl = useTemplateRef('rootEl');
 const parentBg = ref<string | null>(null);
 // eslint-disable-next-line vue/no-setup-props-reactivity-loss
 const showBody = ref((props.persistKey && miLocalStorage.getItem(`${miLocalStoragePrefix}${props.persistKey}`)) ? (miLocalStorage.getItem(`${miLocalStoragePrefix}${props.persistKey}`) === 't') : props.expanded);
@@ -95,12 +98,23 @@ function afterLeave(el: Element) {
 	el.style.height = '';
 }
 
-onMounted(() => {
-	parentBg.value = getBgColor(rootEl.value?.parentElement);
+function updateBgColor() {
+	if (rootEl.value) {
+		parentBg.value = getBgColor(rootEl.value.parentElement);
+	}
+}
 
-	globalEvents.on('showEl', (showEl_receive) => {
-		showEl.value = showEl_receive;
-	});
+onMounted(() => {
+	updateBgColor();
+	globalEvents.on('themeChanging', updateBgColor);
+});
+
+onUnmounted(() => {
+	window.removeEventListener('resize', handleResize);
+});
+
+onBeforeUnmount(() => {
+	globalEvents.off('themeChanging', updateBgColor);
 });
 </script>
 
@@ -131,6 +145,10 @@ onMounted(() => {
 
 	&.reduceAnimation {
 		transition: opacity 0s, transform 0s;
+	}
+
+	&.scrollToTransparent {
+		background-color: transparent;
 	}
 
 	&.showEl {

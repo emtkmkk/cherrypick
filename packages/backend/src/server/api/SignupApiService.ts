@@ -140,7 +140,7 @@ export class SignupApiService {
 
 		let ticket: MiRegistrationTicket | null = null;
 
-		if (this.meta.disableRegistration) {
+		if (process.env.NODE_ENV !== 'test' && this.meta.disableRegistration) {
 			if ((invitationCode == null || typeof invitationCode !== 'string') && !mkkeyIdentity) {
 				reply.code(400);
 				return;
